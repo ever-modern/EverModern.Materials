@@ -1,23 +1,22 @@
-﻿@using Microsoft.AspNetCore.Components.Web
+﻿@using DestallMaterials.Blazor.Components.Universal
+@using Microsoft.AspNetCore.Components.Web
 @typeparam TValue
 
 @inherits DisposableComponent
 
 @code {
     [Parameter]
-    public Action<TValue> OnValueSet { get => _valueChanged; set => _valueChanged = value; }
+    public string? Label { get; set; }
 
     [Parameter]
-    public string Label { get; set; }
+    public TValue? Value { get; set; }
 
     [Parameter]
-    public TValue Value { get; set; }
-
-    [Parameter]
+    [EditorRequired]
     public EventCallback<TValue> ValueChanged { get; set; }
 
     [Parameter]
-    public RenderFragment ChildContent { get; set; }
+    public RenderFragment? ChildContent { get; set; }
 
     [Parameter]
     public Action OnBlur { get; set; } = () => { };
@@ -38,9 +37,7 @@
     public string Class { get; set; } = "";
 
     [Parameter]
-    public string Error { get; set; } = "";
-
-    protected TValue _value;
+    public string? Error { get; set; }
 
     protected void OnOuterClick(MouseEventArgs mouseEventArgs)
     {
@@ -49,12 +46,4 @@
             OnClickOutside();
         }
     }
-
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        _value = Value;
-    }
-
-    Action<TValue> _valueChanged { get; set; }
 }

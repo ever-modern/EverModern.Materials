@@ -1,7 +1,8 @@
 ﻿@using DestallMaterials.WheelProtection.Extensions.Objects;
 @using DestallMaterials.WheelProtection.Extensions;
+@using System.Numerics
 
-@typeparam T
+@typeparam T where T : INumber<T>
 @inherits BaseInput<T>
 
 @if (IsFraction)

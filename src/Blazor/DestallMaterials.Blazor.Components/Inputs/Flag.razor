@@ -1,5 +1,4 @@
 ﻿@using DestallMaterials.Blazor.Services;
-@using DestallMaterials.WheelProtection.Extensions.Strings
 
 @inherits BaseInput<bool>
 
@@ -7,6 +6,7 @@
     <input type="checkbox"
            class="flag-checkbox"
            @bind-value=Value
+           @oninput="() => {}"
            disabled="@Disabled" />
     <span class="flag-checkmark"></span>
     @if (!string.IsNullOrEmpty(Label))
