@@ -8,7 +8,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Blazor\DestallMaterials.Blazor.Components\DestallMaterials.Blazor.Components.csproj" />
-		<ProjectReference Include="..\..\DestallMaterials.Blazor.Components\DestallMaterials.Blazor.csproj" />
 		<ProjectReference Include="..\Blazor.VisualTesting.Client\Blazor.VisualTesting.Client.csproj" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
 	</ItemGroup>
