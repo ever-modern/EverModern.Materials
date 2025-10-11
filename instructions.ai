@@ -1,0 +1,110 @@
+# DestallMaterials - AI Agent Instructions
+
+This file contains solutions to common technical problems encountered when working with the DestallMaterials project.
+
+## Build & Environment Setup
+
+### .NET 9 Installation (Linux)
+
+If `dotnet` command is not found, install .NET 9 SDK:
+
+```bash
+# Download and install .NET 9 SDK
+wget https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh
+chmod +x /tmp/dotnet-install.sh
+/tmp/dotnet-install.sh --channel 9.0 --install-dir /workspace/.dotnet
+
+# Add to PATH (for current session)
+export PATH="/workspace/.dotnet:$PATH"
+
+# Verify installation
+/workspace/.dotnet/dotnet --version
+```
+
+### Building the Project
+
+```bash
+# Build entire solution
+cd /workspace/DestallMaterials/src
+/workspace/.dotnet/dotnet build DestallMaterials.sln
+
+# Build specific project (Blazor Components)
+cd /workspace/DestallMaterials/src/DestallMaterials.Blazor.Components
+/workspace/.dotnet/dotnet build DestallMaterials.Blazor.csproj
+
+# Build VisualTesting project
+cd /workspace/DestallMaterials/src/DestallMaterials.Blazor.VisualTesting
+/workspace/.dotnet/dotnet build
+```
+
+## Git Operations
+
+### Clone Repository
+
+```bash
+# Use the provided GitHub token in the project instructions
+git clone https://[GITHUB_TOKEN]@github.com/dest-all/DestallMaterials.git
+cd DestallMaterials
+git checkout dev/ai
+git pull origin dev/ai
+```
+
+### Push Changes
+
+```bash
+cd /workspace/DestallMaterials
+git add .
+git commit -m "Your commit message"
+git push origin dev/ai
+```
+
+## Component Development
+
+### Removing MudBlazor Dependencies
+
+When removing MudBlazor components:
+
+1. **Remove MudBlazor using statement**: Delete `@using MudBlazor` from the component
+2. **Replace MudBlazor components**: Use standard HTML elements with custom CSS
+3. **Add CSS classes**: Follow the naming convention - component type + base types
+4. **Create companion CSS file**: Use the pattern `ComponentName.razor.css` for scoped styles
+5. **Maintain functionality**: Ensure all event handlers and bindings still work
+
+### Flag Component (Checkbox) - Custom Implementation
+
+The Flag component was successfully migrated from MudBlazor to custom implementation:
+
+**Key Changes:**
+- Replaced `<MudCheckBox>` with semantic HTML (`<label>`, `<input type="checkbox">`, `<span>`)
+- Created custom CSS with visual checkbox appearance
+- Maintained all functionality (value binding, disabled state, labels)
+- Added proper CSS classes: `flag`, `baseinput`, plus custom classes
+
+**Files Modified:**
+- `src/DestallMaterials.Blazor.Components/Components/Universal/Inputs/Flag.razor`
+- `src/DestallMaterials.Blazor.Components/Components/Universal/Inputs/Flag.razor.css` (new file)
+- `src/DestallMaterials.Blazor.VisualTesting/Pages/Index.razor` (demo added)
+
+**CSS Architecture:**
+- Clean, simple structure without excessive div nesting
+- Custom checkmark using CSS pseudo-elements (`:after`)
+- Support for hover, focus, active, and disabled states
+- Accessible with keyboard navigation support
+
+## Project Structure
+
+- **DestallMaterials.Blazor.Components**: Reusable Blazor components
+- **DestallMaterials.Blazor.VisualTesting**: Visual testing and demo application
+- Component path: `src/DestallMaterials.Blazor.Components/Components/Universal/Inputs/`
+
+## Testing
+
+To visually test components, add them to the VisualTesting Index page:
+- File: `src/DestallMaterials.Blazor.VisualTesting/Pages/Index.razor`
+- Include multiple states and configurations
+- Show interactive examples
+
+---
+
+**Last Updated**: 2025-10-11
+**Agent**: MiniMax Agent

@@ -1,16 +1,29 @@
 ﻿@using DestallMaterials.Blazor.Services;
 @using DestallMaterials.WheelProtection.Extensions.Strings
-@using MudBlazor
 
 @inherits BaseInput<bool>
 
-<MudCheckBox @bind-Checked=Value T="bool" Label="@Label" Disabled=Disabled Class="@Class" />
+<label class="flag baseinput @(Disabled ? "disabled" : "") @Class">
+    <input type="checkbox" 
+           class="flag-checkbox" 
+           checked="@Value" 
+           disabled="@Disabled"
+           @onchange="HandleChange" />
+    <span class="flag-checkmark"></span>
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <span class="flag-label">@Label</span>
+    }
+</label>
 
 @code {
-    void onClick(bool value)
+    private async Task HandleChange(ChangeEventArgs e)
     {
-        Value = value;
-        OnValueSet(value);
+        if (!Disabled)
+        {
+            var newValue = (bool)(e.Value ?? false);
+            await OnInput(newValue);
+        }
     }
 
     [Parameter]
