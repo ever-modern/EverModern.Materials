@@ -97,6 +97,12 @@ The Flag component was successfully migrated from MudBlazor to custom implementa
 - Maintained backward compatibility with existing `OnValueSet` Action-based callbacks
 - Both EventCallback and Action callbacks are now invoked in the `OnInput` method
 
+**Flag Component Binding Implementation:**
+- Use `@bind="CurrentValue"` with `@bind:event="onchange"` in the component template
+- Implement CurrentValue property with getter returning `Value` and setter calling `OnInput` asynchronously
+- The async void pattern (`OnValueChanged` method) ensures proper event handling without blocking
+- This pattern enables two-way binding between parent and child components
+
 ## Project Structure
 
 - **DestallMaterials.Blazor.Components**: Reusable Blazor components
