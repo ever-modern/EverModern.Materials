@@ -1,0 +1,98 @@
+﻿@using System.Globalization
+
+@inherits BaseInput<DateTime>
+
+<MudItem Class="@Class" Style="@containerStyle">
+    @{
+        const string icon = "Icons.Material.Filled.Clear;";
+        string style = Date == default ? $"visibility: hidden;" : "";
+        style = $"{style} ;";
+
+        <MudIconButton Icon="@icon" Style="@style" OnClick="() => { Value = default; StateHasChanged(); }" Size="Size.Small" />
+    }
+    @if (PickDate)
+    {
+        <FlexibleDatePicker Clearable="false"
+                            OnValueChanged="d => OnValueChanged(WithDate(d))"
+                            Value=Date
+                            PlaceholderText="Nothing"
+                            Culture=Culture
+                            Label="@Label"
+                            Error="@Error" />
+    }
+    @if (PickTime)
+    {
+        string timeLabel = string.IsNullOrWhiteSpace(Label) ? "" : Label;
+
+        /*Ai todo*/
+        <TimePicker Culture=Culture
+                       Class="d-inline-flex"
+                       Style="margin-left: 10px;min-width:88px;"
+                       Label=@timeLabel
+                       OnValueChanged="t => OnValueChanged(WithTime(t))"
+                       Time="Time"
+                       PickerVariant="PickerVariant.Dialog"
+                       Error=@(Error is not null) />
+    }
+
+</MudItem>
+
+@code {
+
+    [Parameter]
+    public bool PickTime { get; set; } = true;
+
+    [Parameter]
+    public bool PickDate { get; set; } = true;
+
+    [Parameter]
+    public DateTime MinValue { get; set; } = new DateTime(2000, 1, 1);
+
+    [Parameter]
+    public CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.CurrentCulture;
+
+    [Parameter]
+    public string? Error { get; set; }
+
+    string containerStyle => "display: flex; max-width: 250px; min-width: 250px;";
+
+    protected override void OnParametersSet()
+    {
+        if (!PickDate && !PickTime)
+        {
+            throw new InvalidOperationException("At least either time or date should be pickable.");
+        }
+
+        base.OnParametersSet();
+    }
+
+    string ValueString => Value > new DateTime(2200, 01, 01) ? "∞" : Value.ToString();
+
+    public TimeSpan Time
+    {
+        get => Value.TimeOfDay;
+        internal set
+        {
+            var newValue = (Date).ToDateTime(TimeOnly.FromTimeSpan(value));
+            OnValueChanged?.Invoke(newValue);
+        }
+    }
+
+    public DateOnly Date
+    {
+        get => DateOnly.FromDateTime(Value);
+        internal set
+        {
+            var newValue = (value).ToDateTime(TimeOnly.FromTimeSpan(Time));
+            OnValueChanged?.Invoke(newValue);
+        }
+    }
+
+    public DateTimeInput()
+    {
+        Value = DateTime.Now;
+    }
+
+    public DateTime WithTime(TimeOnly time) => Value.Date + time.ToTimeSpan();
+    public DateTime WithDate(DateOnly date) => date.ToDateTime(default) + Value.TimeOfDay;
+}

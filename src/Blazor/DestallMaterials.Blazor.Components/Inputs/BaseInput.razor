@@ -13,7 +13,7 @@
 
     [Parameter]
     [EditorRequired]
-    public EventCallback<TValue> ValueChanged { get; set; }
+    public Action<TValue> OnValueChanged { get; set; }
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -38,6 +38,10 @@
 
     [Parameter]
     public string? Error { get; set; }
+
+    protected virtual void OnValueSet(TValue newValue)
+    {
+    }
 
     protected void OnOuterClick(MouseEventArgs mouseEventArgs)
     {

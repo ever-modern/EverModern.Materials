@@ -1,16 +1,18 @@
-﻿@using DestallMaterials.Blazor.Services;
+﻿@inherits BaseInput<bool>
 
-@inherits BaseInput<bool>
-
-<label class="flag baseinput @(Disabled ? "disabled" : "") @Class">
+<label class="flag base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
     <input type="checkbox"
            class="flag-checkbox"
            @bind-value=Value
-           @oninput="() => {}"
+           @bind-value:event="onchange"
            disabled="@Disabled" />
     <span class="flag-checkmark"></span>
     @if (!string.IsNullOrEmpty(Label))
     {
         <span class="flag-label">@Label</span>
+    }
+    @if (ChildContent is not null)
+    {
+        @ChildContent
     }
 </label>

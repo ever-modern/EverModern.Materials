@@ -19,8 +19,4 @@
     <ProjectReference Include="..\..\DestallMaterials.DataStructures\DestallMaterials.WheelProtection.DataStructures.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Lists\" />
-  </ItemGroup>
-
 </Project>
