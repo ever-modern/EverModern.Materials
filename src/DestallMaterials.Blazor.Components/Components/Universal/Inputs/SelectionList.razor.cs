@@ -213,7 +213,7 @@ public partial class SelectionList<TItem> : ClickableComponent
 
     ElementReference _listReference;
 
-    IList<TItem> Items = new List<TItem>();
+    readonly List<TItem> _items = [];
 
     const int _listLineHeight = 20;
 }
