@@ -97,11 +97,19 @@ The Flag component was successfully migrated from MudBlazor to custom implementa
 - Maintained backward compatibility with existing `OnValueSet` Action-based callbacks
 - Both EventCallback and Action callbacks are now invoked in the `OnInput` method
 
-**Flag Component Binding Implementation:**
-- Use `@bind="CurrentValue"` with `@bind:event="onchange"` in the component template
-- Implement CurrentValue property with getter returning `Value` and setter calling `OnInput` asynchronously
-- The async void pattern (`OnValueChanged` method) ensures proper event handling without blocking
-- This pattern enables two-way binding between parent and child components
+**Flag Component Binding Implementation (FIXED):**
+- Use `@bind="CurrentValue"` with `@bind:event="onchange"` in the checkbox input element
+- Implement `CurrentValue` property with:
+  - Getter: returns the `Value` from BaseInput
+  - Setter: updates `Value` and calls `OnValueChanged(value)` if value changed
+- Implement `OnValueChanged` as async void method that:
+  - Invokes `ValueChanged.InvokeAsync(newValue)` to notify parent (required for @bind-Value)
+  - Also invokes `OnValueSet?.Invoke(newValue)` for backward compatibility with Action callbacks
+- This pattern enables proper two-way binding with parent components using @bind-Value
+
+**Common Binding Issue:**
+- Using `@bind-value=Value` (directly binding to the parameter) does NOT work because it doesn't trigger ValueChanged
+- The correct approach is to bind to a local property (CurrentValue) that handles the ValueChanged event
 
 ## Project Structure
 
