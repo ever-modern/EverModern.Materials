@@ -91,6 +91,12 @@ The Flag component was successfully migrated from MudBlazor to custom implementa
 - Support for hover, focus, active, and disabled states
 - Accessible with keyboard navigation support
 
+**Two-Way Binding Fix:**
+- Added `EventCallback<TValue> ValueChanged` to BaseInput for proper Blazor `@bind-Value` support
+- The EventCallback is required for parent components to receive value updates
+- Maintained backward compatibility with existing `OnValueSet` Action-based callbacks
+- Both EventCallback and Action callbacks are now invoked in the `OnInput` method
+
 ## Project Structure
 
 - **DestallMaterials.Blazor.Components**: Reusable Blazor components
