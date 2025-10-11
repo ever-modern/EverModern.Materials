@@ -6,9 +6,9 @@
 <label class="flag baseinput @(Disabled ? "disabled" : "") @Class">
     <input type="checkbox"
            class="flag-checkbox"
-           checked="@Value"
-           disabled="@Disabled"
-           @onchange="HandleChange" />
+           @bind="CurrentValue"
+           @bind:event="onchange"
+           disabled="@Disabled" />
     <span class="flag-checkmark"></span>
     @if (!string.IsNullOrEmpty(Label))
     {
@@ -17,11 +17,16 @@
 </label>
 
 @code {
-    private async Task HandleChange(ChangeEventArgs e)
+    private bool CurrentValue
     {
-        if (!Disabled)
+        get => Value;
+        set => OnValueChanged(value);
+    }
+
+    private async void OnValueChanged(bool newValue)
+    {
+        if (Value != newValue && !Disabled)
         {
-            var newValue = (bool)(e.Value ?? false);
             await OnInput(newValue);
         }
     }
