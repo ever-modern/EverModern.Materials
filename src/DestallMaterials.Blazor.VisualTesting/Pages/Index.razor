@@ -6,22 +6,3 @@
 @using DestallMaterials.WheelProtection.Executions;
 
 <PageTitle>Index</PageTitle>
-
-<FlexibleDatePicker OnValueChanged="DateChanged" Clearable="true" Value="Value" />
-
-@code {
-    void DateChanged(DateTime? dateTime)
-    {
-        if (dateTime is null)
-        {
-            Console.WriteLine("No value");
-        }
-        else
-        {
-            Console.WriteLine(dateTime.Value);
-        }
-        Value = dateTime;
-    }
-
-    DateTime? Value;
-}
