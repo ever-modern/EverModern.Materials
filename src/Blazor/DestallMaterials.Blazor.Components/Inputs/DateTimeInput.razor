@@ -2,14 +2,12 @@
 
 @inherits BaseInput<DateTime>
 
-<MudItem Class="@Class" Style="@containerStyle">
-    @{
-        const string icon = "Icons.Material.Filled.Clear;";
-        string style = Date == default ? $"visibility: hidden;" : "";
-        style = $"{style} ;";
-
-        <MudIconButton Icon="@icon" Style="@style" OnClick="() => { Value = default; StateHasChanged(); }" Size="Size.Small" />
-    }
+<div class="datetime-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class" style="@containerStyle">
+    <button type="button"
+            class="datetime-input-clear @(Date == default ? "hidden" : "")"
+            @onclick="ClearValue">
+        ×
+    </button>
     @if (PickDate)
     {
         <FlexibleDatePicker Clearable="false"
@@ -24,18 +22,15 @@
     {
         string timeLabel = string.IsNullOrWhiteSpace(Label) ? "" : Label;
 
-        /*Ai todo*/
         <TimePicker Culture=Culture
-                       Class="d-inline-flex"
-                       Style="margin-left: 10px;min-width:88px;"
-                       Label=@timeLabel
-                       OnValueChanged="t => OnValueChanged(WithTime(t))"
-                       Time="Time"
-                       PickerVariant="PickerVariant.Dialog"
-                       Error=@(Error is not null) />
+                    Class="datetime-input-time"
+                    Style="margin-left: 10px;min-width:88px;"
+                    Label=@timeLabel
+                    OnValueChanged="t => OnValueChanged(WithTime(t))"
+                    Time="Time"
+                    Error=@(Error is not null) />
     }
-
-</MudItem>
+</div>
 
 @code {
 
@@ -91,6 +86,12 @@
     public DateTimeInput()
     {
         Value = DateTime.Now;
+    }
+
+    void ClearValue()
+    {
+        Value = default;
+        StateHasChanged();
     }
 
     public DateTime WithTime(TimeOnly time) => Value.Date + time.ToTimeSpan();

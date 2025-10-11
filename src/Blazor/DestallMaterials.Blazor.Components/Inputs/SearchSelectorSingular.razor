@@ -2,26 +2,23 @@
 @typeparam TItem
 
 @{
-    RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<Content>
-        @GetItemRepresentation(row)
-    </Content>);
+    RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<text>@GetItemRepresentation(row)</text>);
 }
-<MudAutocomplete T="TItem"
-                 Label=@Label
-                 SearchFunc="async (filter, ct) => await GetItemsByFilter(filter, ct)"
-                 ToStringFunc="GetItemRepresentation"
-                 MaxItems="50"
-                 Value="Value"
-                 ValueChanged="OnValueSetInner"
-                 Disabled=Disabled
-                 Clearable=MayBeEmpty
-                 OnClearButtonClick="Clear"
-                 Class="@Class"
-                 Error="HasError"
-                 ErrorText=@Error
-                 ItemSelectedTemplate="itemTemplate"
-                 ItemTemplate="itemTemplate"
-                 />
+<Autocomplete T="TItem"
+              Label=@Label
+              SearchFunc="async (filter, ct) => await GetItemsByFilter(filter, ct)"
+              ToStringFunc="GetItemRepresentation"
+              MaxItems="50"
+              Value="Value"
+              ValueChanged="OnValueSetInner"
+              Disabled=Disabled
+              Clearable=MayBeEmpty
+              OnClearButtonClick="Clear"
+              Class="@cssClass"
+              Error="HasError"
+              ErrorText=@Error
+              ItemSelectedTemplate="itemTemplate"
+              ItemTemplate="itemTemplate" />
 
 
 

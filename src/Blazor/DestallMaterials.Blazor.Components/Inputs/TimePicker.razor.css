@@ -1,19 +1,17 @@
-.string-input {
+.time-picker {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    width: 100%;
 }
 
-.string-input-label {
+.time-picker-label {
     font-size: 12px;
     font-weight: 500;
     color: #374151;
     margin-bottom: 2px;
 }
 
-.string-input-field {
-    width: 100%;
+.time-picker-field {
     padding: 8px 12px;
     font-size: 14px;
     line-height: 1.5;
@@ -23,38 +21,29 @@
     border-radius: 4px;
     transition: all 0.2s ease-in-out;
     outline: none;
+    min-width: 88px;
 }
 
-.string-input-field:focus {
+.time-picker-field:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.string-input-field:hover:not(:disabled) {
+.time-picker-field:hover {
     border-color: #9ca3af;
 }
 
-.string-input-field:disabled {
-    background-color: #f3f4f6;
-    color: #9ca3af;
-    cursor: not-allowed;
-}
-
-.string-input.errored .string-input-field {
+.time-picker.errored .time-picker-field {
     border-color: #ef4444;
 }
 
-.string-input.errored .string-input-field:focus {
+.time-picker.errored .time-picker-field:focus {
     border-color: #dc2626;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-.string-input-error {
+.time-picker-error {
     font-size: 12px;
     color: #ef4444;
     margin-top: 2px;
-}
-
-.string-input.disabled .string-input-field {
-    opacity: 0.6;
 }

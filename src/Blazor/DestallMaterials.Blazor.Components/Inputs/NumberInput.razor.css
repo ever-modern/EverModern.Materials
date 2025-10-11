@@ -1,18 +1,18 @@
-.string-input {
+.number-input {
     display: flex;
     flex-direction: column;
     gap: 4px;
     width: 100%;
 }
 
-.string-input-label {
+.number-input-label {
     font-size: 12px;
     font-weight: 500;
     color: #374151;
     margin-bottom: 2px;
 }
 
-.string-input-field {
+.number-input-field {
     width: 100%;
     padding: 8px 12px;
     font-size: 14px;
@@ -25,36 +25,47 @@
     outline: none;
 }
 
-.string-input-field:focus {
+.number-input-field:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.string-input-field:hover:not(:disabled) {
+.number-input-field:hover:not(:disabled) {
     border-color: #9ca3af;
 }
 
-.string-input-field:disabled {
+.number-input-field:disabled {
     background-color: #f3f4f6;
     color: #9ca3af;
     cursor: not-allowed;
 }
 
-.string-input.errored .string-input-field {
+.number-input.errored .number-input-field {
     border-color: #ef4444;
 }
 
-.string-input.errored .string-input-field:focus {
+.number-input.errored .number-input-field:focus {
     border-color: #dc2626;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-.string-input-error {
+.number-input-error {
     font-size: 12px;
     color: #ef4444;
     margin-top: 2px;
 }
 
-.string-input.disabled .string-input-field {
+.number-input.disabled .number-input-field {
     opacity: 0.6;
+}
+
+/* Hide default number input spinners */
+.number-input-field::-webkit-outer-spin-button,
+.number-input-field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input-field[type=number] {
+    -moz-appearance: textfield;
 }

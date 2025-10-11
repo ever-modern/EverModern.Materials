@@ -1,0 +1,40 @@
+.datetime-input {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    position: relative;
+}
+
+.datetime-input-clear {
+    background: none;
+    border: none;
+    font-size: 18px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    margin-top: 20px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.datetime-input-clear:hover {
+    color: #ef4444;
+}
+
+.datetime-input-clear.hidden {
+    visibility: hidden;
+}
+
+.datetime-input.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.datetime-input.errored {
+    /* Error styling handled by child components */
+}
+
+.datetime-input-time {
+    display: inline-flex;
+}

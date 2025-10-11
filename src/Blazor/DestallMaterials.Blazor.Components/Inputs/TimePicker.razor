@@ -1,0 +1,63 @@
+@using System.Globalization
+
+<div class="time-picker @(Error ? "errored" : "") @Class" style="@Style">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="time-picker-label">@Label</label>
+    }
+    <input type="time"
+           class="time-picker-field"
+           value="@CurrentValue"
+           @onchange="OnTimeChanged"
+           step="60" />
+    @if (Error)
+    {
+        <span class="time-picker-error">Invalid time</span>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public TimeSpan Time { get; set; }
+
+    [Parameter]
+    public Action<TimeOnly> OnValueChanged { get; set; } = _ => { };
+
+    [Parameter]
+    public string Label { get; set; }
+
+    [Parameter]
+    public bool Error { get; set; }
+
+    [Parameter]
+    public CultureInfo Culture { get; set; } = CultureInfo.CurrentCulture;
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public string Style { get; set; }
+
+    private string CurrentValue
+    {
+        get
+        {
+            var timeOnly = TimeOnly.FromTimeSpan(Time);
+            return timeOnly.ToString("HH:mm");
+        }
+    }
+
+    private void OnTimeChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(value) && TimeOnly.TryParse(value, out var parsed))
+        {
+            var newTime = parsed;
+            if (TimeOnly.FromTimeSpan(Time) != newTime)
+            {
+                OnValueChanged?.Invoke(newTime);
+                StateHasChanged();
+            }
+        }
+    }
+}

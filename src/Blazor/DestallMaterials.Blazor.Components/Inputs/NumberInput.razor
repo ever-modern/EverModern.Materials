@@ -1,21 +1,26 @@
 ﻿@using System.Numerics
+@using System.Globalization
 
 @typeparam T where T : INumber<T>
 @inherits BaseInput<T>
 
-@* ai todo *@
-@if (IsFraction)
-{
-    <MudBlazor.MudNumericField Format=@Format T="T" ValueChanged="v => OnValueSet(v)" Value="_value" HideSpinButtons Label="@Label" />
-}
-else if (IsWholeNumber)
-{
-    <MudBlazor.MudNumericField T="T" ValueChanged="v => OnValueSet(v)" Value=_value HideSpinButtons Label="@Label" />
-}
-else
-{
-    throw new InvalidOperationException($"Invalid number type {typeof(T).FullName}.");
-}
+<div class="number-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="number-input-label">@Label</label>
+    }
+    <input type="number"
+           class="number-input-field"
+           @bind="CurrentValue"
+           @bind:event="oninput"
+           disabled="@Disabled"
+           step="@Step"
+           placeholder="@Label" />
+    @if (Error is not null)
+    {
+        <span class="number-input-error">@Error</span>
+    }
+</div>
 
 @code {
     [Parameter]
@@ -36,4 +41,42 @@ else
     static readonly bool IsFraction = FractionalNumbers.Contains(typeof(T));
     static readonly bool IsWholeNumber = WholeNumbers.Contains(typeof(T));
 
+    string Step => IsFraction ? "0.01" : "1";
+
+    private string CurrentValue
+    {
+        get => Value?.ToString() ?? string.Empty;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (T.TryParse(value, CultureInfo.InvariantCulture, out var parsed))
+            {
+                if (!EqualityComparer<T>.Default.Equals(Value, parsed))
+                {
+                    Value = parsed;
+                    _ = OnValueChangedAsync(parsed);
+                }
+            }
+        }
+    }
+
+    private async Task OnValueChangedAsync(T newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!IsFraction && !IsWholeNumber)
+        {
+            throw new InvalidOperationException($"Invalid number type {typeof(T).FullName}.");
+        }
+        base.OnParametersSet();
+    }
 }

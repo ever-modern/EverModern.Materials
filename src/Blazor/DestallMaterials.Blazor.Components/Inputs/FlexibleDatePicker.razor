@@ -1,26 +1,29 @@
 ﻿@using System.Globalization
 
-
-@* ai todo *@
-<MudDatePicker Label=@Label
-               Editable="true"
-               Date="Value == default ? null : Value.ToDateTime(default)"
-               ImmediateText="true"
-               Placeholder=@ValueNotSetText
-               DateFormat="@_dateFormat"
-               TextChanged="DatePickerTextChanged"
-               Clearable=Clearable
-               DateChanged="d => OnValueChanged(DateOnly.FromDateTime(d ?? default))"
-               Culture=Culture
-               PickerVariant="PickerVariant.Dialog"
-               Class="flexible-date-picker"
-               HelperText=" "
-               ErrorText=@Error
-               Error=errorred
-               Style="min-width: 125px;" />
+<div class="flexible-date-picker @(errorred ? "errored" : "")" style="min-width: 125px;">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="flexible-date-picker-label">@Label</label>
+    }
+    <input type="text"
+           class="flexible-date-picker-field"
+           @bind="TextValue"
+           @bind:event="oninput"
+           @onblur="OnBlur"
+           placeholder="@ValueNotSetText" />
+    @if (Clearable && Value != default)
+    {
+        <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
+    }
+    @if (errorred && !string.IsNullOrEmpty(Error))
+    {
+        <span class="flexible-date-picker-error">@Error</span>
+    }
+</div>
 
 @code {
     private string _dateFormat = "dd.MM.yyyy";
+    private bool errorred => !string.IsNullOrEmpty(Error);
 
     static readonly string[] _shortFormats 
         = ["ddMM", "dd.MM", "dd", "d"];
@@ -50,6 +53,24 @@
 
     [Parameter]
     public string ValueNotSetText { get; set; } = "Not set";
+
+    private string TextValue
+    {
+        get => Value == default ? "" : Value.ToString(_dateFormat);
+        set => DatePickerTextChanged(value);
+    }
+
+    void ClearValue()
+    {
+        Value = default;
+        OnValueChanged(default);
+        StateHasChanged();
+    }
+
+    void OnBlur()
+    {
+        StateHasChanged();
+    }
 
     void DatePickerTextChanged(string value)
     {

@@ -1,0 +1,179 @@
+@using System.Threading
+@typeparam TItem
+
+<div class="autocomplete @(Error ? "errored" : "") @Class">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="autocomplete-label">@Label</label>
+    }
+    <div class="autocomplete-input-wrapper">
+        <input type="text"
+               class="autocomplete-field"
+               @bind="SearchText"
+               @bind:event="oninput"
+               @onfocus="OnFocus"
+               @onblur="OnBlurAsync"
+               disabled="@Disabled"
+               placeholder="@Label" />
+        @if (Clearable && Value != null)
+        {
+            <button type="button" class="autocomplete-clear" @onclick="Clear">×</button>
+        }
+    </div>
+    @if (_showDropdown && _items != null && _items.Any())
+    {
+        <div class="autocomplete-dropdown">
+            @foreach (var item in _items.Take(MaxItems))
+            {
+                <div class="autocomplete-item" @onclick="() => SelectItem(item)">
+                    @if (ItemTemplate != null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                    else
+                    {
+                        @ToStringFunc(item)
+                    }
+                </div>
+            }
+        </div>
+    }
+    @if (Error)
+    {
+        <span class="autocomplete-error">@ErrorText</span>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Func<string, CancellationToken, Task<IEnumerable<TItem>>> SearchFunc { get; set; }
+
+    [Parameter]
+    public Func<TItem, string> ToStringFunc { get; set; } = item => item?.ToString() ?? "";
+
+    [Parameter]
+    public TItem Value { get; set; }
+
+    [Parameter]
+    public Action<TItem> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool Clearable { get; set; }
+
+    [Parameter]
+    public Action OnClearButtonClick { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public bool Error { get; set; }
+
+    [Parameter]
+    public string ErrorText { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> ItemTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> ItemSelectedTemplate { get; set; }
+
+    [Parameter]
+    public int MaxItems { get; set; } = 50;
+
+    private string _searchText;
+    private bool _showDropdown;
+    private IEnumerable<TItem> _items = [];
+    private CancellationTokenSource _searchCts;
+
+    private string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            _searchText = value;
+            _ = PerformSearchAsync(value);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (Value != null)
+        {
+            _searchText = ToStringFunc(Value);
+        }
+    }
+
+    private async Task PerformSearchAsync(string searchText)
+    {
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            _items = [];
+            _showDropdown = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var results = await SearchFunc(searchText, _searchCts.Token);
+            _items = results ?? [];
+            _showDropdown = _items.Any();
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellation
+        }
+    }
+
+    private void OnFocus()
+    {
+        if (_items.Any())
+        {
+            _showDropdown = true;
+        }
+    }
+
+    private async Task OnBlurAsync()
+    {
+        await Task.Delay(200); // Delay to allow click on dropdown item
+        _showDropdown = false;
+        StateHasChanged();
+    }
+
+    private void SelectItem(TItem item)
+    {
+        Value = item;
+        _searchText = ToStringFunc(item);
+        _showDropdown = false;
+        ValueChanged?.Invoke(item);
+        StateHasChanged();
+    }
+
+    private void Clear()
+    {
+        Value = default;
+        _searchText = "";
+        _showDropdown = false;
+        OnClearButtonClick?.Invoke();
+        ValueChanged?.Invoke(default);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+}

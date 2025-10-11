@@ -1,19 +1,40 @@
 ﻿@inherits BaseInput<string>
 
-<MudTextField T="string" TextChanged="v=>Value = v" Label=Label Variant="Variant.Text" Value="Value"></MudTextField>
+<div class="string-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="string-input-label">@Label</label>
+    }
+    <input type="text"
+           class="string-input-field"
+           @bind="CurrentValue"
+           @bind:event="oninput"
+           disabled="@Disabled"
+           placeholder="@Label" />
+    @if (Error is not null)
+    {
+        <span class="string-input-error">@Error</span>
+    }
+</div>
 
 @code {
+    private string CurrentValue
+    {
+        get => Value ?? string.Empty;
+        set
+        {
+            if (Value != value)
+            {
+                Value = value;
+                _ = OnValueChangedAsync(value);
+            }
+        }
+    }
 
-    //[Parameter]
-    //public Func<string, string> InvalidityCondition { get; set; } = s => "";
-
-    //[Parameter]
-    //public Action OnFocus { get; set; } = () => { };
-
-    //public bool HasError => ErrorMessage.HasContent();
-
-    //public string ErrorMessage => InvalidityCondition(Value);
-
-    //private string InputClass() => HasError ? "errored" : "";
-
+    private async Task OnValueChangedAsync(string newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
 }

@@ -1,0 +1,20 @@
+@typeparam T
+
+<div class="chip @Class">
+    <span class="chip-content">@ChildContent</span>
+    @if (OnClose != null)
+    {
+        <button type="button" class="chip-close" @onclick="OnClose">×</button>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public Action OnClose { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+}

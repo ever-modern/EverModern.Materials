@@ -1,5 +1,21 @@
+.search-selector-plural {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.search-selector-plural-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
 span.errored {
-    margin-left: 3px;
-    color: red;
-    background-color: salmon;
+    color: #ef4444;
+    font-size: 12px;
+    margin-left: 4px;
+    background-color: #fee2e2;
+    padding: 2px 6px;
+    border-radius: 4px;
 }
