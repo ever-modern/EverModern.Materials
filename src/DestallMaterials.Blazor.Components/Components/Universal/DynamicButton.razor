@@ -11,7 +11,7 @@
 @{
     string style = Button.Hidden ? "visibility:hidden" : "";
 
-    style = $"width:50px; {style}; {Style}";
+    style = $"{style}; {Style}";
 }
 
 <MudBlazor.MudItem Style="@style">
@@ -39,7 +39,7 @@
     {
         <MudButton ButtonType=MudBlazor.ButtonType.Button
                    Disabled=@Button.Disabled
-                   OnClick="@OnClick"
+                   OnClick="() => OnClick(UntilDisposed)"
                    StartIcon="@(Button.Icon)"
                    Size="MudBlazor.Size.Medium"
                    Color="Button.Color"
@@ -57,7 +57,7 @@
     [EditorRequired]
     public ButtonConfiguration Button { get; set; }
 
-    public Task PressAsync() => OnClick();
+    public Task PressAsync(CancellationToken cancellationToken) => OnClick(cancellationToken);
 
     [Parameter]
     public Action<DynamicButton> ReferenceAction { get; set; } = db => { };
@@ -78,7 +78,7 @@
 
     readonly string id = Guid.NewGuid().ToString();
 
-    async Task OnClick()
+    async Task OnClick(CancellationToken cancellationToken)
     {
         if (Button.Callback is null)
         {
@@ -89,10 +89,10 @@
         StateHasChanged();
         try
         {
-            await Button.Callback();
+            await Button.Callback(cancellationToken);
             Success = true;
             StateHasChanged();
-            await Task.Delay(StateShowPeriod);
+            await Task.Delay(StateShowPeriod, cancellationToken);
             isSuccess = true;
         }
         catch (Exception ex)

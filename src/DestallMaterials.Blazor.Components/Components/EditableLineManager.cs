@@ -13,11 +13,11 @@ internal class EditableLineManager<TLineModel>
 
     public TLineModel PreviousValue { get; set; }
 
-    public Func<Task> Save { get; set; } = async () => { };
+    public Func<CancellationToken, Task> Save { get; set; } = (ct) => Task.CompletedTask;
 
-    public Func<Task> Delete { get; set; } = async () => { };
+    public Func<CancellationToken, Task> Delete { get; set; } = (ct) => Task.CompletedTask;
 
-    public Action RevertChanges { get; set; } = async () => { };
+    public Action RevertChanges { get; set; } = () => { };
 
     public Action Refresh { get; set; } = () => { };
 

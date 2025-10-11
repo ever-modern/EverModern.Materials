@@ -1,0 +1,5 @@
+namespace FolderedNamespace;
+
+class FolderedClass
+{	
+}

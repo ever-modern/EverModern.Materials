@@ -1,21 +1,38 @@
-﻿using DestallMaterials.WheelProtection.Extensions;
-using DestallMaterials.WheelProtection.Extensions.Enumerables;
-using DestallMaterials.WheelProtection.Extensions.Strings;
-using DestallMaterials.WheelProtection.PublishLast;
-using System.Security;
+﻿using DestallMaterials.WheelProtection.PublishLast;
 
 string dir = Environment.CurrentDirectory;
 
-Do(dir);
+#if DEBUG
+dir = "C:\\Users\\user\\Documents\\projects\\csharp\\dest-all\\DestallMaterials\\src";
+#endif
+
+var packageFolders = FindPackageFolders(dir);
+
+foreach (var packageFolder in packageFolders)
+{
+    ActOnReleaseFolder(packageFolder);
+}
+
 Console.ReadKey();
 
-static void Do(string directory)
+static IEnumerable<string> FindPackageFolders(string baseFolder)
+{
+    var result = Directory.GetFiles(baseFolder, "*.nupkg", SearchOption.AllDirectories)
+        .GroupBy(nupkg => Directory.GetParent(nupkg).FullName)
+        .Where(gr => gr.Key.EndsWith("Release"))
+        .Select(gr => gr.Key)
+        .ToArray();
+
+    return result;
+}
+
+static void ActOnReleaseFolder(string directory)
 {
     const string apiKeyVariableName = "NugetPublishingApiKey";
 
     string? nugetApiKey = Environment.GetEnvironmentVariable(apiKeyVariableName);
 
-    if (nugetApiKey.IsEmpty())
+    if (string.IsNullOrEmpty(nugetApiKey))
     {
         Console.WriteLine($"Api key for nuget should be set in environment variable {apiKeyVariableName}.");
         Console.WriteLine($"Aborted");
@@ -24,17 +41,17 @@ static void Do(string directory)
 
     var packages = Directory.GetFiles(directory, "*.nupkg");
 
-    if (packages.IsEmpty())
+    if (packages.Length == 0)
     {
         Console.WriteLine($"No *.nupkg found.");
         return;
     }
 
-    var packagesFromNewestToOldest = packages.OrderDescending();
+    var packagesFromNewestToOldest = packages.OrderByDescending(p => new FileInfo(p).CreationTimeUtc);
 
     var packageToPush = packagesFromNewestToOldest.First();
 
-    string command = $"dotnet nuget push {packageToPush} --api-key {nugetApiKey} --source https://api.nuget.org/v3/index.json";
+    string command = $"dotnet nuget push {packageToPush} --api-key {nugetApiKey} --source https://api.nuget.org/v3/index.json --skip-duplicate";
 
     Console.WriteLine(@$"Running command:
 {command}");

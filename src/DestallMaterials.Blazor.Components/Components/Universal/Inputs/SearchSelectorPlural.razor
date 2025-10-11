@@ -1,21 +1,35 @@
-﻿@using MudBlazor
+﻿@using DestallMaterials.WheelProtection.Extensions.Strings
+@using MudBlazor
 @typeparam TItem
 
 <div class="@cssClass">
     <MudAutocomplete T="TItem"
                      Label=@Label
-                     SearchFunc="async filter => await GetItemsByFilter(filter)"
+                     SearchFunc="async (string filterString, CancellationToken cancellationToken) => await GetItemsByFilter(filterString, default)"
                      ResetValueOnEmptyText="true"
                      ToStringFunc="GetItemRepresentation"
                      MaxItems="50"
                      ValueChanged="async v => await OnValueChanged(v)"
                      @ref=_autocomplete
                      Disabled=Disabled
-                     />
+                     ErrorText=@GeneralError
+                     Error="@GeneralError.HasContent()" />
 
-    @foreach (var selectedItem in _value ?? Enumerable.Empty<TItem>())
+
+    @{
+        int i = 0;
+    }
+    @foreach (var selectedItem in _value ?? [])
     {
-        <MudChip OnClose="() => RemoveItem(selectedItem)">@(GetItemRepresentation(selectedItem))</MudChip>
+        var error = ItemErrors.FirstOrDefault(e => e.Item1 == i).Item2;
+        i++;
+        <MudChip T=string OnClose="() => RemoveItem(selectedItem)">
+            @(GetItemRepresentation(selectedItem))
+            @if (error is not null)
+            {
+                <span class="errored">(@(error))</span>
+            }
+        </MudChip>
     }
 </div>
 
@@ -23,7 +37,7 @@
 @code {
     [Parameter]
     [EditorRequired]
-    public Func<string, Task<IEnumerable<TItem>>> GetItemsByFilter { get; set; }
+    public Func<string, CancellationToken, Task<IEnumerable<TItem>>> GetItemsByFilter { get; set; }
 
     [Parameter]
     public Func<TItem, string> GetItemRepresentation { get; set; } = item => item?.ToString();
@@ -49,6 +63,12 @@
     [Parameter]
     public string Class { get; set; }
 
+    [Parameter]
+    public IReadOnlyList<(int, string)> ItemErrors { get; set; } = [];
+
+    [Parameter]
+    public string GeneralError { get; set; } = "";
+
     string cssClass => $"search-selector-plural {Class}";
 
     TItem _currentItemInAutocomplete;
@@ -58,7 +78,7 @@
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        _value = Value?.ToList() ?? new List<TItem>();
+        _value = Value?.ToList() ?? [];
     }
 
     MudAutocomplete<TItem> _autocomplete;
@@ -77,14 +97,18 @@
 
     async Task OnValueChanged(TItem value)
     {
+        if (_autocomplete is not null)
+        {
+            await _autocomplete.CloseMenuAsync();
+            await _autocomplete.ClearAsync();
+            await Task.Delay(10);
+        }
+
         if (!ItemIsEmpty(value))
         {
             _value.Add(value);
             FireValueChanged();
-            if (_autocomplete != null)
-            {
-                await _autocomplete.Clear();
-            }
+
         }
     }
 }

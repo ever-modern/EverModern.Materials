@@ -1,12 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <!--<ImplicitUsings>enable</ImplicitUsings>-->
     <!--<Nullable>enable</Nullable>-->
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <AssemblyVersion>1.0.0.4</AssemblyVersion>
-    <Version>1.0.4</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DestallMaterials.DataStructures\DestallMaterials.WheelProtection.DataStructures.csproj" />
+  </ItemGroup>
 
 </Project>

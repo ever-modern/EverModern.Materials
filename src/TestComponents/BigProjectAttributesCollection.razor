@@ -1,0 +1,33 @@
+﻿@using DestallMaterials.CodeGeneration;
+@using DestallMaterials.CodeGeneration.Utilities
+@using Microsoft.CodeAnalysis
+
+@inherits DestallMaterials.CodeGeneration.SourceGenerationTemplate;
+
+@{
+    var a = GetSymbolsAsync().Result;
+
+    return;
+}
+
+<text>
+    @a.Count
+</text>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string ProjectName { get; set; } = "";
+
+    [Parameter]
+    [EditorRequired]
+    public string[] Attributes { get; set; } = Array.Empty<string>();
+
+    async Task<IReadOnlyDictionary<INamedTypeSymbol, IReadOnlyList<ISymbol>>> GetSymbolsAsync()
+    {
+        var compilation = await CompilationSource.GetProjectCompilationAsync(ProjectName, default);
+        var attributed = SemanticsReceiver.AnalyzeAttributeBearers(compilation, Attributes);
+
+        return attributed;
+    }
+}

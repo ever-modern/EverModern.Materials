@@ -1,201 +1,227 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DestallMaterials.WheelProtection.Queues
-{
+namespace DestallMaterials.WheelProtection.Queues;
 
-#if NETSTANDARD2_0
-    internal static class StandardQueueExtensions
+/// <summary>
+/// Works on a fixed pool of items. Creating new items will not happen.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public abstract class FixedPoolRecycler<T> : Recycler<T> where T : class
+{
+    readonly IReadOnlyList<T> _fixedPool;
+    int _reachedItem;
+    protected FixedPoolRecycler(IReadOnlyList<T> items)
+        : base(items.Count)
     {
-        public static bool TryDequeue<T>(this System.Collections.Generic.Queue<T> queue, out T item)
+        _fixedPool = items;
+    }
+
+    protected override sealed bool TryCreateNew(out T item)
+    {
+        if (_reachedItem == _fixedPool.Count)
         {
-            if (queue.Count > 0)
-            {
-                item = queue.Dequeue();
-                return true;
-            }
             item = default;
             return false;
         }
+
+        item = _fixedPool[_reachedItem++];
+        return true;
     }
-#endif
+}
 
-    public abstract class Recycler<T>
+/// <summary>
+/// Accumulates pool of items up to the limit provided.
+/// Awaits items to be released from use and yields them once it's done.
+/// Creates new items, when other items in the pool are busy and there is still room in the pool.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public abstract class Recycler<T> : IDisposable
+    where T : class
+{
+    volatile bool _isDisposed;
+    /// <summary>
+    /// Try to construct new produced item directly, if possible.
+    /// </summary>
+    /// <param name="item">Created item</param>
+    /// <returns>
+    /// True - item has been created. It will be used later.
+    /// False - item is not allowed to be created. Recycler will await other pooled items to be released.
+    /// </returns>
+    protected abstract bool TryCreateNew(out T item);
+
+    /// <summary>
+    /// Determine if item can be returned to pool with its instant state.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <returns></returns>
+    protected abstract bool IsWell(T item);
+
+    /// <summary>
+    /// How to dispose of item, if its state is invalid, i.e. IsWell is false.
+    /// </summary>
+    /// <param name="item"></param>
+    protected abstract void Discard(T item);
+
+    readonly ItemManager[] _pool;
+
+    protected Recycler(int maxPoolSize)
     {
-        /// <summary>
-        /// Construct new produced item directly.
-        /// </summary>
-        /// <returns></returns>
-        protected abstract T CreateNew();
+        _pool = new ItemManager[maxPoolSize];
+    }
 
-        /// <summary>
-        /// Determine if item can be returned to pool with its instant state.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        protected abstract bool IsWell(T item);
+    readonly Queue<TaskCompletionSource<ItemLocker<T>>> _subscriptions
+        = [];
 
-        /// <summary>
-        /// How to dispose of item, if its state is invalid, i.e. IsWell is false.
-        /// </summary>
-        /// <param name="item"></param>
-        protected abstract void Discard(T item);
-
-        readonly object _locker = new object();
-        readonly ItemManager[] _pool;
-
-        protected Recycler(int maxPoolSize)
+    /// <summary>
+    /// Request new item locker from the Recycler, waiting for once it's:
+    /// 1) created anew
+    /// 2) released from usage
+    /// 3) just taken out free from pool
+    /// </summary>
+    /// <returns>Tool releasing item for usage in another request.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public ValueTask<ItemLocker<T>> Another(CancellationToken cancellationToken = default)
+    {
+        lock (this)
         {
-            _pool = new ItemManager[maxPoolSize];
-        }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-        readonly System.Collections.Generic.Queue<TaskCompletionSource<ItemLocker<T>>> _subscriptions = new System.Collections.Generic.Queue<TaskCompletionSource<ItemLocker<T>>>();
-
-        /// <summary>
-        /// Request new item locker from the Recycler, waiting for once it's:
-        /// 1) created anew
-        /// 2) released from usage
-        /// 3) just taken out free from pool
-        /// </summary>
-        /// <returns>Tool releasing item for usage in another request.</returns>
-        /// <exception cref="InvalidOperationException"></exception>
-        public
-#if NETSTANDARD2_0
-Task<ItemLocker<T>>
-#else
-ValueTask<ItemLocker<T>>
-#endif
-
-            AwaitAnother(CancellationToken cancellationToken = default)
-        {
-            lock (_locker)
+            var spanPool = _pool.AsSpan();
+            int i = 0;
+            int nonEmptyCount = 0;
+            for (; i < spanPool.Length; i++)
             {
-                var spanPool = _pool
-#if NETSTANDARD2_0
-#else
-                    .AsSpan()
-#endif
-                    ;
-                int i = 0;
-                int nonEmptyCount = 0;
-                for (; i < spanPool.Length; i++)
+                var stateItem = spanPool[i];
+                if (stateItem is null)
                 {
-                    var stateItem = spanPool[i];
-                    if (stateItem is null)
-                    {
-                        continue;
-                    }
-                    nonEmptyCount++;
-                    if (stateItem.Available == true)
-                    {
-                        stateItem.Available = false;
-#if NETSTANDARD2_0
-                        return Task.FromResult<ItemLocker<T>>(stateItem);
-#else
-                        return new ValueTask<ItemLocker<T>>(stateItem);
-#endif
-                    }
+                    continue;
                 }
-                if (nonEmptyCount == _pool.Length)
+                
+                nonEmptyCount++;
+
+                if (stateItem.Available == true)
                 {
-                    var taskSource = new TaskCompletionSource<ItemLocker<T>>();
-                    _subscriptions.Enqueue(taskSource);
-                    cancellationToken.Register(() => taskSource.TrySetCanceled());
-#if NETSTANDARD2_0
-                    return taskSource.Task;
-#else
-                    return new ValueTask<ItemLocker<T>>(taskSource.Task);
-#endif
+                    stateItem.Available = false;
+
+                    return new ValueTask<ItemLocker<T>>(stateItem);
                 }
-                for (i = 0; i < spanPool.Length; i++)
-                {
-                    if (spanPool[i] is null)
-                    {
-                        ItemManager itemManager = CreateNewManager(i);
-#if NETSTANDARD2_0
-                        return Task.FromResult<ItemLocker<T>>(itemManager);
-#else
-                        return new ValueTask<ItemLocker<T>>(itemManager);
-#endif
-                    }
-                }
-                throw new InvalidOperationException();
             }
-        }
-
-        ItemManager CreateNewManager(int i)
-        {
-            var item = CreateNew();
-            var itemManager = new ItemManager(OnItemReleased(i, item))
+            if (nonEmptyCount == _pool.Length)
             {
-                Item = item
-            };
-            _pool[i] = itemManager;
-            return itemManager;
-        }
-
-        Action<ItemManager> OnItemReleased(int i, T item)
-            => im =>
+                return WaitOnPooledItem(cancellationToken);
+            }
+            for (i = 0; i < spanPool.Length; i++)
             {
-                lock (_locker)
+                if (spanPool[i] is null)
                 {
-                    if (IsWell(item))
+                    ItemManager itemManager = CreateNewManager(i);
+
+                    if (itemManager is null)
                     {
-                        while (_subscriptions.TryDequeue(out var request))
+                        if (nonEmptyCount == 0)
                         {
-                            if (request.Task.IsCompleted)
-                            {
-                                continue;
-                            }
-                            if (request.TrySetResult(im))
-                            {
-                                return;
-                            }
+                            throw new InvalidOperationException("No items in the pool and new item was not retrieved. Request can't be carried out.");
                         }
-                        im.Available = true;
+
+                        return WaitOnPooledItem(cancellationToken);
                     }
-                    else
+
+                    return new ValueTask<ItemLocker<T>>(itemManager);
+                }
+            }
+            throw new InvalidOperationException();
+        }
+    }
+
+    ValueTask<ItemLocker<T>> WaitOnPooledItem(CancellationToken cancellationToken)
+    {
+        var taskSource = new TaskCompletionSource<ItemLocker<T>>();
+        _subscriptions.Enqueue(taskSource);
+        cancellationToken.Register(() => taskSource.TrySetCanceled());
+
+        return new ValueTask<ItemLocker<T>>(taskSource.Task);
+    }
+
+    ItemManager CreateNewManager(int i)
+    {
+        if (!TryCreateNew(out var item))
+        {
+            return null;
+        }
+        var itemManager = new ItemManager(item, OnItemReleased(i, item));
+        _pool[i] = itemManager;
+        return itemManager;
+    }
+
+    Action<CallbackItemLocker<T>> OnItemReleased(int i, T item)
+        => im =>
+        {
+            lock (this)
+            {
+                if (IsWell(item))
+                {
+                    while (_subscriptions.TryDequeue(out var request))
                     {
-                        Discard(item);
-                        im = null;
-                        while (_subscriptions.TryDequeue(out var request))
+                        if (request.Task.IsCompleted)
                         {
-                            if (request.Task.IsCompleted)
-                            {
-                                continue;
-                            }
-                            im = CreateNewManager(i);
-                            if (request.TrySetResult(im))
-                            {
-                                return;
-                            }
+                            continue;
                         }
-                        if (im is null)
+                        if (request.TrySetResult(im))
                         {
-                            _pool[i] = null;
+                            return;
                         }
                     }
+                    ((ItemManager)im).Available = true;
                 }
-            };
+                else
+                {
+                    Discard(item);
+                    im = null;
+                    while (_subscriptions.TryDequeue(out var request))
+                    {
+                        if (request.Task.IsCompleted)
+                        {
+                            continue;
+                        }
+                        im = CreateNewManager(i);
+                        if (request.TrySetResult(im))
+                        {
+                            return;
+                        }
+                    }
+                    if (im is null)
+                    {
+                        _pool[i] = null;
+                    }
+                }
+            }
+        };
 
-        sealed class ItemManager : ItemLocker<T>
+    public void Dispose()
+    {
+        if (_isDisposed)
         {
-            public bool Available { get; set; }
-
-            readonly Action _dispose;
-            public ItemManager(Action dispose)
-            {
-                _dispose = dispose;
-            }
-
-            public ItemManager(Action<ItemManager> dispose)
-            {
-                _dispose = () => dispose(this);
-            }
-
-            public override void Dispose() => _dispose();
+            return;
         }
+
+        _isDisposed = true;
+
+        foreach (var item in _pool)
+        {
+            item.Dispose();
+        }
+    }
+
+    sealed class ItemManager : CallbackItemLocker<T>
+    {
+        public ItemManager(T item, Action<CallbackItemLocker<T>> onDisposed)
+            : base(item, onDisposed)
+        {
+        }
+
+        public bool Available { get; set; }
     }
 }

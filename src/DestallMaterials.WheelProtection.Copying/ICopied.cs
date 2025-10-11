@@ -23,7 +23,6 @@ namespace DestallMaterials.WheelProtection.Copying
         }
 
         public static IEnumerable<T> CopyWith<T>(this IEnumerable<T> items, Action<T> with)
-            where T : ICopied<T>
-            => items.Select(i => i.CopyWith(with));
+            where T : ICopied<T> => items.Select(i => i.CopyWith(with));
     }
 }

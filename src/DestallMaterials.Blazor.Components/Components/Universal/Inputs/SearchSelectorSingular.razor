@@ -1,24 +1,35 @@
-﻿@using MudBlazor
+﻿@using DestallMaterials.WheelProtection.Extensions.Strings
+@using MudBlazor
 @typeparam TItem
 
+@{
+    RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<Content>
+        @GetItemRepresentation(row)
+    </Content>);
+}
 <MudAutocomplete T="TItem"
                  Label=@Label
-                 SearchFunc="async filter => await GetItemsByFilter(filter)"
+                 SearchFunc="async (filter, ct) => await GetItemsByFilter(filter, ct)"
                  ToStringFunc="GetItemRepresentation"
                  MaxItems="50"
                  Value="Value"
-                 ValueChanged="OnValueSet"
+                 ValueChanged="OnValueSetInner"
                  Disabled=Disabled
-                 Clearable=true
+                 Clearable=MayBeEmpty
                  OnClearButtonClick="Clear"
                  Class="@Class"
+                 Error="HasError"
+                 ErrorText=@Error
+                 ItemSelectedTemplate="itemTemplate"
+                 ItemTemplate="itemTemplate"
                  />
+
 
 
 @code {
     [Parameter]
     [EditorRequired]
-    public Func<string, Task<IEnumerable<TItem>>> GetItemsByFilter { get; set; }
+    public Func<string, CancellationToken, Task<IEnumerable<TItem>>> GetItemsByFilter { get; set; }
 
     [Parameter]
     public Func<TItem, string> GetItemRepresentation { get; set; } = item => item.ToString();
@@ -44,6 +55,17 @@
     [Parameter]
     public Action OnClear { get; set; } = () => { };
 
+    [Parameter]
+    public bool MayBeEmpty { get; set; } = true;
+
+    [Parameter]
+    public string Error { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> ItemTemplate { get; set; }
+
+    public bool HasError => Error.HasContent();
+
     string cssClass => $"search-selector-singular {Class}";
 
     void Clear()
@@ -53,4 +75,9 @@
         OnClear();
     }
 
+    void OnValueSetInner(TItem item)
+    {
+        Value = item;
+        OnValueSet(item);
+    }
 }

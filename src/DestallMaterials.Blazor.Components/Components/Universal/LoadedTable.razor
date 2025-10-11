@@ -24,16 +24,16 @@
                 </RenderPiece>
             }
         </RenderPiece>
-        
-        @for (int i = 0; i < _loadedItems.Count; i++)
-        {
-            var item = _loadedItems[i];
+
+    @for (int i = 0; i < _loadedItems.Count; i++)
+    {
+        var item = _loadedItems[i];
             <RenderPiece ReferenceAction="r => item.RenderPiece = r">
                 <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)" @oncontextmenu:preventDefault="true">
                     @Line(item.Model)
                 </tr>
             </RenderPiece>
-        }
+    }
     </tbody>;
 }
 
@@ -75,7 +75,7 @@ else
 
     [Parameter]
     [EditorRequired]
-    public Func<int, Task<IReadOnlyList<TLineModel>>> Source { get; set; }
+    public Func<int, CancellationToken, Task<IReadOnlyList<TLineModel>>> Source { get; set; }
 
     [Parameter]
     [EditorRequired]
@@ -141,13 +141,13 @@ else
         StateHasChanged();
     }
 
-    public async Task RefreshAsync()
+    public async Task RefreshAsync(CancellationToken cancellationToken)
     {
         _addedItems.Clear();
         _loadedItems.Clear();
         _reachedEnd = false;
         _loadedPages = 0;
-        await LoadAnotherAsync();
+        await LoadAnotherAsync(cancellationToken);
         StateHasChanged();
     }
 
@@ -165,12 +165,12 @@ else
     int _loadedPages = 0;
 
     bool _loading;
-    async Task LoadAnotherAsync()
+    async Task LoadAnotherAsync(CancellationToken cancellationToken)
     {
         if (!_reachedEnd)
         {
             _loading = true;
-            var newItems = await Source(++_loadedPages);
+            var newItems = await Source(++_loadedPages, cancellationToken);
             if (newItems.Any())
             {
                 _loadedItems.AddRange(newItems.Select(ni => new ModelRenderPiecePair<TLineModel>(ni)));
@@ -186,7 +186,7 @@ else
     }
 
     protected override Task OnInitializedAsync()
-        => base.OnInitializedAsync().Then(LoadAnotherAsync);
+        => base.OnInitializedAsync().ThenAsync(async () => await LoadAnotherAsync(UntilDisposed));
 
     bool? _boundAsWindow;
     IDisposable callback;
@@ -208,9 +208,17 @@ else
                     return;
                 }
                 var itemRectangle = await ui.GetElementBoungingRectangle(_tableId);
-                if ((itemRectangle.Bottom - scrollState.VisibleHeight) / scrollState.VisibleHeight < LoadAtScrollRatio)
+
+                if (itemRectangle is null)
                 {
-                    await LoadAnotherAsync();
+                    callback.Dispose();
+                    callback = null;
+                    return;
+                }
+
+                if ((itemRectangle.Value.Bottom - scrollState.VisibleHeight) / scrollState.VisibleHeight < LoadAtScrollRatio)
+                {
+                    await LoadAnotherAsync(UntilDisposed);
                 }
             });
         }
@@ -224,7 +232,7 @@ else
                 }
                 if ((elementScrollState.ScrolledVertically + elementScrollState.VisibleHeight) / (elementScrollState.MaxVerticalScroll) >= (1 - LoadAtScrollRatio))
                 {
-                    await LoadAnotherAsync();
+                    await LoadAnotherAsync(UntilDisposed);
                 }
             });
 
@@ -234,7 +242,8 @@ else
 
     }
 
-    static readonly ByReferenceEqualityComparer<TLineModel> _equalityComparer = ByReferenceEqualityComparer<TLineModel>.Instance;
+    static readonly IEqualityComparer<TLineModel> _equalityComparer
+        = ReferenceEqualityComparer.Instance;
 
     static readonly Func<TLineModel, TLineModel, bool> LinesAreEqual = typeof(TLineModel) == typeof(string) ?
         (s1, s2) => s1.Equals(s2) : (s1, s2) => LinesAreEqual(s1, s2);

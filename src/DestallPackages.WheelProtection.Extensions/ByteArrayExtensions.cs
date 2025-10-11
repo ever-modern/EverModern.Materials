@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DestallMaterials.WheelProtection.Extensions.ByteArray;
+﻿namespace DestallMaterials.WheelProtection.Extensions.Compression;
 
 public static class ByteArrayExtensions
 {
-    public static async Task<byte[]> CompressWithAsync(this byte[] byteArray, Func<Stream, Stream> compressor)
+    public static async Task<byte[]> CompressWithAsync(
+        this byte[] byteArray,
+        Func<Stream, Stream> compressor
+    )
     {
         using var inputStream = new MemoryStream(byteArray);
         using var outputStream = new MemoryStream();
@@ -40,7 +35,10 @@ public static class ByteArrayExtensions
         return result;
     }
 
-    public static async Task<byte[]> DecompressWithAsync(this byte[] byteArray, Func<Stream, Stream> decompressor)
+    public static async Task<byte[]> DecompressWithAsync(
+        this byte[] byteArray,
+        Func<Stream, Stream> decompressor
+    )
     {
         using var inputStream = new MemoryStream(byteArray);
         using var decompressionStream = decompressor(inputStream);

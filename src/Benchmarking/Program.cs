@@ -1,1 +1,3 @@
-﻿return 0;
+﻿using BenchmarkDotNet.Running;
+
+var summary = BenchmarkRunner.Run(typeof(Program).Assembly);

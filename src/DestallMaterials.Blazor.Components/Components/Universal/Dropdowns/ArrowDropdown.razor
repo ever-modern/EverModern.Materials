@@ -10,9 +10,9 @@
      @onmouseover="_onMouseIn"
      @onmouseout="_onMouseOut">
 
-    <Button OnClick="async () => Toggle()">
+    <MudBlazor.MudButton @onclick="async () => Toggle()">
         @Text<i class="material-icons">@Icon</i>
-    </Button>
+    </MudBlazor.MudButton>
     @if (Open)
     {
         <ul class="dropdown-content">

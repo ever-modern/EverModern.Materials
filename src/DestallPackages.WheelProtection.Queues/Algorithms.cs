@@ -6,17 +6,18 @@ namespace DestallMaterials.WheelProtection.Queues
 {
     public static class Algorithms
     {
-        public static IReadOnlyList<KeyValuePair<TimeSpan, int>> OptimizeConstraints(this IEnumerable<KeyValuePair<TimeSpan, int>> constraints)
+        public static IReadOnlyList<CallConstraint> OptimizeConstraints(this IEnumerable<CallConstraint> constraints)
         {
-            constraints = constraints.OrderByDescending(c => c.Key).ToArray();
+            constraints = constraints.OrderByDescending(c => c.Period).ToArray();
 
             var result = constraints.Where(constraint =>
             {
-                var shorterConstraints = constraints.Where(c => c.Key < constraint.Key);
+                var shorterConstraints = constraints.Where(c => c.Period < constraint.Period);
 
-                var limitIsContainedWithin = shorterConstraints.FirstOrDefault(sc => Math.Ceiling(constraint.Key.Ticks / (double)sc.Key.Ticks) * sc.Value < constraint.Value);
+                var limitIsContainedWithin = shorterConstraints.FirstOrDefault(
+                    sc => Math.Ceiling(constraint.Period.Ticks / (double)sc.Period.Ticks) * sc.MaxCallsCount < constraint.MaxCallsCount);
 
-                return limitIsContainedWithin.Value == default;
+                return limitIsContainedWithin.MaxCallsCount == default;
             }).ToList();
 
             return result;

@@ -1,5 +1,18 @@
-﻿@inherits DestallMaterials.CodeGeneration.CodegenComponent;
+﻿@using DestallMaterials.CodeGeneration;
 
-<File Path="DestallMaterials.Tests/output.txt">
-    @Compilation.AssemblyName    
-</File>
+@inherits DestallMaterials.CodeGeneration.SourceGenerationTemplate;
+
+<SourceFile Path=@Path Virtual=@Virtual> 
+    @Content
+</SourceFile>
+
+@code {
+    [Parameter]
+    public string Content { get; set; }
+
+    [Parameter]
+    public ProjectRelativeFilePath Path { get; set; }
+
+    [Parameter]
+    public bool Virtual { get; set; }
+}

@@ -10,7 +10,7 @@ public class ButtonConfiguration
 
     public bool Disabled { get; set; } = true;
 
-    public Func<Task> Callback { get; init; } = () => Task.CompletedTask;
+    public Func<CancellationToken, Task> Callback { get; init; } = (ct) => Task.CompletedTask;
 
     public string ActionName { get; init; } = "";
 
@@ -23,4 +23,8 @@ public class ButtonConfiguration
     public TimeSpan ShowStateFor { get; set; } = TimeSpan.FromSeconds(1);
 
     public Action AfterSuccess { get; set; } = () => { };
+
+    public string Style { get; set; } = "";
+
+    public string CssClass { get; set; } = "";
 }

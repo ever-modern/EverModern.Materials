@@ -1,20 +1,13 @@
-﻿using DestallMaterials.WheelProtection.Queues;
+﻿using DestallMaterials.WheelProtection.DataStructures.Serialization;
 
+var streamForWriting = new MemoryStream();
 
-var constraints = new Dictionary<TimeSpan, int>
-{
-    {
-        TimeSpan.FromSeconds(0.5), 3
-    }
-};
+var data = (DateTime.Now, DateTime.Now.AddDays(2));
 
-var rateController = new RateController(constraints);
+TuplesSerialization.SerializeTuple(data, streamForWriting);
 
-var rand = new Random();
-for (int i = 0; i < 100; i++)
-{
-    using (await rateController.WaitNext())
-    {
-        Console.WriteLine(DateTime.Now);
-    }
-}
+var streamForReading = new MemoryStream(streamForWriting.ToArray());
+
+var data2 = TuplesSerialization.DeserializeTuple<DateTime, DateTime>(streamForReading);
+
+return 0;

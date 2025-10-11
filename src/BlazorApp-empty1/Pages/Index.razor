@@ -1,0 +1,31 @@
+﻿@page "/"
+@using DestallMaterials.Blazor.Components.Universal.Inputs
+@using DestallMaterials.WheelProtection.Extensions.Strings
+
+<DateTimeInput Value="Value" OnValueSet="OnValueChanged" Label="Test date input" />
+
+<DateTimeInput Value="Value" OnValueSet="OnValueChanged" Error="Error text" />
+
+@* <SearchSelectorSingular TItem="string" GetItemsByFilter="GetItemsAsync" >
+    <div>Inserted text</div>
+</SearchSelectorSingular> *@
+
+@* <SearchSelectorPlural 
+        TItem="string" 
+        GetItemsByFilter="GetItemsAsync" 
+        ItemErrors="AllItems.Select((item, index) => (item, index)).Where(ii => ii.index > -1).Select(ii => (ii.index, ii.item)).ToArray()" /> *@
+
+@code{
+    DateTime Value;
+
+    void OnValueChanged(DateTime dateTime)
+    {
+        Console.WriteLine(dateTime.ToString());
+        Value = dateTime;
+    }
+
+    async Task<IEnumerable<string>> GetItemsAsync(string filter, CancellationToken cancellationToken)
+        => AllItems.Where(i => filter.IsEmpty() || i.ToLower().Contains(filter.ToLower()));
+
+    IEnumerable<string> AllItems ="First Second Third Fourth Fifth Sixth Seventh Eighth Ninth Tenth".Split(' ');
+}

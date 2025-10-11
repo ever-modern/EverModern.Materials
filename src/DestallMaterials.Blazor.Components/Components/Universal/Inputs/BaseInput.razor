@@ -1,11 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Components.Web
 @typeparam TValue
 
-@*@inherits ClickableComponent*@
+@inherits DisposableComponent
 
 @code {
     [Parameter]
-    public Func<TValue, Task> OnValueSetAsync { get; set; } = async s => { };
+    public Func<TValue, Task> OnValueSetAsync { get; set; } = s => Task.CompletedTask;
 
     [Parameter]
     public Action<TValue> OnValueSet { get; set; } = s => { };
@@ -26,13 +26,13 @@
     public Action OnBlur { get; set; } = () => { };
 
     [Parameter]
-    public Func<Task> OnMouseIn { get; set; } = async () => { };
+    public Func<CancellationToken, Task> OnMouseIn { get; set; } = (ct) => Task.CompletedTask;
 
     [Parameter]
-    public Func<Task> OnMouseOut { get; set; } = async () => { };
+    public Func<CancellationToken, Task> OnMouseOut { get; set; } = (ct) => Task.CompletedTask;
 
     [Parameter]
-    public Func<Task> OnClickOutside { get; set; } = async () => { };
+    public Func<CancellationToken, Task> OnClickOutside { get; set; } = (ct) => Task.CompletedTask;
 
     [Parameter]
     public bool Disabled { get; set; }
@@ -62,7 +62,7 @@
         //await base.OnOuterClickAsync(mouseEventArgs);
         if (OnClickOutside != null)
         {
-            await OnClickOutside();
+            await OnClickOutside(UntilDisposed);
         }
     }
 

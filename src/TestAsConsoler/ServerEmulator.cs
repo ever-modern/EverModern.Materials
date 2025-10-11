@@ -2,14 +2,14 @@
 
 public class ServerEmulator
 {
-    readonly IEnumerable<KeyValuePair<TimeSpan, int>> _constraints;
-    readonly List<RateController.StartAndFinishTime> _processed = new List<RateController.StartAndFinishTime>();
+    readonly IEnumerable<CallConstraint> _constraints;
+    readonly List<StartAndFinishTime> _processed = [];
 
     object _lock = new object();
 
-    public ServerEmulator(IEnumerable<KeyValuePair<TimeSpan, int>> constraints)
+    public ServerEmulator(IEnumerable<CallConstraint> constraints)
     {
-        _constraints = constraints.OptimizeConstraints();
+        _constraints = Algorithms.OptimizeConstraints(constraints);
     }
 
     public async Task<long> ProcessRequestAsync(TimeSpan executionLength)
@@ -21,16 +21,15 @@ public class ServerEmulator
             if (_constraints.Any(constraint => _processed.Count(p =>
             {
                 bool notFinished = p.Finish == default;
-                bool finishedJustYet = date - p.Finish < constraint.Key;
-                bool startedJustYet = (date - p.Start < constraint.Key);
+                bool finishedJustYet = date - p.Finish < constraint.Period;
+                bool startedJustYet = (date - p.Start < constraint.Period);
                 return (notFinished || finishedJustYet || startedJustYet);
-            }) >= constraint.Value))
+            }) >= constraint.MaxCallsCount))
             {
                 throw new Exception();
             }
         }
-        var times = new RateController.StartAndFinishTime();
-        times.Start = date;
+        var times = new StartAndFinishTime(date);
         _processed.Add(times);
         await Task.Delay(executionLength);
         times.Finish = DateTime.UtcNow;

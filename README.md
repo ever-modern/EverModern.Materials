@@ -14,7 +14,7 @@ WheelProtection.* - packages to be imported in order not to write common utility
 
 ------------------------------------------------------------------------------------------------------------------
 
-CodeGeneration - most grandioze of all in the repo. Allows to get compilation object of targetted project and bind it to blazor component, that will generate code, according to its content, formed as if it was a Razor page.
+CodeGeneration - most ambitious of all in the repo. Allows to get compilation object of targetted project and bind it to blazor component, that will generate code, according to its content, formed as if it was a Razor page.
 Just like that:
 ```
 <File Path="TargetProject/Auto.cs">

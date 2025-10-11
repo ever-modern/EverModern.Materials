@@ -1,11 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netstandard2.1;net7.0</TargetFrameworks>
+		<TargetFrameworks>net9.0</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<AssemblyVersion>1.1.3.0</AssemblyVersion>
-		<FileVersion>1.1.3.0</FileVersion>
-		<Version>$(VersionPrefix)1.1.3.0</Version>
+		<Version>1.2.11</Version>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DestallMaterials.Chronos\DestallMaterials.Chronos.csproj" />
+	  <ProjectReference Include="..\DestallMaterials.DataStructures\DestallMaterials.WheelProtection.DataStructures.csproj" />
+	</ItemGroup>
 
 </Project>

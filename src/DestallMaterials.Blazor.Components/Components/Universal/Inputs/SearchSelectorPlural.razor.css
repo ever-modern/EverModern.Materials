@@ -1,0 +1,5 @@
+span.errored {
+    margin-left: 3px;
+    color: red;
+    background-color: salmon;
+}

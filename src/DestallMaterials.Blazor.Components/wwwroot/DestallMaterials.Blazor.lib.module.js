@@ -70,21 +70,27 @@ window.Y_scrollToFit = function (elemId, containerId) {
 
 window.setCssVariableValue = function (elemId, variableName, value) {
     const elem = document.getElementById(elemId);
-    elem.style.setProperty(variableName, value);
+    if (elem) {
+        elem.style.setProperty(variableName, value);
+    }
 }
 
 window.getItemScroll_Y = function (elementId) {
     const elem = document.getElementById(elementId);
-    const result = elem.scrollTop;
-    return result;
+    if (elem) {
+        const result = elem.scrollTop;
+        return result;
+    }
 }
 
 window.disableDefaultHandling = function (elemId, eventType) {
     const elem = document.getElementById(elemId);
-    elem[eventType] = event => {
-        event.preventDefault();
+    if (elem) {
+        elem[eventType] = event => {
+            event.preventDefault();
+        }
+        elem.removeEventListener(eventType, elem[eventType]);
     }
-    elem.removeEventListener(eventType, elem[eventType]);
 }
 
 const gatherWindowScrollState = () => {

@@ -1,28 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace DestallMaterials.WheelProtection.Extensions.HashSets;
 
-namespace DestallMaterials.WheelProtection.Extensions.HashSets
+public static class HashSetExtensions
 {
-    public static class HashSetExtensions
+    /// <summary>
+    /// Adds item to the set and returns added item if it didn't exist. If existed, the existing item will be returned.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="items"></param>
+    /// <param name="seekedItem"></param>
+    /// <returns></returns>
+    public static T EnsureExists<T>(this HashSet<T> items, T seekedItem)
     {
-        /// <summary>
-        /// Adds item to the set and returns added item if it didn't exist. If existed, the existing item will be returned.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        /// <param name="seekedItem"></param>
-        /// <returns></returns>
-        public static T EnsureExists<T>(this HashSet<T> items, T seekedItem)
+        if (items.TryGetValue(seekedItem, out var result))
         {
-            if (items.TryGetValue(seekedItem, out var result))
-            {
-                return result;
-            }
-            items.Add(seekedItem);
-            return seekedItem;
+            return result;
         }
+        items.Add(seekedItem);
+        return seekedItem;
     }
 }

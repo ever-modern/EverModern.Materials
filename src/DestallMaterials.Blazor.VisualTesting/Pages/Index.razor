@@ -2,26 +2,26 @@
 @using DestallMaterials.Blazor.Auxiliary;
 @using DestallMaterials.Blazor.Components.Universal.Dropdowns
 @using DestallMaterials.Blazor.Components.Universal;
+@using DestallMaterials.Blazor.Components.Universal.Inputs
 @using DestallMaterials.WheelProtection.Executions;
 
 <PageTitle>Index</PageTitle>
 
-@{
-    var dynamicButton = new ButtonConfiguration
-    {
-        ShowStateFor = TimeSpan.FromSeconds(5),
-        Callback = async () => throw new ExplainedError(),
-        Hidden = false,
-        Disabled = false,
-        ActionName = "Click me"
-    };
-}
-
-<DynamicButton Button="dynamicButton" />
+<FlexibleDatePicker OnValueChanged="DateChanged" Clearable="true" Value="Value" />
 
 @code {
-    class ExplainedError : Exception, IExplained
+    void DateChanged(DateTime? dateTime)
     {
-        public string Explanation => "Test error popover";
+        if (dateTime is null)
+        {
+            Console.WriteLine("No value");
+        }
+        else
+        {
+            Console.WriteLine(dateTime.Value);
+        }
+        Value = dateTime;
     }
+
+    DateTime? Value;
 }

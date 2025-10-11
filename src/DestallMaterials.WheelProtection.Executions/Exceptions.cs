@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace DestallMaterials.WheelProtection.Executions;
 
-namespace DestallMaterials.WheelProtection.Executions
+public interface IExplained
 {
-    public interface IExplained
-    {
-        string Explanation { get; }
-    }
+    string Explanation { get; }
 }
