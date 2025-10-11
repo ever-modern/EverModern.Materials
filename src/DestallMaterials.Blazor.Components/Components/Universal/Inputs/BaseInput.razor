@@ -8,13 +8,13 @@
     public Action<TValue> OnValueSet { get => _valueChanged; set => _valueChanged = value; }
 
     [Parameter]
-    public Action<TValue> ValueChanged { get => _valueChanged; set => _valueChanged = value; }
-
-    [Parameter]
     public string Label { get; set; }
 
     [Parameter]
     public TValue Value { get; set; }
+
+    [Parameter]
+    public EventCallback<TValue> ValueChanged { get; set; }
 
     [Parameter]
     public RenderFragment ChildContent { get; set; }
@@ -42,7 +42,15 @@
     protected virtual async Task OnInput(TValue value)
     {
         Value = value;
-        OnValueSet?.Invoke(value);        
+        
+        // Support both EventCallback (for @bind-Value) and Action (for OnValueSet)
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(value);
+        }
+        
+        // Also invoke the Action-based callback if set
+        _valueChanged?.Invoke(value);
     }
 
     protected async Task OnOuterClickAsync(MouseEventArgs mouseEventArgs)
