@@ -4,9 +4,9 @@
 @inherits BaseInput<bool>
 
 <label class="flag baseinput @(Disabled ? "disabled" : "") @Class">
-    <input type="checkbox" 
-           class="flag-checkbox" 
-           checked="@Value" 
+    <input type="checkbox"
+           class="flag-checkbox"
+           checked="@Value"
            disabled="@Disabled"
            @onchange="HandleChange" />
     <span class="flag-checkmark"></span>
@@ -25,7 +25,4 @@
             await OnInput(newValue);
         }
     }
-
-    [Parameter]
-    public string Class { get; set; }
 }

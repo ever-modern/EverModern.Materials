@@ -5,13 +5,10 @@
 
 @code {
     [Parameter]
-    public Func<TValue, Task> OnValueSetAsync { get; set; } = s => Task.CompletedTask;
+    public Action<TValue> OnValueSet { get => _valueChanged; set => _valueChanged = value; }
 
     [Parameter]
-    public Action<TValue> OnValueSet { get; set; } = s => { };
-
-    [Parameter]
-    public Action<TValue> OnValueGet { get; set; } = s => { };
+    public Action<TValue> ValueChanged { get => _valueChanged; set => _valueChanged = value; }
 
     [Parameter]
     public string Label { get; set; }
@@ -37,29 +34,19 @@
     [Parameter]
     public bool Disabled { get; set; }
 
+    [Parameter]
+    public string Class { get; set; }
+
     protected TValue _value;
 
     protected virtual async Task OnInput(TValue value)
     {
         Value = value;
-        Task onValueSetTask = null;
-        if (OnValueSetAsync != null)
-        {
-            onValueSetTask = OnValueSetAsync(value);
-        }
-        if (OnValueSet != null)
-        {
-            OnValueSet(value);
-        }
-        if (onValueSetTask != null)
-        {
-            await onValueSetTask;
-        }
+        OnValueSet?.Invoke(value);        
     }
 
     protected async Task OnOuterClickAsync(MouseEventArgs mouseEventArgs)
     {
-        //await base.OnOuterClickAsync(mouseEventArgs);
         if (OnClickOutside != null)
         {
             await OnClickOutside(UntilDisposed);
@@ -71,4 +58,6 @@
         base.OnParametersSet();
         _value = Value;
     }
+
+    Action<TValue> _valueChanged { get; set; }
 }
