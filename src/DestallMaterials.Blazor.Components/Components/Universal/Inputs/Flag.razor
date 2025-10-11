@@ -6,7 +6,8 @@
 <label class="flag baseinput @(Disabled ? "disabled" : "") @Class">
     <input type="checkbox"
            class="flag-checkbox"
-           @bind-value=Value
+           @bind="CurrentValue"
+           @bind:event="onchange"
            disabled="@Disabled" />
     <span class="flag-checkmark"></span>
     @if (!string.IsNullOrEmpty(Label))
@@ -14,3 +15,30 @@
         <span class="flag-label">@Label</span>
     }
 </label>
+
+@code {
+    private bool CurrentValue
+    {
+        get => Value;
+        set
+        {
+            if (Value != value)
+            {
+                Value = value;
+                OnValueChanged(value);
+            }
+        }
+    }
+
+    private async void OnValueChanged(bool newValue)
+    {
+        // Notify parent component through EventCallback
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(newValue);
+        }
+
+        // Also invoke the Action callback if provided
+        OnValueSet?.Invoke(newValue);
+    }
+}
