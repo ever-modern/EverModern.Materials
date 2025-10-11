@@ -97,19 +97,23 @@ The Flag component was successfully migrated from MudBlazor to custom implementa
 - Maintained backward compatibility with existing `OnValueSet` Action-based callbacks
 - Both EventCallback and Action callbacks are now invoked in the `OnInput` method
 
-**Flag Component Binding Implementation (FIXED):**
+**Flag Component Binding Implementation (FIXED - Updated):**
 - Use `@bind="CurrentValue"` with `@bind:event="onchange"` in the checkbox input element
 - Implement `CurrentValue` property with:
   - Getter: returns the `Value` from BaseInput
-  - Setter: updates `Value` and calls `OnValueChanged(value)` if value changed
-- Implement `OnValueChanged` as async void method that:
+  - Setter: updates `Value` and calls `OnValueChanged(value)` if value changed (using `_ = OnValueChanged(value)` to fire-and-forget the async task)
+- Implement `OnValueChanged` as `async Task` method (NOT async void) that:
   - Invokes `ValueChanged.InvokeAsync(newValue)` to notify parent (required for @bind-Value)
-  - Also invokes `OnValueSet?.Invoke(newValue)` for backward compatibility with Action callbacks
+  - Invokes `OnValueSet?.Invoke(newValue)` for backward compatibility with Action callbacks
+  - Calls `StateHasChanged()` to ensure the component UI updates properly
 - This pattern enables proper two-way binding with parent components using @bind-Value
 
-**Common Binding Issue:**
+**Common Binding Issues and Solutions:**
 - Using `@bind-value=Value` (directly binding to the parameter) does NOT work because it doesn't trigger ValueChanged
 - The correct approach is to bind to a local property (CurrentValue) that handles the ValueChanged event
+- **CRITICAL**: Always use `async Task` instead of `async void` for async methods to enable proper task handling
+- **CRITICAL**: Always call `StateHasChanged()` at the end of value change handlers to ensure UI updates
+- Use fire-and-forget pattern `_ = OnValueChanged(value)` in property setters when calling async methods
 
 ## Project Structure
 

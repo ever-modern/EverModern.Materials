@@ -25,12 +25,12 @@
             if (Value != value)
             {
                 Value = value;
-                OnValueChanged(value);
+                _ = OnValueChanged(value);
             }
         }
     }
 
-    private async void OnValueChanged(bool newValue)
+    private async Task OnValueChanged(bool newValue)
     {
         // Notify parent component through EventCallback
         if (ValueChanged.HasDelegate)
@@ -40,5 +40,8 @@
 
         // Also invoke the Action callback if provided
         OnValueSet?.Invoke(newValue);
+        
+        // Ensure UI updates
+        StateHasChanged();
     }
 }
