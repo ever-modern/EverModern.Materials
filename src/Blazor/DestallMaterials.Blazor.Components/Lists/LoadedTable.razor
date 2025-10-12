@@ -1,6 +1,7 @@
-﻿@using DestallMaterials.Blazor.Components.Containers
-@using DestallMaterials.Blazor.Components.Universal
-@using DestallMaterials.Blazor.Services.UI
+﻿@using DestallMaterials.Blazor.Components.Common
+@using DestallMaterials.Blazor.Components.Containers
+@using DestallMaterials.Blazor.Components.Services.UI
+
 @typeparam TLineModel where TLineModel : class
 
 @inherits DisposableComponent
@@ -9,7 +10,6 @@
 @inject IUiManipulator ui
 
 @{
-
     RenderFragment body = @<tbody>
         <RenderPiece Show=true ReferenceAction="r => _addedItemsPart = r">
             @for (int i = 0; i < _addedItems.Count; i++)

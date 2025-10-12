@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace DestallMaterials.Blazor.Services.UI;
+namespace DestallMaterials.Blazor.Components.Services.UI;
 
 
 public class JsUiManipulator : IUiManipulator

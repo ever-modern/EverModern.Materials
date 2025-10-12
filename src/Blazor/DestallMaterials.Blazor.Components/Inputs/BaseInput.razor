@@ -1,5 +1,6 @@
-﻿@using DestallMaterials.Blazor.Components.Universal
+﻿@using DestallMaterials.Blazor.Components.Common
 @using Microsoft.AspNetCore.Components.Web
+
 @typeparam TValue
 
 @inherits DisposableComponent
@@ -38,6 +39,8 @@
 
     [Parameter]
     public string? Error { get; set; }
+
+    public bool HasError => string.IsNullOrWhiteSpace(Error) == false;
 
     protected virtual void OnValueSet(TValue newValue)
     {

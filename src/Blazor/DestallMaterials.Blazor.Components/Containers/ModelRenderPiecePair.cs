@@ -1,6 +1,4 @@
-﻿using DestallMaterials.Blazor.Components.Containers;
-
-namespace DestallMaterials.Blazor.Components;
+﻿namespace DestallMaterials.Blazor.Components.Containers;
 
 sealed class ModelRenderPiecePair<TModel>
 {

@@ -45,7 +45,7 @@
     public int MaxItemsShown { get; set; }
 
     [Parameter]
-    public IEnumerable<TItem> Value { get; set; }
+    public IEnumerable<TItem> Value { get; set; } = [];
 
     [Parameter]
     public Action<TItem[]> OnValueSet { get; set; } = i => { };

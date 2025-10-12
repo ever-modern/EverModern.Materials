@@ -1,4 +1,4 @@
-﻿namespace DestallMaterials.Blazor.Components.Universal.Dropdowns;
+﻿namespace DestallMaterials.Blazor.Components.Containers;
 
 public abstract class DropdownMenuOption
 {

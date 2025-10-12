@@ -1,6 +1,8 @@
 ﻿@using System.Globalization
 
-<div class="flexible-date-picker @(errorred ? "errored" : "")" style="min-width: 125px;">
+@inherits BaseInput<DateOnly>
+
+<div class="flexible-date-picker @(HasError ? "errored" : "")" style="min-width: 125px;">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="flexible-date-picker-label">@Label</label>
@@ -15,7 +17,7 @@
     {
         <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
     }
-    @if (errorred && !string.IsNullOrEmpty(Error))
+    @if (HasError && !string.IsNullOrEmpty(Error))
     {
         <span class="flexible-date-picker-error">@Error</span>
     }
@@ -23,7 +25,6 @@
 
 @code {
     private string _dateFormat = "dd.MM.yyyy";
-    private bool errorred => !string.IsNullOrEmpty(Error);
 
     static readonly string[] _shortFormats 
         = ["ddMM", "dd.MM", "dd", "d"];
@@ -31,25 +32,13 @@
         = ["ddMMyy", "dd.MM.yyyy", "dd.M.yyyy", "d.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "dd.M.yy", "d.MM.yy", "d.M.yy"];
 
     [Parameter]
-    public Action<DateOnly> OnValueChanged { get; set; } = (newDate) => { };
-
-    [Parameter]
     public string PlaceholderText { get; set; }
-
-    [Parameter]
-    public DateOnly Value { get; set; }
 
     [Parameter]
     public CultureInfo Culture { get; set; } = CultureInfo.CurrentCulture;
 
     [Parameter]
     public bool Clearable { get; set; }
-
-    [Parameter]
-    public string Label { get; set; }
-
-    [Parameter]
-    public string Error { get; set; }
 
     [Parameter]
     public string ValueNotSetText { get; set; } = "Not set";
@@ -64,11 +53,6 @@
     {
         Value = default;
         OnValueChanged(default);
-        StateHasChanged();
-    }
-
-    void OnBlur()
-    {
         StateHasChanged();
     }
 

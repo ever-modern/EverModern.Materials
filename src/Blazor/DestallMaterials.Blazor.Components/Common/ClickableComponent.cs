@@ -1,9 +1,8 @@
 ﻿using DestallMaterials.Blazor.Components.Services.UI;
-using DestallMaterials.Blazor.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
-namespace DestallMaterials.Blazor.Components;
+namespace DestallMaterials.Blazor.Components.Common;
 
 public abstract partial class ClickableComponent : ViewComponent
 {

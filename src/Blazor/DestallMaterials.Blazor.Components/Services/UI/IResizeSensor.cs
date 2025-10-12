@@ -1,7 +1,6 @@
-﻿using DestallMaterials.Blazor.Components.Services.UI;
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
 
-namespace DestallMaterials.Blazor.Services.UI;
+namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public struct ElementSize
 {

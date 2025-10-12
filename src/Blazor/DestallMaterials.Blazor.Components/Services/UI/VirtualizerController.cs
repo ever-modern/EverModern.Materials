@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.Web.Virtualization;
 using System.Reflection;
 
-namespace DestallMaterials.Blazor.Services.UI;
+namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public class VirtualizerController<TVirtualize>
 {

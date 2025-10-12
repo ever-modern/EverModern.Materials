@@ -28,7 +28,7 @@
                     Label=@timeLabel
                     OnValueChanged="t => OnValueChanged(WithTime(t))"
                     Time="Time"
-                    Error=@(Error is not null) />
+                    Error=@(Error) />
     }
 </div>
 
@@ -45,9 +45,6 @@
 
     [Parameter]
     public CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.CurrentCulture;
-
-    [Parameter]
-    public string? Error { get; set; }
 
     string containerStyle => "display: flex; max-width: 250px; min-width: 250px;";
 

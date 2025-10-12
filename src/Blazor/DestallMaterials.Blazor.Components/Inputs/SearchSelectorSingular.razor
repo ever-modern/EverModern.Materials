@@ -1,6 +1,8 @@
 ﻿@using DestallMaterials.Blazor.Components.Containers
 @typeparam TItem
 
+@inherits BaseInput<TItem>
+
 @{
     RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<text>@GetItemRepresentation(row)</text>);
 }
@@ -34,46 +36,28 @@
     public int MaxItemsShown { get; set; }
 
     [Parameter]
-    public TItem Value { get; set; }
-
-    [Parameter]
-    public Action<TItem> OnValueSet { get; set; } = i => { };
-
-    [Parameter]
-    public string Label { get; set; }
-
-    [Parameter]
-    public bool Disabled { get; set; }
-
-    [Parameter]
-    public string Class { get; set; }
-
-    [Parameter]
     public Action OnClear { get; set; } = () => { };
 
     [Parameter]
     public bool MayBeEmpty { get; set; } = true;
 
     [Parameter]
-    public string Error { get; set; }
-
-    [Parameter]
     public RenderFragment<TItem> ItemTemplate { get; set; }
 
     public bool HasError => string.IsNullOrWhiteSpace(Error) == false;
 
-    string cssClass => $"search-selector-singular {Class}";
+    string cssClass => $"input search-selector-singular {Class}";
 
     void Clear()
     {
         Value = default;
-        OnValueSet(Value);
+        OnValueChanged(Value);
         OnClear();
     }
 
     void OnValueSetInner(TItem item)
     {
         Value = item;
-        OnValueSet(item);
+        OnValueChanged(item);
     }
 }

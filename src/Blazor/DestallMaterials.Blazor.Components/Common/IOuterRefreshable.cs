@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace DestallMaterials.Blazor.Components.Universal;
+namespace DestallMaterials.Blazor.Components.Common;
 
 public interface IOuterRefreshable
 {

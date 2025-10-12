@@ -1,4 +1,4 @@
-﻿namespace DestallMaterials.Blazor.Services.UI;
+﻿namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public struct ElementBoungingRectangle
 {

@@ -1,7 +1,7 @@
 ﻿using DestallMaterials.WheelProtection.DataStructures;
 using Microsoft.AspNetCore.Components;
 
-namespace DestallMaterials.Blazor.Components.Universal;
+namespace DestallMaterials.Blazor.Components.Common;
 
 
 public class DisposableComponent : ComponentBase, IDisposable

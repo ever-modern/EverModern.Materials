@@ -1,15 +1,9 @@
 ﻿using DestallMaterials.Blazor.Components.Services.UI;
-using DestallMaterials.Blazor.Services.UI;
 using DestallMaterials.WheelProtection.DataStructures;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DestallMaterials.Blazor.Components
+namespace DestallMaterials.Blazor.Components.Common
 {
     public abstract partial class ViewComponent : ComponentBase, IDisposable
     {

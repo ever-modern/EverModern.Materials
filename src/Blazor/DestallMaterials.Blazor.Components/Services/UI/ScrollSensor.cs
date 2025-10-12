@@ -1,7 +1,6 @@
-﻿using DestallMaterials.Blazor.Components.Services.UI;
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
 
-namespace DestallMaterials.Blazor.Services.UI;
+namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public class ScrollStates
 {
@@ -42,7 +41,7 @@ public interface IScrollSensor : IElementSensor<ScrollState>
 
 public class JsScrollSensor : IScrollSensor
 {
-    readonly Dictionary<string, List<Func<ScrollState, Task>>> _subscriptions = new();
+    readonly Dictionary<string, List<Func<ScrollState, Task>>> _subscriptions = [];
     readonly IJSRuntime _js;
 
     const string _subscribeForScrollCommand = "destallMaterials.sensors.scroll.subscribe";
@@ -107,7 +106,7 @@ public class JsScrollSensor : IScrollSensor
         double maxHorizontalScroll,
         double positionX,
         double positionY)
-        => new ScrollState
+        => new()
         {
             ScrolledHorizontally = scrolledHorizontally,
             VisibleWidth = width,
