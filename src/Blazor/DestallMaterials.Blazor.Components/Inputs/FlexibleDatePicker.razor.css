@@ -2,7 +2,6 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    position: relative;
 }
 
 .flexible-date-picker-label {
@@ -12,10 +11,15 @@
     margin-bottom: 2px;
 }
 
+.flexible-date-picker-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .flexible-date-picker-field {
     width: 100%;
     padding: 8px 12px;
-    padding-right: 32px;
     font-size: 14px;
     line-height: 1.5;
     color: #1f2937;
@@ -24,6 +28,12 @@
     border-radius: 4px;
     transition: all 0.2s ease-in-out;
     outline: none;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.flexible-date-picker.has-clear-button .flexible-date-picker-field {
+    padding-right: 36px;
 }
 
 .flexible-date-picker-field:focus {

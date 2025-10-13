@@ -2,21 +2,23 @@
 
 @inherits BaseInput<DateOnly>
 
-<div class="flexible-date-picker @(HasError ? "errored" : "")" style="min-width: 125px;">
+<div class="flexible-date-picker @(HasError ? "errored" : "") @(Clearable && Value != default ? "has-clear-button" : "") @Class">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="flexible-date-picker-label">@Label</label>
     }
-    <input type="text"
-           class="flexible-date-picker-field"
-           @bind="TextValue"
-           @bind:event="oninput"
-           @onblur="OnBlur"
-           placeholder="@ValueNotSetText" />
-    @if (Clearable && Value != default)
-    {
-        <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
-    }
+    <div class="flexible-date-picker-input-wrapper">
+        <input type="text"
+               class="flexible-date-picker-field"
+               @bind="TextValue"
+               @bind:event="oninput"
+               @onblur="OnBlur"
+               placeholder="@ValueNotSetText" />
+        @if (Clearable && Value != default)
+        {
+            <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
+        }
+    </div>
     @if (HasError && !string.IsNullOrEmpty(Error))
     {
         <span class="flexible-date-picker-error">@Error</span>
@@ -43,42 +45,77 @@
     [Parameter]
     public string ValueNotSetText { get; set; } = "Not set";
 
+    private string _textInput = "";
+
     private string TextValue
     {
-        get => Value == default ? "" : Value.ToString(_dateFormat);
-        set => DatePickerTextChanged(value);
+        get => _textInput;
+        set
+        {
+            _textInput = value;
+            DatePickerTextChanged(value);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        // Sync text input with Value when Value changes externally
+        if (Value != default)
+        {
+            _textInput = Value.ToString(_dateFormat);
+        }
+        else if (string.IsNullOrEmpty(_textInput))
+        {
+            _textInput = "";
+        }
     }
 
     void ClearValue()
     {
         Value = default;
+        _textInput = "";
         _ = OnValueChangedAsync(default);
     }
 
     void DatePickerTextChanged(string value)
     {
-        DateOnly newValue = default;
-        if (value == null || value.Length < 6 && !value.EndsWith(" "))
+        // Don't process while user is still typing (unless they add a space to confirm)
+        if (string.IsNullOrEmpty(value))
         {
-        }
-        else
-        {
-            if (DateTime.TryParseExact(value, _formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime validDate))
+            // Allow clearing
+            if (Value != default)
             {
-                newValue = DateOnly.FromDateTime(validDate);
+                Value = default;
+                _ = OnValueChangedAsync(default);
             }
-            else if (DateTime.TryParseExact(value, _shortFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out validDate))
-            {
-                var now = DateTime.Now;
-                newValue = DateOnly.FromDateTime(validDate);
-                newValue = DateOnly.FromDateTime(validDate).AddMonths(now.Month - validDate.Month);
-            }
+            return;
         }
-        var valueChanged = newValue != Value;
-        Value = newValue;
 
-        if (valueChanged)
+        // Only try to parse if we have enough characters or user added space
+        if (value.Length < 6 && !value.EndsWith(" "))
         {
+            return; // Still typing, don't update Value yet
+        }
+
+        DateOnly newValue = default;
+        
+        if (DateTime.TryParseExact(value.TrimEnd(), _formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime validDate))
+        {
+            newValue = DateOnly.FromDateTime(validDate);
+        }
+        else if (DateTime.TryParseExact(value.TrimEnd(), _shortFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out validDate))
+        {
+            var now = DateTime.Now;
+            newValue = DateOnly.FromDateTime(validDate);
+            newValue = newValue.AddYears(now.Year - validDate.Year);
+        }
+
+        // Only update if we successfully parsed a date
+        if (newValue != default && newValue != Value)
+        {
+            Value = newValue;
+            _textInput = newValue.ToString(_dateFormat);
             _ = OnValueChangedAsync(newValue);
         }
     }

@@ -23,6 +23,8 @@
     border-radius: 4px;
     transition: all 0.2s ease-in-out;
     outline: none;
+    height: 38px;
+    box-sizing: border-box;
 }
 
 .string-input-field:focus {

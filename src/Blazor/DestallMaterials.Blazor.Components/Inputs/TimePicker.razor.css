@@ -22,6 +22,8 @@
     transition: all 0.2s ease-in-out;
     outline: none;
     min-width: 88px;
+    height: 38px;
+    box-sizing: border-box;
 }
 
 .time-picker-field:focus {

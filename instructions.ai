@@ -227,6 +227,90 @@ private async Task OnValueChangedAsync(TValue newValue)
 - DestallMaterials.Blazor.Components: Build succeeded, 0 errors, 0 warnings
 - VisualTesting: Build succeeded, 0 errors, 0 warnings
 
+## Critical Bug Fixes - Layout and Input Issues (2025-10-13)
+
+Successfully identified and fixed critical layout and input handling issues reported by user:
+
+**Issues Reported:**
+1. Date input partially covers the time input in DateTimeInput
+2. Time input has a slightly bigger height than Date input
+3. Can't type any value into Date input - it gets overwritten by emptiness
+
+**Root Causes Found:**
+
+1. **FlexibleDatePicker Input Clearing Bug:**
+   - **Problem**: `DatePickerTextChanged` method had flawed logic that set `Value = newValue` unconditionally, even when `newValue` was `default` (empty). When users typed partial dates like "01", the value wasn't long enough to parse, so it defaulted to empty, clearing the input.
+   - **Solution**: 
+     - Added separate `_textInput` field to track what user is typing
+     - Only update `Value` when a complete, valid date is successfully parsed
+     - Return early if input is too short (< 6 characters) and doesn't end with space
+     - Added `OnParametersSet` to sync text input with external Value changes
+
+2. **DateTimeInput Layout Overlap:**
+   - **Problem**: Both FlexibleDatePicker and TimePicker had their own labels, causing duplicate labels and misalignment. The flex layout didn't properly separate the inputs.
+   - **Solution**: 
+     - Restructured to show label only once when both date and time are displayed
+     - Created `datetime-input-controls` wrapper for horizontal layout
+     - Separated rendering logic for three cases: both, date-only, time-only
+     - Moved clear button inside controls wrapper for better alignment
+
+3. **Height Inconsistencies:**
+   - **Problem**: Input fields didn't have explicit heights, causing slight variations
+   - **Solution**: 
+     - Set consistent `height: 38px` and `box-sizing: border-box` on all input fields:
+       - FlexibleDatePicker
+       - TimePicker  
+       - StringInput
+       - NumberInput
+     - Ensured clear button aligns with 38px height
+
+**Files Modified:**
+
+1. **FlexibleDatePicker.razor**:
+   - Added `_textInput` field for tracking user input
+   - Rewrote `DatePickerTextChanged` to only update Value on successful parse
+   - Added input wrapper div for better structure
+   - Added `has-clear-button` class for conditional padding
+
+2. **FlexibleDatePicker.razor.css**:
+   - Added `flexible-date-picker-input-wrapper` for positioning
+   - Added consistent `height: 38px` to input field
+   - Conditional padding-right only when clear button is shown
+
+3. **DateTimeInput.razor**:
+   - Restructured layout with conditional rendering
+   - Added shared label for date+time mode
+   - Created `datetime-input-controls` wrapper
+   - Added `OnDateChanged` and `OnTimeChanged` async methods
+   - Fixed `ClearValue` to call `OnValueChangedAsync`
+
+4. **DateTimeInput.razor.css**:
+   - Changed to flex-column layout
+   - Added `datetime-input-label` styling
+   - Added `datetime-input-controls` for horizontal input layout
+   - Set clear button to `height: 38px` for proper alignment
+   - Improved spacing with flex properties
+
+5. **TimePicker.razor.css**:
+   - Added consistent `height: 38px` to input field
+
+6. **StringInput.razor.css**:
+   - Added consistent `height: 38px` to input field
+
+7. **NumberInput.razor.css**:
+   - Added consistent `height: 38px` to input field
+
+**Additional Improvements:**
+- All input components now have consistent 38px height
+- Better visual alignment across all input types
+- Improved user experience - can now type dates without them being cleared
+- Clear button properly positioned and aligned
+- Responsive layout that works for all DateTimeInput modes (date+time, date-only, time-only)
+
+**Build Status:**
+- DestallMaterials.Blazor.Components: Build succeeded, 0 errors
+- VisualTesting: Build succeeded, 0 errors
+
 ---
 
 **Last Updated**: 2025-10-13

@@ -2,32 +2,50 @@
 
 @inherits BaseInput<DateTime>
 
-<div class="datetime-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class" style="@containerStyle">
-    <button type="button"
-            class="datetime-input-clear @(Date == default ? "hidden" : "")"
-            @onclick="ClearValue">
-        ×
-    </button>
-    @if (PickDate)
+<div class="datetime-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+    @if (PickDate && PickTime)
     {
-        <FlexibleDatePicker Clearable="false"
-                            OnValueChanged="d => OnValueChanged(WithDate(d))"
+        <!-- Show label only once when both are displayed -->
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="datetime-input-label">@Label</label>
+        }
+        <div class="datetime-input-controls">
+            <FlexibleDatePicker Clearable="false"
+                                OnValueChanged="d => _ = OnDateChanged(d)"
+                                Value=Date
+                                PlaceholderText="Date"
+                                Culture=Culture
+                                Class="datetime-input-date"
+                                Error="@Error" />
+            <TimePicker Culture=Culture
+                        Class="datetime-input-time"
+                        OnValueChanged="t => _ = OnTimeChanged(t)"
+                        Time="Time"
+                        Error=@(Error) />
+            <button type="button"
+                    class="datetime-input-clear @(Date == default ? "hidden" : "")"
+                    @onclick="ClearValue">
+                ×
+            </button>
+        </div>
+    }
+    else if (PickDate)
+    {
+        <FlexibleDatePicker Clearable="true"
+                            OnValueChanged="d => _ = OnDateChanged(d)"
                             Value=Date
-                            PlaceholderText="Nothing"
+                            PlaceholderText="Date"
                             Culture=Culture
                             Label="@Label"
                             Error="@Error" />
     }
-    @if (PickTime)
+    else if (PickTime)
     {
-        string timeLabel = string.IsNullOrWhiteSpace(Label) ? "" : Label;
-
         <TimePicker Culture=Culture
-                    Class="datetime-input-time"
-                    Style="margin-left: 10px;min-width:88px;"
-                    Label=@timeLabel
-                    OnValueChanged="t => OnValueChanged(WithTime(t))"
+                    OnValueChanged="t => _ = OnTimeChanged(t)"
                     Time="Time"
+                    Label="@Label"
                     Error=@(Error) />
     }
 </div>
@@ -45,8 +63,6 @@
 
     [Parameter]
     public CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.CurrentCulture;
-
-    string containerStyle => "display: flex; max-width: 250px; min-width: 250px;";
 
     protected override void OnParametersSet()
     {
@@ -95,7 +111,27 @@
     void ClearValue()
     {
         Value = default;
-        StateHasChanged();
+        _ = OnValueChangedAsync(default);
+    }
+
+    async Task OnDateChanged(DateOnly date)
+    {
+        var newValue = date.ToDateTime(TimeOnly.FromTimeSpan(Time));
+        if (Value != newValue)
+        {
+            Value = newValue;
+            await OnValueChangedAsync(newValue);
+        }
+    }
+
+    async Task OnTimeChanged(TimeOnly time)
+    {
+        var newValue = Date.ToDateTime(time);
+        if (Value != newValue)
+        {
+            Value = newValue;
+            await OnValueChangedAsync(newValue);
+        }
     }
 
     public DateTime WithTime(TimeOnly time) => Value.Date + time.ToTimeSpan();
