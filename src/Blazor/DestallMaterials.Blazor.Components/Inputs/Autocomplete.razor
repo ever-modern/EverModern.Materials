@@ -1,7 +1,10 @@
 @using System.Threading
+@using DestallMaterials.Blazor.Components.Common
+@using DestallMaterials.Blazor.Components.Services.UI
 @typeparam TItem
+@inherits DisposableComponent
 
-<div class="autocomplete @(Error ? "errored" : "") @Class">
+<div class="autocomplete @(Error ? "errored" : "") @Class" @onclick="OpenDropdown">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="autocomplete-label">@Label</label>
@@ -23,18 +26,24 @@
     @if (_showDropdown && _items != null && _items.Any())
     {
         <ul class="autocomplete-dropdown" style="list-style-type: none">
-            @foreach (var item in _items.Take(MaxItems))
-            {
-                <li class="autocomplete-item" @onclick="() => SelectItem(item)">
-                    @if (ItemTemplate != null)
-                    {
-                        @ItemTemplate(item)
-                    }
-                    else
-                    {
-                        @ToStringFunc(item)
-                    }
-                </li>
+            @{
+                var itemsList = _items.Take(MaxItems).ToList();
+                for (int i = 0; i < itemsList.Count; i++)
+                {
+                    var item = itemsList[i];
+                    var index = i;
+                    var highlightClass = index == _highlightedIndex ? "highlighted" : "";
+                    <li class="autocomplete-item @highlightClass" @onclick="() => SelectItem(item)">
+                        @if (ItemTemplate != null)
+                        {
+                            @ItemTemplate(item)
+                        }
+                        else
+                        {
+                            @ToStringFunc(item)
+                        }
+                    </li>
+                }
             }
         </ul>
     }
@@ -45,6 +54,9 @@
 </div>
 
 @code {
+    [Inject]
+    private IGlobalClickCatcher GlobalClickCatcher { get; set; }
+
     [Parameter]
     public Func<string, CancellationToken, Task<IEnumerable<TItem>>> SearchFunc { get; set; }
 
@@ -91,6 +103,7 @@
     private bool _showDropdown;
     private IEnumerable<TItem> _items = [];
     private CancellationTokenSource _searchCts;
+    private int _highlightedIndex = -1;
 
     private string SearchText
     {
@@ -102,12 +115,59 @@
         }
     }
 
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ForLifetime(async (ct) =>
+        {
+            var keyEvent = await GlobalClickCatcher.WhenKeyPressed(ct);
+            await HandleKeyPress(keyEvent);
+        });
+    }
+
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
         if (Value != null)
         {
             _searchText = ToStringFunc(Value);
+        }
+    }
+
+    private void OpenDropdown()
+    {
+        if (!Disabled && _items.Any())
+        {
+            _showDropdown = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs keyEvent)
+    {
+        if (!_showDropdown || !_items.Any())
+            return;
+
+        var itemsList = _items.Take(MaxItems).ToList();
+
+        switch (keyEvent.Key)
+        {
+            case "ArrowDown":
+                _highlightedIndex = (_highlightedIndex + 1) % itemsList.Count;
+                await InvokeAsync(StateHasChanged);
+                break;
+
+            case "ArrowUp":
+                _highlightedIndex = _highlightedIndex <= 0 ? itemsList.Count - 1 : _highlightedIndex - 1;
+                await InvokeAsync(StateHasChanged);
+                break;
+
+            case "Enter":
+                if (_highlightedIndex >= 0 && _highlightedIndex < itemsList.Count)
+                {
+                    SelectItem(itemsList[_highlightedIndex]);
+                }
+                break;
         }
     }
 
@@ -120,6 +180,7 @@
         {
             _items = [];
             _showDropdown = false;
+            _highlightedIndex = -1;
             StateHasChanged();
             return;
         }
@@ -129,6 +190,7 @@
             var results = await SearchFunc(searchText, _searchCts.Token);
             _items = results ?? [];
             _showDropdown = _items.Any();
+            _highlightedIndex = -1;
             StateHasChanged();
         }
         catch (TaskCanceledException)
@@ -149,6 +211,7 @@
     {
         await Task.Delay(200); // Delay to allow click on dropdown item
         _showDropdown = false;
+        _highlightedIndex = -1;
         StateHasChanged();
     }
 
@@ -157,6 +220,7 @@
         Value = item;
         _searchText = ToStringFunc(item);
         _showDropdown = false;
+        _highlightedIndex = -1;
         ValueChanged?.Invoke(item);
         StateHasChanged();
     }
@@ -166,13 +230,15 @@
         Value = default;
         _searchText = "";
         _showDropdown = false;
+        _highlightedIndex = -1;
         OnClearButtonClick?.Invoke();
         ValueChanged?.Invoke(default);
         StateHasChanged();
     }
 
-    public void Dispose()
+    protected override void BeforeDispose()
     {
+        base.BeforeDispose();
         _searchCts?.Cancel();
         _searchCts?.Dispose();
     }

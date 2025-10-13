@@ -45,6 +45,10 @@
     border-color: #9ca3af;
 }
 
+.flexible-date-picker-field::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
 .flexible-date-picker.errored .flexible-date-picker-field {
     border-color: #ef4444;
 }

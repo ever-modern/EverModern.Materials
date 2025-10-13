@@ -78,7 +78,9 @@
     top: 100%;
     left: 0;
     right: 0;
+    margin: 0;
     margin-top: 4px;
+    padding: 0;
     max-height: 300px;
     overflow-y: auto;
     background-color: #ffffff;
@@ -86,16 +88,22 @@
     border-radius: 4px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     z-index: 1000;
+    list-style-type: none;
 }
 
 .autocomplete-item {
     padding: 8px 12px;
+    margin: 0;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .autocomplete-item:hover {
     background-color: #f3f4f6;
+}
+
+.autocomplete-item.highlighted {
+    background-color: #e5e7eb;
 }
 
 .autocomplete-error {
