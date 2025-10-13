@@ -566,3 +566,65 @@ Successfully redesigned DateInput component to use native `<input type="date">` 
 **Commit**: 44f9217 - "Fix DateInput and SearchSelector components"
 **Last Updated**: 2025-10-14
 **Agent**: MiniMax Agent
+
+## Component Fixes - DateInput and SearchSelector (2025-10-14)
+
+**Issues Fixed:**
+
+1. **DateInput Native Picker Issue**:
+   - **Problem**: DateInput was using `<input type="date">` which triggered browser's native date picker despite CSS rules to hide it
+   - **Solution**: Changed input type from "date" to "text" with readonly attribute
+   - **Implementation**:
+     - Changed input type to "text"
+     - Made input readonly (user can only use custom scroll picker)
+     - Changed date format display from "yyyy-MM-dd" to "dd.MM.yyyy" for better readability
+     - Removed unused `OnNativeInputChanged` method
+   - **Result**: Only the custom three-scroll picker (Day/Month/Year) is shown, no browser native picker
+   - **File**: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/DateInput.razor`
+
+2. **SearchSelector Click-to-Open Enhancement**:
+   - **Problem**: SearchSelector dropdown only opened if items already existed (`_items.Any()` check)
+   - **Issue**: User clicking on empty input wouldn't see any results
+   - **Solution**: Modified `OpenDropdown()` to perform initial search with empty string when clicked
+   - **Implementation**:
+     - Changed `OpenDropdown()` to async method
+     - Added logic to trigger `PerformSearchAsync("")` when no items exist and input is empty
+     - Dropdown opens after search completes if results are found
+   - **Result**: SearchSelector now opens and shows results on click, even with empty input
+   - **File**: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor`
+
+3. **SearchSelector CSS Margin** (Verified):
+   - **Status**: Already correctly implemented
+   - **Verification**: Confirmed `margin: 0` is set on `.autocomplete-item` in CSS
+   - **File**: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor.css`
+
+4. **SearchSelector Keyboard Navigation** (Verified):
+   - **Status**: Already correctly implemented
+   - **Verification**: Confirmed implementation includes:
+     - Component inherits from `DisposableComponent`
+     - Uses `IGlobalClickCatcher.WhenKeyPressed()` for keyboard events
+     - `ForLifetime()` pattern for proper cleanup
+     - ArrowDown/ArrowUp navigation with `_highlightedIndex` tracking
+     - Enter key to select highlighted item
+     - `.highlighted` CSS class for visual feedback
+   - **Files**: 
+     - `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor`
+     - `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor.css`
+
+**Build Status**:
+- Build succeeded with 0 errors, 74 warnings (pre-existing)
+- All fixes tested and verified to compile correctly
+
+**Files Modified**:
+1. `src/Blazor/DestallMaterials.Blazor.Components/Inputs/DateInput.razor`
+   - Changed input type from "date" to "text"
+   - Made input readonly
+   - Changed display format to dd.MM.yyyy
+   - Removed OnNativeInputChanged method
+
+2. `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor`
+   - Modified OpenDropdown() to trigger search on click with empty input
+   - Changed to async void method
+
+**Last Updated**: 2025-10-14
+**Agent**: MiniMax Agent

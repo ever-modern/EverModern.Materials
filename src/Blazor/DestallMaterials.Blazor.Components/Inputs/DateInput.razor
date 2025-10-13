@@ -11,7 +11,6 @@
 }
 
 <div class="@cssClass"
-     @oninput="OnNativeInputChanged"
      @onfocus="OnInputFocus"
      @onblur="OnInputBlur"
      @onmouseout="() => _mouseIn = false"
@@ -22,10 +21,11 @@
         <label class="flexible-date-picker-label">@Label</label>
     }
     <div class="flexible-date-picker-input-wrapper">
-        <input type="date"
+        <input type="text"
                class="flexible-date-picker-field"
-               value="@(Value != default ? Value.ToString("yyyy-MM-dd") : "")"
+               value="@(Value != default ? Value.ToString("dd.MM.yyyy", Culture) : "")"
                placeholder="@ValueNotSetText"
+               readonly
                @ref="_inputElement"
                @onmouseout="() => _mouseIn = false"
                @onmouseover="() => _mouseIn = true" />
@@ -170,28 +170,6 @@
             _showCustomPicker = false;
             InvokeAsync(StateHasChanged);
         });
-    }
-
-    private void OnNativeInputChanged(ChangeEventArgs e)
-    {
-        var dateString = e.Value?.ToString();
-        if (string.IsNullOrWhiteSpace(dateString))
-        {
-            Value = default;
-            _ = OnValueChangedAsync(default);
-            return;
-        }
-
-        // Parse the native date input (format: yyyy-MM-dd)
-        if (DateOnly.TryParseExact(dateString, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var newDate))
-        {
-            Value = newDate;
-            _selectedDay = newDate.Day;
-            _selectedMonth = newDate.Month;
-            _selectedYear = newDate.Year;
-            _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
-            _ = OnValueChangedAsync(newDate);
-        }
     }
 
     void ClearValue()

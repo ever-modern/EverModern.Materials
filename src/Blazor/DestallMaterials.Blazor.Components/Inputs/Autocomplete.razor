@@ -134,9 +134,19 @@
         }
     }
 
-    private void OpenDropdown()
+    private async void OpenDropdown()
     {
-        if (!Disabled && _items.Any())
+        if (Disabled)
+            return;
+
+        // If there are no items and search text is empty, perform an initial search
+        if (!_items.Any() && string.IsNullOrWhiteSpace(_searchText))
+        {
+            await PerformSearchAsync("");
+        }
+
+        // Open dropdown if we have items
+        if (_items.Any())
         {
             _showDropdown = true;
             StateHasChanged();
