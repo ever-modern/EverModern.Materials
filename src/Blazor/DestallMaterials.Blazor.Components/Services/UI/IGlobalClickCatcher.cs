@@ -23,16 +23,12 @@ public class DisposableCallback : IDisposable
 }
 public interface IGlobalClickCatcher
 {
-    DisposableCallback SubscribeForGlobalClick(Action<MouseEventArgs> onMouseClick);
-    DisposableCallback SubscribeForKeyClick(Action<KeyboardEventArgs> onKeyClick);
-
-
-    DisposableCallback SubscribeForGlobalClick(Func<MouseEventArgs, Task> onMouseClick);
-    DisposableCallback SubscribeForKeyClick(Func<KeyboardEventArgs, Task> onKeyClick);
+    Task<MouseEventArgs> WhenMouseClicked(CancellationToken cancellationToken);
+    Task<KeyboardEventArgs> WhenKeyPressed(CancellationToken cancellationToken);
 }
 
 public interface IGlobalClickInvoker
 {
-    Task FireGlobalMouseClickEvent(MouseEventArgs eventArgs);
-    Task FireKeyClickEvent(KeyboardEventArgs eventArgs);
+    void FireGlobalMouseClickEvent(MouseEventArgs args);
+    void FireKeyClickEvent(KeyboardEventArgs eventArgs);
 }

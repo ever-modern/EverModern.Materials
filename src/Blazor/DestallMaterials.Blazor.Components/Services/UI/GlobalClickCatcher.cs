@@ -4,55 +4,40 @@ namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public class GlobalClickCatcher : IGlobalClickCatcher, IGlobalClickInvoker
 {
-    readonly List<Action<KeyboardEventArgs>> _keyClickCallbacks = new();
-    readonly List<Action<MouseEventArgs>> _mouseClickCallbacks = new();
+    TaskCompletionSource<MouseEventArgs> _mouseClickTcs = new();
+    TaskCompletionSource<KeyboardEventArgs> _keyClickTcs = new();
 
-    readonly List<Func<KeyboardEventArgs, Task>> _keyClickCallbacksAsync = new();
-    readonly List<Func<MouseEventArgs, Task>> _mouseClickCallbacksAsync = new();
-
-    public async Task FireGlobalMouseClickEvent(MouseEventArgs eventArgs)
+    public Task<KeyboardEventArgs> WhenKeyPressed(CancellationToken cancellationToken)
     {
-        foreach (var callback in _mouseClickCallbacks)
+        lock (this)
         {
-            callback(eventArgs);
+            return _keyClickTcs.Task;
         }
-        await Task.WhenAll(_mouseClickCallbacksAsync.Select(c => c(eventArgs)).ToArray());
     }
 
-    public async Task FireKeyClickEvent(KeyboardEventArgs eventArgs)
+    public Task<MouseEventArgs> WhenMouseClicked(CancellationToken cancellationToken)
     {
-        foreach (var callback in _keyClickCallbacks)
+        lock (this)
         {
-            callback(eventArgs);
+            return _mouseClickTcs.Task;
         }
-        await Task.WhenAll(_keyClickCallbacksAsync.Select(c => c(eventArgs)).ToArray());
     }
 
-    public DisposableCallback SubscribeForGlobalClick(Action<MouseEventArgs> onMouseClick)
+    public void FireGlobalMouseClickEvent(MouseEventArgs args)
     {
-        var dc = new DisposableCallback(e => _mouseClickCallbacks.Remove(onMouseClick));
-        _mouseClickCallbacks.Add(onMouseClick);
-        return dc;
+        lock (this)
+        {
+            _mouseClickTcs.TrySetResult(args);
+            _mouseClickTcs = new();
+        }
     }
 
-    public DisposableCallback SubscribeForKeyClick(Action<KeyboardEventArgs> onKeyClick)
+    public void FireKeyClickEvent(KeyboardEventArgs eventArgs)
     {
-        var dc = new DisposableCallback(e => _keyClickCallbacks.Remove(onKeyClick));
-        _keyClickCallbacks.Add(onKeyClick);
-        return dc;
-    }
-
-    public DisposableCallback SubscribeForKeyClick(Func<KeyboardEventArgs, Task> onKeyClick)
-    {
-        var dc = new DisposableCallback(e => _keyClickCallbacksAsync.Remove(onKeyClick));
-        _keyClickCallbacksAsync.Add(onKeyClick);
-        return dc;
-    }
-
-    public DisposableCallback SubscribeForGlobalClick(Func<MouseEventArgs, Task> onMouseClick)
-    {
-        var dc = new DisposableCallback(e => _mouseClickCallbacksAsync.Remove(onMouseClick));
-        _mouseClickCallbacksAsync.Add(onMouseClick);
-        return dc;
+        lock (this)
+        {
+            _keyClickTcs.TrySetResult(eventArgs);
+            _keyClickTcs = new();
+        }
     }
 }

@@ -45,7 +45,7 @@ public abstract partial class ClickableComponent : ViewComponent
         base.OnAfterRender(firstRender);
         if (firstRender)
         {
-            Subscribe(GlobalClickCatcher.SubscribeForGlobalClick(OnGlobalClick));
+            //Subscribe(GlobalClickCatcher.SubscribeForGlobalClick(OnGlobalClick));
         }
     }
 

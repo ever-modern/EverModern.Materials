@@ -1,4 +1,5 @@
 ﻿using Microsoft.JSInterop;
+using System.Collections;
 
 namespace DestallMaterials.Blazor.Components.Services.UI;
 
@@ -119,3 +120,4 @@ public static class ScrollSensorExtensions
     public static Task<DisposableCallback> SubscribeForWindowScrollAsync(this IScrollSensor scrollSensor, Func<ScrollState, Task> callback)
         => scrollSensor.SubscribeAsync("__window", callback);
 }
+

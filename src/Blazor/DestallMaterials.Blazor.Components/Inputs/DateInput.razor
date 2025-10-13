@@ -1,8 +1,22 @@
 ﻿@using System.Globalization
+@using DestallMaterials.Blazor.Components.Containers
+@using DestallMaterials.Blazor.Components.Services.UI
 
 @inherits BaseInput<DateOnly>
 
-<div class="date-input flexible-date-picker @(HasError ? "errored" : "") @(Clearable && Value != default ? "has-clear-button" : "") @Class">
+@inject IGlobalClickCatcher clickCatcher
+
+@{
+    var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has - clear - button" : "")} {Class}";
+}
+
+<div class="@cssClass"
+     @oninput="OnNativeInputChanged"
+     @onfocus="OnInputFocus"
+     @onblur="OnInputBlur"
+     @onmouseout="() => _mouseIn = false"
+     @onmouseover="() => _mouseIn = true">
+
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="flexible-date-picker-label">@Label</label>
@@ -11,60 +25,77 @@
         <input type="date"
                class="flexible-date-picker-field"
                value="@(Value != default ? Value.ToString("yyyy-MM-dd") : "")"
-               @oninput="OnNativeInputChanged"
-               @onfocus="OnInputFocus"
-               @onblur="OnInputBlur"
                placeholder="@ValueNotSetText"
-               @ref="_inputElement" />
+               @ref="_inputElement"
+               @onmouseout="() => _mouseIn = false"
+               @onmouseover="() => _mouseIn = true" />
         @if (Clearable && Value != default)
         {
             <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
         }
-        
+
         @if (_showCustomPicker)
         {
-            <div class="date-picker-dropdown" @onclick:stopPropagation="true">
-                <div class="date-picker-scroll-container">
-                    <div class="date-picker-scroll-column">
-                        <div class="date-picker-scroll-label">Day</div>
-                        <div class="date-picker-scroll-items" @ref="_dayScrollRef">
-                            @for (int day = 1; day <= _daysInMonth; day++)
-                            {
-                                var currentDay = day;
-                                <div class="date-picker-item @(currentDay == _selectedDay ? "selected" : "")"
-                                     @onclick="() => SelectDay(currentDay)">
-                                    @day.ToString("D2")
-                                </div>
-                            }
-                        </div>
+            <div class="date-picker-dropdown date-picker-scroll-container" @onclick:stopPropagation="true">
+                <span class="date-picker-scroll-column">
+                    <div class="date-picker-scroll-label">Day</div>
+                    <div class="date-picker-scroll-items" @ref="_dayScrollRef">
+                        @{
+                            var maxDay = Value.Year == MaxValue.Year && MaxValue.Month == Value.Month ?
+                                MaxValue.Day :
+                                31;
+
+                            var minDay = Value.Year == MinValue.Year && MinValue.Month == Value.Month ?
+                                MinValue.Day :
+                                1;
+                        }
+                        @for (int day = 1; day <= _daysInMonth; day++)
+                        {
+                            var currentDay = day;
+                            var disabled = day > maxDay || day < minDay;
+                            <div class="date-picker-item @(currentDay == _selectedDay ? "selected" : "") @(disabled ? "disabled" : "")"
+                                 @onclick="() => SelectDay(currentDay)">
+                                @day.ToString("D2")
+                            </div>
+                        }
                     </div>
-                    
-                    <div class="date-picker-scroll-column">
-                        <div class="date-picker-scroll-label">Month</div>
-                        <div class="date-picker-scroll-items" @ref="_monthScrollRef">
-                            @for (int month = 1; month <= 12; month++)
-                            {
-                                var currentMonth = month;
-                                <div class="date-picker-item @(currentMonth == _selectedMonth ? "selected" : "")"
-                                     @onclick="() => SelectMonth(currentMonth)">
-                                    @month.ToString("D2")
-                                </div>
-                            }
-                        </div>
+                </span>
+
+                <div class="date-picker-scroll-column">
+                    <span class="date-picker-scroll-label">Month</span>
+                    <div class="date-picker-scroll-items" @ref="_monthScrollRef">
+                        @{
+                            var maxMonth = Value.Year == MaxValue.Year ?
+                                MaxValue.Month :
+                                31;
+
+                            var minMonth = Value.Year == MinValue.Year ?
+                                MinValue.Month :
+                                1;
+                        }
+                        @for (int month = 1; month <= 12; month++)
+                        {
+                            var currentMonth = month;
+                            var disabled = month < minMonth || month > maxMonth;
+                            <div class="date-picker-item @(currentMonth == _selectedMonth ? "selected" : "") @(disabled ? "disabled" : "")"
+                                 @onclick="() => SelectMonth(currentMonth)">
+                                @month.ToString("D2")
+                            </div>
+                        }
                     </div>
-                    
-                    <div class="date-picker-scroll-column">
-                        <div class="date-picker-scroll-label">Year</div>
-                        <div class="date-picker-scroll-items" @ref="_yearScrollRef">
-                            @for (int year = DateTime.Now.Year - 100; year <= DateTime.Now.Year + 100; year++)
-                            {
-                                var currentYear = year;
-                                <div class="date-picker-item @(currentYear == _selectedYear ? "selected" : "")"
-                                     @onclick="() => SelectYear(currentYear)">
-                                    @year
-                                </div>
-                            }
-                        </div>
+                </div>
+
+                <div class="date-picker-scroll-column">
+                    <span class="date-picker-scroll-label">Year</span>
+                    <div class="date-picker-scroll-items" @ref="_yearScrollRef">
+                        @for (int year = DateTime.Now.Year - 100; year <= DateTime.Now.Year + 100; year++)
+                        {
+                            var currentYear = year;
+                            <div class="date-picker-item @(currentYear == _selectedYear ? "selected" : "")"
+                                 @onclick="() => SelectYear(currentYear)">
+                                @year
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -81,7 +112,7 @@
     private ElementReference _dayScrollRef;
     private ElementReference _monthScrollRef;
     private ElementReference _yearScrollRef;
-    
+
     private bool _showCustomPicker = false;
     private int _selectedDay = DateTime.Now.Day;
     private int _selectedMonth = DateTime.Now.Month;
@@ -97,10 +128,16 @@
     [Parameter]
     public string ValueNotSetText { get; set; } = "Not set";
 
+    [Parameter]
+    public DateOnly MinValue { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddYears(-50));
+
+    [Parameter]
+    public DateOnly MaxValue { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        
+
         // Sync picker state with Value when Value changes externally
         if (Value != default)
         {
@@ -178,13 +215,13 @@
     {
         _selectedMonth = month;
         _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
-        
+
         // Adjust day if it exceeds the days in the new month
         if (_selectedDay > _daysInMonth)
         {
             _selectedDay = _daysInMonth;
         }
-        
+
         UpdateValueFromPicker();
     }
 
@@ -192,13 +229,13 @@
     {
         _selectedYear = year;
         _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
-        
+
         // Adjust day if it exceeds the days in the new month (e.g., Feb 29 in non-leap year)
         if (_selectedDay > _daysInMonth)
         {
             _selectedDay = _daysInMonth;
         }
-        
+
         UpdateValueFromPicker();
     }
 
@@ -217,7 +254,7 @@
         {
             // Invalid date combination, ignore
         }
-        
+
         StateHasChanged();
     }
 
@@ -227,4 +264,24 @@
         await Task.CompletedTask;
         StateHasChanged();
     }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (firstRender)
+        {
+            ForLifetime(async ct =>
+            {
+                await clickCatcher.WhenMouseClicked(ct);
+                if (_mouseIn is false)
+                {
+                    _showCustomPicker = false;
+                    StateHasChanged();
+                }
+            });
+        }
+    }
+
+    bool _mouseIn = false;
 }

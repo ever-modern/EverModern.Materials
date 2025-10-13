@@ -22,10 +22,10 @@
     </div>
     @if (_showDropdown && _items != null && _items.Any())
     {
-        <div class="autocomplete-dropdown">
+        <ul class="autocomplete-dropdown" style="list-style-type: none">
             @foreach (var item in _items.Take(MaxItems))
             {
-                <div class="autocomplete-item" @onclick="() => SelectItem(item)">
+                <li class="autocomplete-item" @onclick="() => SelectItem(item)">
                     @if (ItemTemplate != null)
                     {
                         @ItemTemplate(item)
@@ -34,9 +34,9 @@
                     {
                         @ToStringFunc(item)
                     }
-                </div>
+                </li>
             }
-        </div>
+        </ul>
     }
     @if (Error)
     {
@@ -67,7 +67,7 @@
     public bool Clearable { get; set; }
 
     [Parameter]
-    public Action OnClearButtonClick { get; set; }
+    public Action? OnClearButtonClick { get; set; }
 
     [Parameter]
     public string Class { get; set; }

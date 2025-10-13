@@ -12,29 +12,38 @@
 @code {
     [Parameter]
     [EditorRequired]
-    public Func<Task> OnOuterClick { get; set; }
+    public Action OnOuterClick { get; set; }
 
     [Parameter]
     [EditorRequired]
     public RenderFragment ChildContent { get; set; }
 
     [Parameter]
-    public string Class { get; set; }
-    
-    [Parameter]
-    public string Style { get; set; }
+    public string Class { get; set; } = "";
 
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        BindToLifetime(globalClick.SubscribeForGlobalClick(async e =>
-        {
-            if (!mouseIn)
-            {
-                await OnOuterClick();
-            }
-        }));
-    }
+    [Parameter]
+    public string Style { get; set; } = "";
 
     bool mouseIn = false;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (firstRender)
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    var mouseClick = await globalClick.WhenMouseClicked(UntilDisposed);
+                    if (Disposed)
+                    {
+                        return;
+                    }
+                    OnOuterClick();
+                }
+            });
+        }
+    }
 }

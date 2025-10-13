@@ -1,5 +1,3 @@
-@typeparam T
-
 <div class="chip @Class">
     <span class="chip-content">@ChildContent</span>
     @if (OnClose != null)
@@ -10,11 +8,12 @@
 
 @code {
     [Parameter]
+    [EditorRequired]
     public RenderFragment ChildContent { get; set; }
 
     [Parameter]
-    public Action OnClose { get; set; }
+    public Action? OnClose { get; set; }
 
     [Parameter]
-    public string Class { get; set; }
+    public string? Class { get; set; }
 }

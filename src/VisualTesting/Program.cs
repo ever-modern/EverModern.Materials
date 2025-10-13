@@ -1,3 +1,4 @@
+using DestallMaterials.Blazor.Components.Services.UI;
 using VisualTesting.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,6 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+var clickCatcher = new GlobalClickCatcher();
+builder.Services.AddSingleton<IGlobalClickCatcher>(clickCatcher);
+builder.Services.AddSingleton<IGlobalClickInvoker>(clickCatcher);
 
 var app = builder.Build();
 
