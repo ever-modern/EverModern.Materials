@@ -11,18 +11,18 @@
             <label class="datetime-input-label">@Label</label>
         }
         <div class="datetime-input-controls">
-            <FlexibleDatePicker Clearable="false"
-                                OnValueChanged="d => _ = OnDateChanged(d)"
-                                Value=Date
-                                PlaceholderText="Date"
-                                Culture=Culture
-                                Class="datetime-input-date"
-                                Error="@Error" />
-            <TimePicker Culture=Culture
-                        Class="datetime-input-time"
-                        OnValueChanged="t => _ = OnTimeChanged(t)"
-                        Time="Time"
-                        Error=@(Error) />
+            <DateInput Clearable="false"
+                       OnValueChanged="d => _ = OnDateChanged(d)"
+                       Value=Date
+                       PlaceholderText="Date"
+                       Culture=Culture
+                       Class="datetime-input-date"
+                       Error="@Error" />
+            <TimeInput Culture=Culture
+                       Class="datetime-input-time"
+                       OnValueChanged="t => _ = OnTimeChanged(t)"
+                       Time="Time"
+                       Error=@(Error) />
             <button type="button"
                     class="datetime-input-clear @(Date == default ? "hidden" : "")"
                     @onclick="ClearValue">
@@ -32,21 +32,21 @@
     }
     else if (PickDate)
     {
-        <FlexibleDatePicker Clearable="true"
-                            OnValueChanged="d => _ = OnDateChanged(d)"
-                            Value=Date
-                            PlaceholderText="Date"
-                            Culture=Culture
-                            Label="@Label"
-                            Error="@Error" />
+        <DateInput Clearable="true"
+                   OnValueChanged="d => _ = OnDateChanged(d)"
+                   Value=Date
+                   PlaceholderText="Date"
+                   Culture=Culture
+                   Label="@Label"
+                   Error="@Error" />
     }
     else if (PickTime)
     {
-        <TimePicker Culture=Culture
-                    OnValueChanged="t => _ = OnTimeChanged(t)"
-                    Time="Time"
-                    Label="@Label"
-                    Error=@(Error) />
+        <TimeInput Culture=Culture
+                   OnValueChanged="t => _ = OnTimeChanged(t)"
+                   Time="Time"
+                   Label="@Label"
+                   Error=@(Error) />
     }
 </div>
 

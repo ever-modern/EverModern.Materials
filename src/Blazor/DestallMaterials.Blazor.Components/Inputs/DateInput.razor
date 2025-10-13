@@ -46,14 +46,34 @@
     public string ValueNotSetText { get; set; } = "Not set";
 
     private string _textInput = "";
+    private string _previousTextInput = "";
 
     private string TextValue
     {
         get => _textInput;
         set
         {
-            _textInput = value;
-            DatePickerTextChanged(value);
+            // Auto-format as user types: insert dots at positions 2 and 5
+            string digitsOnly = new string(value.Where(char.IsDigit).ToArray());
+            
+            // Format: dd.MM.yyyy
+            string formatted = "";
+            if (digitsOnly.Length > 0)
+            {
+                formatted = digitsOnly.Substring(0, Math.Min(2, digitsOnly.Length));
+                if (digitsOnly.Length > 2)
+                {
+                    formatted += "." + digitsOnly.Substring(2, Math.Min(2, digitsOnly.Length - 2));
+                }
+                if (digitsOnly.Length > 4)
+                {
+                    formatted += "." + digitsOnly.Substring(4, Math.Min(4, digitsOnly.Length - 4));
+                }
+            }
+            
+            _textInput = formatted;
+            _previousTextInput = formatted;
+            DatePickerTextChanged(formatted);
         }
     }
 
@@ -64,10 +84,12 @@
         if (Value != default)
         {
             _textInput = Value.ToString(_dateFormat);
+            _previousTextInput = _textInput;
         }
         else if (string.IsNullOrEmpty(_textInput))
         {
             _textInput = "";
+            _previousTextInput = "";
         }
     }
 
@@ -75,12 +97,13 @@
     {
         Value = default;
         _textInput = "";
+        _previousTextInput = "";
         _ = OnValueChangedAsync(default);
     }
 
     void DatePickerTextChanged(string value)
     {
-        // Don't process while user is still typing (unless they add a space to confirm)
+        // Don't process while user is still typing
         if (string.IsNullOrEmpty(value))
         {
             // Allow clearing
@@ -92,23 +115,17 @@
             return;
         }
 
-        // Only try to parse if we have enough characters or user added space
-        if (value.Length < 6 && !value.EndsWith(" "))
+        // Only try to parse if we have a complete date (10 characters: dd.MM.yyyy)
+        if (value.Length < 10)
         {
             return; // Still typing, don't update Value yet
         }
 
         DateOnly newValue = default;
         
-        if (DateTime.TryParseExact(value.TrimEnd(), _formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime validDate))
+        if (DateTime.TryParseExact(value, _formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime validDate))
         {
             newValue = DateOnly.FromDateTime(validDate);
-        }
-        else if (DateTime.TryParseExact(value.TrimEnd(), _shortFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out validDate))
-        {
-            var now = DateTime.Now;
-            newValue = DateOnly.FromDateTime(validDate);
-            newValue = newValue.AddYears(now.Year - validDate.Year);
         }
 
         // Only update if we successfully parsed a date
@@ -116,6 +133,7 @@
         {
             Value = newValue;
             _textInput = newValue.ToString(_dateFormat);
+            _previousTextInput = _textInput;
             _ = OnValueChangedAsync(newValue);
         }
     }

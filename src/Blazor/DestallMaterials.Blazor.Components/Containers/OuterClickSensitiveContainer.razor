@@ -26,7 +26,7 @@
 
     protected override void OnParametersSet()
     {
-        base.OnInitialized();
+        base.OnParametersSet();
         BindToLifetime(globalClick.SubscribeForGlobalClick(async e =>
         {
             if (!mouseIn)

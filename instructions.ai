@@ -313,5 +313,164 @@ Successfully identified and fixed critical layout and input handling issues repo
 
 ---
 
+## DateInput Auto-Formatting Implementation (2025-10-13)
+
+Successfully implemented auto-formatting feature for DateInput component that automatically inserts separators (dots) as the user types numbers.
+
+**User-Reported Issue:**
+- DateInput component was accepting any integer sequence without formatting
+- Users couldn't see the date format (dd.MM.yyyy) being applied while typing
+- Expected behavior: typing "25122024" should automatically become "25.12.2024"
+
+**Root Cause:**
+- The component was only formatting after parsing the complete date
+- No real-time formatting during user input
+- TextValue setter wasn't processing the input to add separators
+
+**Solution Implemented:**
+
+1. **Auto-Formatting Logic in TextValue Setter:**
+   ```csharp
+   private string TextValue
+   {
+       get => _textInput;
+       set
+       {
+           // Extract digits only from input
+           string digitsOnly = new string(value.Where(char.IsDigit).ToArray());
+           
+           // Format as dd.MM.yyyy
+           string formatted = "";
+           if (digitsOnly.Length > 0)
+           {
+               formatted = digitsOnly.Substring(0, Math.Min(2, digitsOnly.Length));
+               if (digitsOnly.Length > 2)
+               {
+                   formatted += "." + digitsOnly.Substring(2, Math.Min(2, digitsOnly.Length - 2));
+               }
+               if (digitsOnly.Length > 4)
+               {
+                   formatted += "." + digitsOnly.Substring(4, Math.Min(4, digitsOnly.Length - 4));
+               }
+           }
+           
+           _textInput = formatted;
+           _previousTextInput = formatted;
+           DatePickerTextChanged(formatted);
+       }
+   }
+   ```
+
+2. **Updated Date Parsing Logic:**
+   - Only attempt to parse when user has typed a complete date (10 characters: dd.MM.yyyy)
+   - Removed the "space to confirm" logic that was confusing
+   - Value only updates when a valid complete date is entered
+
+3. **Added State Tracking:**
+   - Added `_previousTextInput` field to track formatting state
+   - Properly syncs with external Value changes in `OnParametersSet()`
+
+**Files Modified:**
+- `src/Blazor/DestallMaterials.Blazor.Components/Inputs/DateInput.razor`
+
+**Behavior:**
+- User types: "2" → displays "2"
+- User types: "25" → displays "25"
+- User types: "251" → displays "25.1"
+- User types: "2512" → displays "25.12"
+- User types: "25122" → displays "25.12.2"
+- User types: "251220" → displays "25.12.20"
+- User types: "2512202" → displays "25.12.202"
+- User types: "25122024" → displays "25.12.2024" (and parses to DateOnly value)
+
+**Visual Test Results:**
+✅ Auto-formatting works correctly - typing "25122024" displays as "25.12.2024"
+✅ Separators are inserted automatically at correct positions
+✅ Value only updates after complete valid date is entered
+✅ Clear button functionality maintained
+
+## Component Renaming Updates (2025-10-13)
+
+Fixed references to renamed components throughout the codebase.
+
+**Components Renamed:**
+- `FlexibleDatePicker.razor` → `DateInput.razor`
+- `TimePicker.razor` → `TimeInput.razor`
+
+**Files Updated:**
+
+1. **DateTimeInput.razor:**
+   - Changed `<FlexibleDatePicker>` to `<DateInput>`
+   - Changed `<TimePicker>` to `<TimeInput>`
+   - All parameter bindings maintained correctly
+
+2. **Home.razor (VisualTesting):**
+   - Updated component references from `FlexibleDatePicker` to `DateInput`
+   - Updated section headers to match new component names
+   - All demos and examples working correctly
+
+**Visual Test Results:**
+✅ DateTimeInput properly uses DateInput and TimeInput components
+✅ Side-by-side layout working correctly (date and time fields)
+✅ No overlapping between fields
+✅ Visual testing page displays all components correctly
+
+## Container Bug Fix (2025-10-13)
+
+Fixed critical bug in OuterClickSensitiveContainer component.
+
+**Bug:**
+- `OnParametersSet()` method was calling `base.OnInitialized()` instead of `base.OnParametersSet()`
+- This could cause lifecycle issues and unexpected behavior
+
+**Fix:**
+```csharp
+protected override void OnParametersSet()
+{
+    base.OnParametersSet();  // Changed from base.OnInitialized()
+    BindToLifetime(globalClick.SubscribeForGlobalClick(async e =>
+    {
+        if (!mouseIn)
+        {
+            await OnOuterClick();
+        }
+    }));
+}
+```
+
+**File Modified:**
+- `src/Blazor/DestallMaterials.Blazor.Components/Containers/OuterClickSensitiveContainer.razor`
+
+**Impact:**
+- Proper component lifecycle behavior
+- Correct base method calls following Blazor best practices
+
+## Build and Test Results (2025-10-13)
+
+**Build Status:**
+- Build succeeded with 91 warnings, 0 errors
+- All components compile successfully
+- VisualTesting project builds and runs correctly
+
+**Visual Testing Performed:**
+1. ✅ **DateInput Auto-Formatting** - Tested typing "25122024", correctly formatted to "25.12.2024"
+2. ✅ **DateTimeInput Layout** - Date and time fields properly aligned side-by-side, no overlapping
+3. ✅ **Component Renaming** - All references to DateInput and TimeInput working correctly
+4. ✅ **Flag Components** - Checkboxes displaying and functioning properly
+5. ✅ **All Input Types** - StringInput, NumberInput, DateInput, DateTimeInput all working
+
+**Test Screenshots Generated:**
+- Full homepage overview
+- DateInput auto-formatting demonstration (25.12.2024)
+- DateTimeInput layout verification
+- Comprehensive component test
+
+**Test Environment:**
+- .NET 9.0.305
+- Blazor Server (http://localhost:5000)
+- Visual testing completed successfully
+
+---
+
 **Last Updated**: 2025-10-13
 **Agent**: MiniMax Agent

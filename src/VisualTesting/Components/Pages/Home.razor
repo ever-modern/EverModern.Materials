@@ -87,26 +87,26 @@
         </div>
     </section>
 
-    <!-- FlexibleDatePicker Component Tests -->
+    <!-- DateInput Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
-        <h2>FlexibleDatePicker Component</h2>
+        <h2>DateInput Component</h2>
         
         <div style="margin: 10px 0;">
             <h3>Basic Date Picker:</h3>
-            <FlexibleDatePicker Label="Birth Date" 
-                                OnValueChanged="v => BirthDate = v" 
-                                Value="@BirthDate" 
-                                Clearable="true" />
+            <DateInput Label="Birth Date" 
+                       OnValueChanged="v => BirthDate = v" 
+                       Value="@BirthDate" 
+                       Clearable="true" />
             <p>Birth Date: <strong>@(BirthDate != default ? BirthDate.ToString("dd.MM.yyyy") : "Not set")</strong></p>
         </div>
 
         <div style="margin: 10px 0;">
             <h3>With Custom Placeholder:</h3>
-            <FlexibleDatePicker Label="Event Date" 
-                                OnValueChanged="v => EventDate = v" 
-                                Value="@EventDate" 
-                                ValueNotSetText="Select a date..."
-                                Clearable="true" />
+            <DateInput Label="Event Date" 
+                       OnValueChanged="v => EventDate = v" 
+                       Value="@EventDate" 
+                       ValueNotSetText="Select a date..."
+                       Clearable="true" />
             <p>Event Date: <strong>@(EventDate != default ? EventDate.ToString("dd.MM.yyyy") : "Not set")</strong></p>
         </div>
     </section>
