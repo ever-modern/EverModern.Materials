@@ -2,13 +2,13 @@
 
 @{
     string cssClass = $"flag base-input {(Disabled ? "disabled" : "")} {(Error is not null ? "errored" : "")} {Class}";
-    Action onChecked = () => OnValueChanged(!Value);
 }
-<label class="@cssClass" @onclick="onChecked">
+<label class="@cssClass">
     <input type="checkbox"
            class="flag-checkbox"
            disabled="@Disabled"
-           checked="@Value"
+           @bind="CurrentValue"
+           @bind:event="onchange"
            />
     <span class="flag-checkmark"></span>
     @if (!string.IsNullOrEmpty(Label))
@@ -20,3 +20,25 @@
         @ChildContent
     }
 </label>
+
+@code {
+    private bool CurrentValue
+    {
+        get => Value;
+        set
+        {
+            if (Value != value)
+            {
+                Value = value;
+                _ = OnValueChangedAsync(value);
+            }
+        }
+    }
+
+    private async Task OnValueChangedAsync(bool newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+}

@@ -1,14 +1,221 @@
 ﻿@page "/"
 @using DestallMaterials.Blazor.Components.Inputs
+@using System.Globalization
 
-<Flag Value="Checked" OnValueChanged="v => Checked = v" />
+<PageTitle>Component Visual Testing</PageTitle>
 
-<p>Checked: @Checked</p>
+<h1>DestallMaterials.Blazor.Components - Visual Testing</h1>
 
-<button @onclick="StateHasChanged">Update</button>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 30px;">
+
+    <!-- Flag Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>Flag Component (Checkbox)</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Basic Usage:</h3>
+            <Flag Label="Enable notifications" OnValueChanged="v => NotificationsEnabled = v" Value="@NotificationsEnabled" />
+            <p>Notifications Enabled: <strong>@NotificationsEnabled</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Custom Label:</h3>
+            <Flag Label="I accept the terms and conditions" OnValueChanged="v => TermsAccepted = v" Value="@TermsAccepted" />
+            <p>Terms Accepted: <strong>@TermsAccepted</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>Disabled State:</h3>
+            <Flag Label="This option is disabled" Disabled="true" OnValueChanged="v => {}" Value="true" />
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Error:</h3>
+            <Flag Label="Required checkbox" Error="@(RequiredCheck ? null : "This field is required")" OnValueChanged="v => RequiredCheck = v" Value="@RequiredCheck" />
+            <p>Required Check: <strong>@RequiredCheck</strong></p>
+        </div>
+    </section>
+
+    <!-- StringInput Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>StringInput Component</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Basic Text Input:</h3>
+            <StringInput Label="Full Name" OnValueChanged="v => FullName = v" Value="@FullName" />
+            <p>Value: <strong>@FullName</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Error:</h3>
+            <StringInput Label="Email Address" 
+                         Error="@(string.IsNullOrWhiteSpace(Email) ? "Email is required" : null)" 
+                         OnValueChanged="v => Email = v" 
+                         Value="@Email" />
+            <p>Email: <strong>@Email</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>Disabled State:</h3>
+            <StringInput Label="Disabled Field" Disabled="true" OnValueChanged="v => {}" Value="Cannot edit this" />
+        </div>
+    </section>
+
+    <!-- NumberInput Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>NumberInput Component</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Integer Input:</h3>
+            <NumberInput Label="Age" OnValueChanged="v => Age = v" Value="@Age" />
+            <p>Age: <strong>@Age</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>Decimal Input:</h3>
+            <NumberInput Label="Price" OnValueChanged="v => Price = v" Value="@Price" Accuracy="2" />
+            <p>Price: <strong>@Price.ToString("F2")</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Error:</h3>
+            <NumberInput Label="Quantity (must be > 0)" 
+                         Error="@(Quantity <= 0 ? "Quantity must be greater than 0" : null)"
+                         OnValueChanged="v => Quantity = v" 
+                         Value="@Quantity" />
+            <p>Quantity: <strong>@Quantity</strong></p>
+        </div>
+    </section>
+
+    <!-- FlexibleDatePicker Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>FlexibleDatePicker Component</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Basic Date Picker:</h3>
+            <FlexibleDatePicker Label="Birth Date" 
+                                OnValueChanged="v => BirthDate = v" 
+                                Value="@BirthDate" 
+                                Clearable="true" />
+            <p>Birth Date: <strong>@(BirthDate != default ? BirthDate.ToString("dd.MM.yyyy") : "Not set")</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Custom Placeholder:</h3>
+            <FlexibleDatePicker Label="Event Date" 
+                                OnValueChanged="v => EventDate = v" 
+                                Value="@EventDate" 
+                                ValueNotSetText="Select a date..."
+                                Clearable="true" />
+            <p>Event Date: <strong>@(EventDate != default ? EventDate.ToString("dd.MM.yyyy") : "Not set")</strong></p>
+        </div>
+    </section>
+
+    <!-- DateTimeInput Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>DateTimeInput Component</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Date and Time:</h3>
+            <DateTimeInput Label="Appointment" 
+                           OnValueChanged="v => Appointment = v" 
+                           Value="@Appointment" 
+                           PickDate="true"
+                           PickTime="true" />
+            <p>Appointment: <strong>@Appointment.ToString("dd.MM.yyyy HH:mm")</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>Date Only:</h3>
+            <DateTimeInput Label="Meeting Date" 
+                           OnValueChanged="v => MeetingDate = v" 
+                           Value="@MeetingDate" 
+                           PickDate="true"
+                           PickTime="false" />
+            <p>Meeting Date: <strong>@MeetingDate.ToString("dd.MM.yyyy")</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>Time Only:</h3>
+            <DateTimeInput Label="Reminder Time" 
+                           OnValueChanged="v => ReminderTime = v" 
+                           Value="@ReminderTime" 
+                           PickDate="false"
+                           PickTime="true" />
+            <p>Reminder Time: <strong>@ReminderTime.ToString("HH:mm")</strong></p>
+        </div>
+    </section>
+
+    <!-- Interactive Test Section -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; background-color: #f0f8ff;">
+        <h2>Interactive Test - All Values</h2>
+        <button @onclick="ResetAllValues" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Reset All Values
+        </button>
+        <button @onclick="StateHasChanged" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+            Force Update
+        </button>
+        
+        <div style="margin-top: 15px; padding: 10px; background-color: white; border-radius: 4px;">
+            <h3>Current Values:</h3>
+            <ul>
+                <li>Notifications Enabled: @NotificationsEnabled</li>
+                <li>Terms Accepted: @TermsAccepted</li>
+                <li>Required Check: @RequiredCheck</li>
+                <li>Full Name: @FullName</li>
+                <li>Email: @Email</li>
+                <li>Age: @Age</li>
+                <li>Price: @Price</li>
+                <li>Quantity: @Quantity</li>
+                <li>Birth Date: @(BirthDate != default ? BirthDate.ToString("dd.MM.yyyy") : "Not set")</li>
+                <li>Event Date: @(EventDate != default ? EventDate.ToString("dd.MM.yyyy") : "Not set")</li>
+                <li>Appointment: @Appointment.ToString("dd.MM.yyyy HH:mm")</li>
+                <li>Meeting Date: @MeetingDate.ToString("dd.MM.yyyy")</li>
+                <li>Reminder Time: @ReminderTime.ToString("HH:mm")</li>
+            </ul>
+        </div>
+    </section>
+</div>
 
 @code {
-    bool Checked { get; set; } = true;
+    // Flag component values
+    bool NotificationsEnabled { get; set; } = true;
+    bool TermsAccepted { get; set; } = false;
+    bool RequiredCheck { get; set; } = false;
 
+    // StringInput values
+    string FullName { get; set; } = "";
+    string Email { get; set; } = "";
 
+    // NumberInput values
+    int Age { get; set; } = 25;
+    decimal Price { get; set; } = 99.99m;
+    int Quantity { get; set; } = 0;
+
+    // DatePicker values
+    DateOnly BirthDate { get; set; } = default;
+    DateOnly EventDate { get; set; } = default;
+
+    // DateTimeInput values
+    DateTime Appointment { get; set; } = DateTime.Now.AddDays(7);
+    DateTime MeetingDate { get; set; } = DateTime.Now;
+    DateTime ReminderTime { get; set; } = DateTime.Now;
+
+    void ResetAllValues()
+    {
+        NotificationsEnabled = false;
+        TermsAccepted = false;
+        RequiredCheck = false;
+        FullName = "";
+        Email = "";
+        Age = 0;
+        Price = 0m;
+        Quantity = 0;
+        BirthDate = default;
+        EventDate = default;
+        Appointment = DateTime.Now;
+        MeetingDate = DateTime.Now;
+        ReminderTime = DateTime.Now;
+        StateHasChanged();
+    }
 }

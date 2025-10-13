@@ -52,8 +52,7 @@
     void ClearValue()
     {
         Value = default;
-        OnValueChanged(default);
-        StateHasChanged();
+        _ = OnValueChangedAsync(default);
     }
 
     void DatePickerTextChanged(string value)
@@ -80,7 +79,14 @@
 
         if (valueChanged)
         {
-            OnValueChanged(newValue);
+            _ = OnValueChangedAsync(newValue);
         }
+    }
+
+    private async Task OnValueChangedAsync(DateOnly newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
     }
 }

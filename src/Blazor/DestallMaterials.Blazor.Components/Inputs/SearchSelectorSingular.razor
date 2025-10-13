@@ -51,13 +51,20 @@
     void Clear()
     {
         Value = default;
-        OnValueChanged(Value);
+        _ = OnValueChangedAsync(Value);
         OnClear();
     }
 
     void OnValueSetInner(TItem item)
     {
         Value = item;
-        OnValueChanged(item);
+        _ = OnValueChangedAsync(item);
+    }
+
+    private async Task OnValueChangedAsync(TItem newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
     }
 }

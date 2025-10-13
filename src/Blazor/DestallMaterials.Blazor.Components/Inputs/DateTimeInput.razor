@@ -66,7 +66,7 @@
         internal set
         {
             var newValue = (Date).ToDateTime(TimeOnly.FromTimeSpan(value));
-            OnValueChanged?.Invoke(newValue);
+            _ = OnValueChangedAsync(newValue);
         }
     }
 
@@ -76,8 +76,15 @@
         internal set
         {
             var newValue = (value).ToDateTime(TimeOnly.FromTimeSpan(Time));
-            OnValueChanged?.Invoke(newValue);
+            _ = OnValueChangedAsync(newValue);
         }
+    }
+
+    private async Task OnValueChangedAsync(DateTime newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
     }
 
     public DateTimeInput()

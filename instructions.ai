@@ -166,7 +166,68 @@ Successfully replaced all MudBlazor components in the input folder with custom i
 - Demo page updated at: `src/Blazor.VisualTesting/Blazor.VisualTesting/Components/Pages/Home.razor`
 - Includes examples of Flag, StringInput, NumberInput, FlexibleDatePicker, DateTimeInput
 
+## Bug Fixes - Component Value Change Handling (2025-10-13)
+
+Successfully identified and fixed bugs in multiple input components that weren't following the async pattern for value change handling.
+
+**Bug Pattern Identified:**
+Components were directly calling `OnValueChanged?.Invoke(newValue)` without:
+1. Using async Task methods (`OnValueChangedAsync`)
+2. Calling `StateHasChanged()` to trigger UI updates
+3. Using fire-and-forget pattern (`_ = OnValueChangedAsync(value)`) in property setters
+
+**Components Fixed:**
+
+1. **Flag.razor** - Critical bug fixed:
+   - **Issue**: Used `@onclick` on label with direct `OnValueChanged` call, checkbox wasn't properly bound
+   - **Fix**: Implemented proper `@bind="CurrentValue"` with `@bind:event="onchange"` on checkbox
+   - **Fix**: Added `CurrentValue` property with async `OnValueChangedAsync` method
+   - **Fix**: Removed `@onclick` from label to prevent double-toggling
+
+2. **DateTimeInput.razor**:
+   - **Issue**: `Time` and `Date` property setters called `OnValueChanged?.Invoke(newValue)` directly
+   - **Fix**: Changed to use `_ = OnValueChangedAsync(newValue)` fire-and-forget pattern
+   - **Fix**: Added `OnValueChangedAsync` method with `StateHasChanged()` call
+
+3. **FlexibleDatePicker.razor**:
+   - **Issue**: `ClearValue()` and `DatePickerTextChanged()` called `OnValueChanged` directly
+   - **Fix**: Changed to use `_ = OnValueChangedAsync(newValue)` pattern
+   - **Fix**: Added `OnValueChangedAsync` method with `StateHasChanged()` call
+
+4. **TimePicker.razor**:
+   - **Issue**: Mixed use of `Time` (TimeSpan) parameter and `Value` (TimeOnly) property
+   - **Issue**: `OnTimeChanged` called `OnValueChanged?.Invoke(newTime)` directly
+   - **Fix**: Added `OnParametersSet()` to sync TimeSpan parameter with TimeOnly Value
+   - **Fix**: Changed to use `_ = OnValueChangedAsync(newTime)` pattern
+   - **Fix**: Added `OnValueChangedAsync` method with `StateHasChanged()` call
+
+5. **SearchSelectorSingular.razor**:
+   - **Issue**: `Clear()` and `OnValueSetInner()` called `OnValueChanged` directly
+   - **Fix**: Changed to use `_ = OnValueChangedAsync(value)` pattern
+   - **Fix**: Added `OnValueChangedAsync` method with `StateHasChanged()` call
+
+**Standard Pattern Established:**
+All BaseInput-derived components now follow this pattern:
+```csharp
+private async Task OnValueChangedAsync(TValue newValue)
+{
+    OnValueChanged?.Invoke(newValue);
+    await Task.CompletedTask;
+    StateHasChanged();
+}
+```
+
+**Visual Testing:**
+- Updated `src/VisualTesting/Components/Pages/Home.razor` with comprehensive demos
+- Added interactive tests for all fixed components
+- Includes examples of: basic usage, disabled states, error states, and value clearing
+- All components demonstrate proper two-way binding and state management
+
+**Build Status:**
+- DestallMaterials.Blazor.Components: Build succeeded, 0 errors, 0 warnings
+- VisualTesting: Build succeeded, 0 errors, 0 warnings
+
 ---
 
-**Last Updated**: 2025-10-12
+**Last Updated**: 2025-10-13
 **Agent**: MiniMax Agent

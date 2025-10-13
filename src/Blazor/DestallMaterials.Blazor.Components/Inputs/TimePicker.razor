@@ -28,12 +28,21 @@
     [Parameter]
     public string Style { get; set; } = "";
 
+    protected override void OnParametersSet()
+    {
+        // Sync TimeSpan parameter with TimeOnly Value
+        if (Time != default)
+        {
+            Value = TimeOnly.FromTimeSpan(Time);
+        }
+        base.OnParametersSet();
+    }
+
     private string CurrentValue
     {
         get
         {
-            var timeOnly = TimeOnly.FromTimeSpan(Time);
-            return timeOnly.ToString("HH:mm");
+            return Value != default ? Value.ToString("HH:mm") : TimeOnly.FromTimeSpan(Time).ToString("HH:mm");
         }
     }
 
@@ -43,11 +52,18 @@
         if (!string.IsNullOrEmpty(value) && TimeOnly.TryParse(value, out var parsed))
         {
             var newTime = parsed;
-            if (TimeOnly.FromTimeSpan(Time) != newTime)
+            if (Value != newTime)
             {
-                OnValueChanged?.Invoke(newTime);
-                StateHasChanged();
+                Value = newTime;
+                _ = OnValueChangedAsync(newTime);
             }
         }
+    }
+
+    private async Task OnValueChangedAsync(TimeOnly newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
     }
 }
