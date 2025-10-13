@@ -520,3 +520,49 @@ Successfully redesigned DateInput component to use native `<input type="date">` 
 
 **Last Updated**: 2025-10-13
 **Agent**: MiniMax Agent
+
+## Component Fixes - 2025-10-14
+
+**Issue**: Fixed DateInput and SearchSelector components with the following improvements:
+
+1. **DateInput Browser Picker Fix**:
+   - Added CSS rule to hide WebKit's default calendar picker indicator
+   - File: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/DateInput.razor.css`
+   - Solution: `.flexible-date-picker-field::-webkit-calendar-picker-indicator { display: none; }`
+   - This ensures only the custom scrollable date picker UI is shown
+
+2. **SearchSelector Click-to-Open**:
+   - Modified Autocomplete component to open dropdown on click even with empty input
+   - File: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor`
+   - Added `@onclick="OpenDropdown"` to the main container div
+   - Implemented `OpenDropdown()` method to show dropdown when items are available
+
+3. **SearchSelector Margin Fix**:
+   - Removed default browser margins/padding from dropdown list items
+   - File: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor.css`
+   - Added explicit `margin: 0; padding: 0;` rules to `.autocomplete-dropdown`
+   - Added specific padding to `.autocomplete-item` for consistent spacing
+
+4. **SearchSelector Keyboard Navigation**:
+   - Implemented keyboard navigation using IGlobalClickCatcher service
+   - Files: `src/Blazor/DestallMaterials.Blazor.Components/Inputs/Autocomplete.razor`
+   - Changed component to inherit from `DisposableComponent` instead of `ComponentBase`
+   - Added keyboard event subscription in `OnInitialized()` using `ForLifetime()` pattern
+   - Implemented arrow up/down navigation to highlight items
+   - Implemented Enter key to select highlighted item
+   - Added visual feedback with `.highlighted` CSS class (light gray background)
+   - Properly manages highlighted index state across dropdown open/close/search cycles
+
+**Technical Implementation**:
+- Used `IGlobalClickCatcher.WhenKeyPressed()` for keyboard event subscription
+- Used `ForLifetime()` method to ensure proper cleanup when component is disposed
+- Maintained `_highlightedIndex` state variable (-1 when no selection)
+- Visual highlighting uses `background-color: #e5e7eb` for selected items
+
+**Build Status**:
+- Build succeeded with 0 errors, 74 warnings (warnings are pre-existing)
+- All changes tested and verified to compile correctly
+
+**Commit**: 44f9217 - "Fix DateInput and SearchSelector components"
+**Last Updated**: 2025-10-14
+**Agent**: MiniMax Agent
