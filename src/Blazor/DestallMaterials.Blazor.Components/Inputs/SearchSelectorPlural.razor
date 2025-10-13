@@ -2,7 +2,7 @@
 @typeparam TItem
 
 <div class="@cssClass">
-    <Autocomplete T="TItem"
+    <Autocomplete TItem="TItem"
                   Label=@Label
                   SearchFunc="async (string filterString, CancellationToken cancellationToken) => await GetItemsByFilter(filterString, default)"
                   ToStringFunc="GetItemRepresentation"

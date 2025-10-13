@@ -6,7 +6,7 @@
 @{
     RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<text>@GetItemRepresentation(row)</text>);
 }
-<Autocomplete T="TItem"
+<Autocomplete TItem="TItem"
               Label=@Label
               SearchFunc="async (filter, ct) => await GetItemsByFilter(filter, ct)"
               ToStringFunc="GetItemRepresentation"

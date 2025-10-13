@@ -14,7 +14,7 @@
             <DateInput Clearable="false"
                        OnValueChanged="d => _ = OnDateChanged(d)"
                        Value=Date
-                       PlaceholderText="Date"
+                       ValueNotSetText="Date"
                        Culture=Culture
                        Class="datetime-input-date"
                        Error="@Error" />
@@ -35,7 +35,7 @@
         <DateInput Clearable="true"
                    OnValueChanged="d => _ = OnDateChanged(d)"
                    Value=Date
-                   PlaceholderText="Date"
+                   ValueNotSetText="Date"
                    Culture=Culture
                    Label="@Label"
                    Error="@Error" />

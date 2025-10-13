@@ -470,6 +470,52 @@ protected override void OnParametersSet()
 - Blazor Server (http://localhost:5000)
 - Visual testing completed successfully
 
+## DateInput Component - Custom Scroll Picker Implementation (2025-10-13)
+
+Successfully redesigned DateInput component to use native `<input type="date">` with a custom scroll picker interface similar to `<input type="time">`.
+
+**Key Changes:**
+
+1. **DateInput.razor**:
+   - Changed from text input with manual formatting to `<input type="date">` base
+   - Added custom dropdown picker with three scrollable columns (Day, Month, Year)
+   - Implemented picker visibility logic on focus/blur
+   - Added proper date synchronization between native input and custom picker
+   - Removed `PlaceholderText` parameter (replaced with `ValueNotSetText`)
+   - Added CSS classes: `date-input`, `date-picker-dropdown`, `date-picker-scroll-column`, etc.
+
+2. **DateInput.razor.css**:
+   - Added extensive CSS for custom date picker dropdown
+   - Three-column scroll layout with individual scroll containers
+   - Selected item highlighting with blue background
+   - Smooth hover effects and transitions
+   - Custom scrollbar styling for better UX
+
+3. **SearchSelectorSingular.razor & SearchSelectorPlural.razor**:
+   - Fixed generic type parameter from `T="TItem"` to `TItem="TItem"` in Autocomplete usage
+   - This is the correct syntax for passing generic type parameters in Blazor
+
+4. **DateTimeInput.razor**:
+   - Updated to use `ValueNotSetText` instead of `PlaceholderText` for DateInput component
+
+5. **Home.razor (VisualTesting)**:
+   - Added SearchSelectorSingular component examples with test data (countries, people)
+   - Added SearchSelectorPlural component examples with test data (skills, technologies)
+   - Implemented test search methods for all SearchSelector components
+   - Added Person class for testing custom object rendering
+   - Updated Interactive Test section to display SearchSelector values
+
+**Technical Notes:**
+
+- **Blazor Generic Components**: When using a generic component inside another generic component, use the type parameter name from the generic component definition (e.g., `TItem="TItem"` not `T="TItem"`)
+- **Custom Picker Behavior**: The picker shows/hides based on input focus, with a small delay on blur to allow click events on picker items
+- **Date Validation**: Automatically adjusts day value when month or year changes (e.g., prevents Feb 31)
+
+**Build Status:**
+- DestallMaterials.Blazor.Components: Build succeeded, 0 errors, 78 warnings
+- VisualTesting: Build succeeded, 0 errors, 0 warnings
+- Application running successfully on http://localhost:5193
+
 ---
 
 **Last Updated**: 2025-10-13

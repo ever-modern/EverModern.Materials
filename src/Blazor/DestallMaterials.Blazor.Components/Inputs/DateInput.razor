@@ -2,21 +2,72 @@
 
 @inherits BaseInput<DateOnly>
 
-<div class="flexible-date-picker @(HasError ? "errored" : "") @(Clearable && Value != default ? "has-clear-button" : "") @Class">
+<div class="date-input flexible-date-picker @(HasError ? "errored" : "") @(Clearable && Value != default ? "has-clear-button" : "") @Class">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="flexible-date-picker-label">@Label</label>
     }
     <div class="flexible-date-picker-input-wrapper">
-        <input type="text"
+        <input type="date"
                class="flexible-date-picker-field"
-               @bind="TextValue"
-               @bind:event="oninput"
-               @onblur="OnBlur"
-               placeholder="@ValueNotSetText" />
+               value="@(Value != default ? Value.ToString("yyyy-MM-dd") : "")"
+               @oninput="OnNativeInputChanged"
+               @onfocus="OnInputFocus"
+               @onblur="OnInputBlur"
+               placeholder="@ValueNotSetText"
+               @ref="_inputElement" />
         @if (Clearable && Value != default)
         {
             <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
+        }
+        
+        @if (_showCustomPicker)
+        {
+            <div class="date-picker-dropdown" @onclick:stopPropagation="true">
+                <div class="date-picker-scroll-container">
+                    <div class="date-picker-scroll-column">
+                        <div class="date-picker-scroll-label">Day</div>
+                        <div class="date-picker-scroll-items" @ref="_dayScrollRef">
+                            @for (int day = 1; day <= _daysInMonth; day++)
+                            {
+                                var currentDay = day;
+                                <div class="date-picker-item @(currentDay == _selectedDay ? "selected" : "")"
+                                     @onclick="() => SelectDay(currentDay)">
+                                    @day.ToString("D2")
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="date-picker-scroll-column">
+                        <div class="date-picker-scroll-label">Month</div>
+                        <div class="date-picker-scroll-items" @ref="_monthScrollRef">
+                            @for (int month = 1; month <= 12; month++)
+                            {
+                                var currentMonth = month;
+                                <div class="date-picker-item @(currentMonth == _selectedMonth ? "selected" : "")"
+                                     @onclick="() => SelectMonth(currentMonth)">
+                                    @month.ToString("D2")
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="date-picker-scroll-column">
+                        <div class="date-picker-scroll-label">Year</div>
+                        <div class="date-picker-scroll-items" @ref="_yearScrollRef">
+                            @for (int year = DateTime.Now.Year - 100; year <= DateTime.Now.Year + 100; year++)
+                            {
+                                var currentYear = year;
+                                <div class="date-picker-item @(currentYear == _selectedYear ? "selected" : "")"
+                                     @onclick="() => SelectYear(currentYear)">
+                                    @year
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
     </div>
     @if (HasError && !string.IsNullOrEmpty(Error))
@@ -26,15 +77,16 @@
 </div>
 
 @code {
-    private string _dateFormat = "dd.MM.yyyy";
-
-    static readonly string[] _shortFormats 
-        = ["ddMM", "dd.MM", "dd", "d"];
-    static readonly string[] _formats 
-        = ["ddMMyy", "dd.MM.yyyy", "dd.M.yyyy", "d.MM.yyyy", "d.M.yyyy", "dd.MM.yy", "dd.M.yy", "d.MM.yy", "d.M.yy"];
-
-    [Parameter]
-    public string PlaceholderText { get; set; }
+    private ElementReference _inputElement;
+    private ElementReference _dayScrollRef;
+    private ElementReference _monthScrollRef;
+    private ElementReference _yearScrollRef;
+    
+    private bool _showCustomPicker = false;
+    private int _selectedDay = DateTime.Now.Day;
+    private int _selectedMonth = DateTime.Now.Month;
+    private int _selectedYear = DateTime.Now.Year;
+    private int _daysInMonth = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
 
     [Parameter]
     public CultureInfo Culture { get; set; } = CultureInfo.CurrentCulture;
@@ -45,97 +97,128 @@
     [Parameter]
     public string ValueNotSetText { get; set; } = "Not set";
 
-    private string _textInput = "";
-    private string _previousTextInput = "";
-
-    private string TextValue
-    {
-        get => _textInput;
-        set
-        {
-            // Auto-format as user types: insert dots at positions 2 and 5
-            string digitsOnly = new string(value.Where(char.IsDigit).ToArray());
-            
-            // Format: dd.MM.yyyy
-            string formatted = "";
-            if (digitsOnly.Length > 0)
-            {
-                formatted = digitsOnly.Substring(0, Math.Min(2, digitsOnly.Length));
-                if (digitsOnly.Length > 2)
-                {
-                    formatted += "." + digitsOnly.Substring(2, Math.Min(2, digitsOnly.Length - 2));
-                }
-                if (digitsOnly.Length > 4)
-                {
-                    formatted += "." + digitsOnly.Substring(4, Math.Min(4, digitsOnly.Length - 4));
-                }
-            }
-            
-            _textInput = formatted;
-            _previousTextInput = formatted;
-            DatePickerTextChanged(formatted);
-        }
-    }
-
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        // Sync text input with Value when Value changes externally
+        
+        // Sync picker state with Value when Value changes externally
         if (Value != default)
         {
-            _textInput = Value.ToString(_dateFormat);
-            _previousTextInput = _textInput;
+            _selectedDay = Value.Day;
+            _selectedMonth = Value.Month;
+            _selectedYear = Value.Year;
+            _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
         }
-        else if (string.IsNullOrEmpty(_textInput))
+        else
         {
-            _textInput = "";
-            _previousTextInput = "";
+            var now = DateTime.Now;
+            _selectedDay = now.Day;
+            _selectedMonth = now.Month;
+            _selectedYear = now.Year;
+            _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
+        }
+    }
+
+    private void OnInputFocus()
+    {
+        _showCustomPicker = true;
+        StateHasChanged();
+    }
+
+    private void OnInputBlur()
+    {
+        // Delay hiding to allow clicking on picker items
+        Task.Delay(200).ContinueWith(_ =>
+        {
+            _showCustomPicker = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void OnNativeInputChanged(ChangeEventArgs e)
+    {
+        var dateString = e.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(dateString))
+        {
+            Value = default;
+            _ = OnValueChangedAsync(default);
+            return;
+        }
+
+        // Parse the native date input (format: yyyy-MM-dd)
+        if (DateOnly.TryParseExact(dateString, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var newDate))
+        {
+            Value = newDate;
+            _selectedDay = newDate.Day;
+            _selectedMonth = newDate.Month;
+            _selectedYear = newDate.Year;
+            _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
+            _ = OnValueChangedAsync(newDate);
         }
     }
 
     void ClearValue()
     {
         Value = default;
-        _textInput = "";
-        _previousTextInput = "";
+        var now = DateTime.Now;
+        _selectedDay = now.Day;
+        _selectedMonth = now.Month;
+        _selectedYear = now.Year;
+        _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
         _ = OnValueChangedAsync(default);
     }
 
-    void DatePickerTextChanged(string value)
+    private void SelectDay(int day)
     {
-        // Don't process while user is still typing
-        if (string.IsNullOrEmpty(value))
-        {
-            // Allow clearing
-            if (Value != default)
-            {
-                Value = default;
-                _ = OnValueChangedAsync(default);
-            }
-            return;
-        }
+        _selectedDay = day;
+        UpdateValueFromPicker();
+    }
 
-        // Only try to parse if we have a complete date (10 characters: dd.MM.yyyy)
-        if (value.Length < 10)
-        {
-            return; // Still typing, don't update Value yet
-        }
-
-        DateOnly newValue = default;
+    private void SelectMonth(int month)
+    {
+        _selectedMonth = month;
+        _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
         
-        if (DateTime.TryParseExact(value, _formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime validDate))
+        // Adjust day if it exceeds the days in the new month
+        if (_selectedDay > _daysInMonth)
         {
-            newValue = DateOnly.FromDateTime(validDate);
+            _selectedDay = _daysInMonth;
         }
+        
+        UpdateValueFromPicker();
+    }
 
-        // Only update if we successfully parsed a date
-        if (newValue != default && newValue != Value)
+    private void SelectYear(int year)
+    {
+        _selectedYear = year;
+        _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
+        
+        // Adjust day if it exceeds the days in the new month (e.g., Feb 29 in non-leap year)
+        if (_selectedDay > _daysInMonth)
         {
-            Value = newValue;
-            _textInput = newValue.ToString(_dateFormat);
-            _previousTextInput = _textInput;
-            _ = OnValueChangedAsync(newValue);
+            _selectedDay = _daysInMonth;
         }
+        
+        UpdateValueFromPicker();
+    }
+
+    private void UpdateValueFromPicker()
+    {
+        try
+        {
+            var newDate = new DateOnly(_selectedYear, _selectedMonth, _selectedDay);
+            if (newDate != Value)
+            {
+                Value = newDate;
+                _ = OnValueChangedAsync(newDate);
+            }
+        }
+        catch
+        {
+            // Invalid date combination, ignore
+        }
+        
+        StateHasChanged();
     }
 
     private async Task OnValueChangedAsync(DateOnly newValue)

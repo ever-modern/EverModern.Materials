@@ -146,6 +146,60 @@
         </div>
     </section>
 
+    <!-- SearchSelectorSingular Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>SearchSelectorSingular Component</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Basic Search Selector:</h3>
+            <SearchSelectorSingular TItem="string"
+                                    Label="Select a Country"
+                                    GetItemsByFilter="SearchCountries"
+                                    GetItemRepresentation="item => item"
+                                    OnValueChanged="v => SelectedCountry = v"
+                                    Value="@SelectedCountry" />
+            <p>Selected Country: <strong>@(SelectedCountry ?? "None")</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Custom Representation:</h3>
+            <SearchSelectorSingular TItem="Person"
+                                    Label="Select a Person"
+                                    GetItemsByFilter="SearchPeople"
+                                    GetItemRepresentation="@(p => $"{p.FirstName} {p.LastName}")"
+                                    OnValueChanged="v => SelectedPerson = v"
+                                    Value="@SelectedPerson" />
+            <p>Selected Person: <strong>@(SelectedPerson != null ? $"{SelectedPerson.FirstName} {SelectedPerson.LastName}" : "None")</strong></p>
+        </div>
+    </section>
+
+    <!-- SearchSelectorPlural Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>SearchSelectorPlural Component</h2>
+        
+        <div style="margin: 10px 0;">
+            <h3>Multiple Selection:</h3>
+            <SearchSelectorPlural TItem="string"
+                                  Label="Select Skills"
+                                  GetItemsByFilter="SearchSkills"
+                                  GetItemRepresentation="item => item"
+                                  OnValueSet="v => SelectedSkills = v"
+                                  Value="@SelectedSkills" />
+            <p>Selected Skills: <strong>@string.Join(", ", SelectedSkills ?? Array.Empty<string>())</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <h3>With Custom Items:</h3>
+            <SearchSelectorPlural TItem="string"
+                                  Label="Select Technologies"
+                                  GetItemsByFilter="SearchTechnologies"
+                                  GetItemRepresentation="item => item"
+                                  OnValueSet="v => SelectedTechnologies = v"
+                                  Value="@SelectedTechnologies" />
+            <p>Selected Technologies: <strong>@string.Join(", ", SelectedTechnologies ?? Array.Empty<string>())</strong></p>
+        </div>
+    </section>
+
     <!-- Interactive Test Section -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; background-color: #f0f8ff;">
         <h2>Interactive Test - All Values</h2>
@@ -172,12 +226,22 @@
                 <li>Appointment: @Appointment.ToString("dd.MM.yyyy HH:mm")</li>
                 <li>Meeting Date: @MeetingDate.ToString("dd.MM.yyyy")</li>
                 <li>Reminder Time: @ReminderTime.ToString("HH:mm")</li>
+                <li>Selected Country: @(SelectedCountry ?? "None")</li>
+                <li>Selected Person: @(SelectedPerson != null ? $"{SelectedPerson.FirstName} {SelectedPerson.LastName}" : "None")</li>
+                <li>Selected Skills: @string.Join(", ", SelectedSkills ?? Array.Empty<string>())</li>
+                <li>Selected Technologies: @string.Join(", ", SelectedTechnologies ?? Array.Empty<string>())</li>
             </ul>
         </div>
     </section>
 </div>
 
 @code {
+    // Person class for testing
+    public class Person
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+    }
     // Flag component values
     bool NotificationsEnabled { get; set; } = true;
     bool TermsAccepted { get; set; } = false;
@@ -201,6 +265,76 @@
     DateTime MeetingDate { get; set; } = DateTime.Now;
     DateTime ReminderTime { get; set; } = DateTime.Now;
 
+    // SearchSelectorSingular values
+    string? SelectedCountry { get; set; }
+    Person? SelectedPerson { get; set; }
+
+    // SearchSelectorPlural values
+    string[] SelectedSkills { get; set; } = Array.Empty<string>();
+    string[] SelectedTechnologies { get; set; } = Array.Empty<string>();
+
+    // Test data
+    private readonly List<string> _countries = new()
+    {
+        "United States", "United Kingdom", "Germany", "France", "Italy", "Spain", 
+        "Canada", "Australia", "Japan", "China", "Brazil", "India", "Russia"
+    };
+
+    private readonly List<Person> _people = new()
+    {
+        new Person { FirstName = "John", LastName = "Doe" },
+        new Person { FirstName = "Jane", LastName = "Smith" },
+        new Person { FirstName = "Bob", LastName = "Johnson" },
+        new Person { FirstName = "Alice", LastName = "Williams" },
+        new Person { FirstName = "Charlie", LastName = "Brown" }
+    };
+
+    private readonly List<string> _skills = new()
+    {
+        "C#", "JavaScript", "Python", "Java", "TypeScript", "SQL", 
+        "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js"
+    };
+
+    private readonly List<string> _technologies = new()
+    {
+        ".NET", "ASP.NET Core", "Blazor", "Entity Framework", "Docker", 
+        "Kubernetes", "Azure", "AWS", "Git", "CI/CD", "Microservices"
+    };
+
+    private Task<IEnumerable<string>> SearchCountries(string filter, CancellationToken ct)
+    {
+        var filtered = string.IsNullOrWhiteSpace(filter)
+            ? _countries
+            : _countries.Where(c => c.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult<IEnumerable<string>>(filtered);
+    }
+
+    private Task<IEnumerable<Person>> SearchPeople(string filter, CancellationToken ct)
+    {
+        var filtered = string.IsNullOrWhiteSpace(filter)
+            ? _people
+            : _people.Where(p => 
+                p.FirstName.Contains(filter, StringComparison.OrdinalIgnoreCase) || 
+                p.LastName.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult<IEnumerable<Person>>(filtered);
+    }
+
+    private Task<IEnumerable<string>> SearchSkills(string filter, CancellationToken ct)
+    {
+        var filtered = string.IsNullOrWhiteSpace(filter)
+            ? _skills
+            : _skills.Where(s => s.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult<IEnumerable<string>>(filtered);
+    }
+
+    private Task<IEnumerable<string>> SearchTechnologies(string filter, CancellationToken ct)
+    {
+        var filtered = string.IsNullOrWhiteSpace(filter)
+            ? _technologies
+            : _technologies.Where(t => t.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult<IEnumerable<string>>(filtered);
+    }
+
     void ResetAllValues()
     {
         NotificationsEnabled = false;
@@ -216,6 +350,10 @@
         Appointment = DateTime.Now;
         MeetingDate = DateTime.Now;
         ReminderTime = DateTime.Now;
+        SelectedCountry = null;
+        SelectedPerson = null;
+        SelectedSkills = Array.Empty<string>();
+        SelectedTechnologies = Array.Empty<string>();
         StateHasChanged();
     }
 }
