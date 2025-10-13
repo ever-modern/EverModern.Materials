@@ -53,7 +53,7 @@ public static class EnumerableExtensions
     }
 
     public static async Task<List<T>> ToListAsync<T>(this IEnumerable<Task<T>> items) =>
-        new List<T>(await Task.WhenAll(items));
+        [.. await Task.WhenAll(items)];
 
     public static async Task<Dictionary<TKey, TValue>> ToDictionaryAsync<TIn, TKey, TValue>(
         this IEnumerable<TIn> ins,

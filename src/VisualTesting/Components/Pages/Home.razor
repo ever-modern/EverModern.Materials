@@ -1,0 +1,14 @@
+﻿@page "/"
+@using DestallMaterials.Blazor.Components.Inputs
+
+<Flag Value="Checked" OnValueChanged="v => Checked = v" />
+
+<p>Checked: @Checked</p>
+
+<button @onclick="StateHasChanged">Update</button>
+
+@code {
+    bool Checked { get; set; } = true;
+
+
+}

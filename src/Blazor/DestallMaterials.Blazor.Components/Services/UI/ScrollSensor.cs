@@ -2,33 +2,20 @@
 
 namespace DestallMaterials.Blazor.Components.Services.UI;
 
-public class ScrollStates
-{
-    public ScrollState Element { get; init; }
-    public ScrollState Window { get; init; }
-}
+public record ScrollStates(ScrollState Element, ScrollState Window);
 
-public struct ElementPosition
-{
-    public double X { get; init; }
-    public double Y { get; init; }
-}
+public readonly record struct ElementPosition(
+    double X,
+    double Y);
 
-
-public struct ScrollState
-{
-    public ElementPosition Position { get; init; }
-
-    public double ScrolledHorizontally { get; init; }
-    public double VisibleWidth { get; init; }
-
-
-    public double VisibleHeight { get; init; }
-    public double ScrolledVertically { get; init; }
-
-    public double MaxVerticalScroll { get; init; }
-    public double MaxHorizontalScroll { get; init; }
-}
+public readonly record struct ScrollState(
+    ElementPosition Position,
+    double ScrolledHorizontally,
+    double VisibleWidth,
+    double VisibleHeight,
+    double ScrolledVertically,
+    double MaxVerticalScroll,
+    double MaxHorizontalScroll);
 
 public interface IElementSensor<T>
 {
@@ -95,7 +82,15 @@ public class JsScrollSensor : IScrollSensor
     }
 
     static ScrollState CreateScrollStateFromInteropArray(double[] numbers)
-        => CreateScrollState(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5], numbers[6], numbers[7]);
+        => CreateScrollState(
+            height: numbers[0],
+            width: numbers[1],
+            scrolledVertically: numbers[2],
+            scrolledHorizontally: numbers[3],
+            maxVerticalScroll: numbers[4],
+            maxHorizontalScroll: numbers[5],
+            positionX: numbers[6],
+            positionY: numbers[7]);
 
     static ScrollState CreateScrollState(
         double height,
@@ -114,11 +109,7 @@ public class JsScrollSensor : IScrollSensor
             ScrolledVertically = scrolledVertically,
             MaxHorizontalScroll = maxHorizontalScroll,
             MaxVerticalScroll = maxVerticalScroll,
-            Position = new ElementPosition
-            {
-                X = positionX,
-                Y = positionY
-            }
+            Position = new ElementPosition(positionX, positionY)
         };
 
 }

@@ -12,7 +12,7 @@ namespace CodeGenerationTests;
 [Parallelizable(scope: ParallelScope.All)]
 [TestFixture]
 public class CodeGenerationWorkspaceTests : CodeGenerationTests
-{    
+{
     [Test]
     public async Task AddSource_MustAdd_TreeMustBeFound()
     {
@@ -163,7 +163,7 @@ public class CodeGenerationWorkspaceTests : CodeGenerationTests
 }}", default);
 
         var (mainCompilation, secondaryCompilation) = await (
-            system.GetProjectCompilationAsync(mainProjectName, default), 
+            system.GetProjectCompilationAsync(mainProjectName, default),
             system.GetProjectCompilationAsync(secondaryProjectName, default));
 
         // Assert
@@ -200,7 +200,7 @@ public class CodeGenerationWorkspaceTests : CodeGenerationTests
 
         var newClassCode = $@"public class NewClass 
 {{
-   {newClasses.Select((nc, i) => $"public {nc.addedClass} Prop_{i} {{ get; set; }}").Join("\n")} 
+   {newClasses.Select((nc, i) => $"public {nc.addedClass} Prop_{i} {{ get; set; }}").Merge("\n")} 
 }}";
 
         await system.AddSourceFileAsync(mainProjectName, "newClass.cs", newClassCode, default);
@@ -213,7 +213,11 @@ public class CodeGenerationWorkspaceTests : CodeGenerationTests
 
         await system.AddSourceFilesAsync(newFiles, default);
 
-        var syntaxTrees = await referredProjects.WhenAll(rp => system.GetProjectCompilationAsync(rp, default).Then(c => c.SyntaxTrees.ToArray()));
+        var syntaxTrees = await referredProjects.Select(async rp =>
+        {
+            var compilation = await system.GetProjectCompilationAsync(rp, default);
+            return compilation.SyntaxTrees.ToArray();
+        }).WhenAll();
 
         var mainCompilation3 = await system.GetProjectCompilationAsync(mainProjectName, default);
 
@@ -224,13 +228,10 @@ public class CodeGenerationWorkspaceTests : CodeGenerationTests
         Assert.IsFalse(errors1.Any());
         Assert.IsTrue(errors2.Any());
         Assert.IsFalse(errors3.Any());
-    }    
+    }
 
     static Diagnostic[] GetErrors(Compilation compilation)
-        => compilation
+        => [.. compilation
             .GetDiagnostics()
-            .Where(d => d.Severity == DiagnosticSeverity.Error)
-            .ToArray();
-
-    static bool HasErrors(Compilation compilation) => GetErrors(compilation).Any();
+            .Where(d => d.Severity == DiagnosticSeverity.Error)];
 }

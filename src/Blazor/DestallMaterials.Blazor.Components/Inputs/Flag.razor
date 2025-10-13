@@ -1,11 +1,15 @@
 ﻿@inherits BaseInput<bool>
 
-<label class="flag base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+@{
+    string cssClass = $"flag base-input {(Disabled ? "disabled" : "")} {(Error is not null ? "errored" : "")} {Class}";
+    Action onChecked = () => OnValueChanged(!Value);
+}
+<label class="@cssClass" @onclick="onChecked">
     <input type="checkbox"
            class="flag-checkbox"
-           @bind-value=Value
-           @bind-value:event="onchange"
-           disabled="@Disabled" />
+           disabled="@Disabled"
+           checked="@Value"
+           />
     <span class="flag-checkmark"></span>
     @if (!string.IsNullOrEmpty(Label))
     {
