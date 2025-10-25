@@ -6,7 +6,7 @@
 @{
     RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<text>@GetItemRepresentation(row)</text>);
 }
-<Autocomplete TItem="TItem"
+<Select TItem="TItem"
               Label=@Label
               SearchFunc="async (filter, ct) => await GetItemsByFilter(filter, ct)"
               ToStringFunc="GetItemRepresentation"
@@ -27,7 +27,7 @@
 @code {
     [Parameter]
     [EditorRequired]
-    public Func<string, CancellationToken, Task<IEnumerable<TItem>>> GetItemsByFilter { get; set; }
+    public Func<string, CancellationToken, Task<IReadOnlyList<TItem>>> GetItemsByFilter { get; set; }
 
     [Parameter]
     public Func<TItem, string> GetItemRepresentation { get; set; } = item => item.ToString();

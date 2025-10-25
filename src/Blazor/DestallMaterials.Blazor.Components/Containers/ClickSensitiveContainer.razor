@@ -5,14 +5,21 @@
 
 @inject IGlobalClickCatcher globalClick
 
-<div style="@Style" class="@Class" @onmouseout="() => mouseIn = false" @onmouseover="() => mouseIn = true">
+<div style="@Style" class="@Class" @onmouseout="() => MouseIn = false"
+     @onmouseover="() => MouseIn = true"
+     @onmouseleave="() => MouseIn = false"
+     @onmouseenter="() => MouseIn = true">
     @ChildContent
 </div>
 
 @code {
     [Parameter]
     [EditorRequired]
-    public Action OnOuterClick { get; set; }
+    public Action? OnOuterClick { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public Action? OnInnerClick { get; set; }
 
     [Parameter]
     [EditorRequired]
@@ -24,7 +31,7 @@
     [Parameter]
     public string Style { get; set; } = "";
 
-    bool mouseIn = false;
+    bool MouseIn = false;
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -32,18 +39,17 @@
 
         if (firstRender)
         {
-            Task.Run(async () =>
+            BindToLifetime(globalClick.OnMouseClicked((_, _) =>
             {
-                while (true)
+                if (MouseIn)
                 {
-                    var mouseClick = await globalClick.WhenMouseClicked(UntilDisposed);
-                    if (Disposed)
-                    {
-                        return;
-                    }
-                    OnOuterClick();
+                    OnInnerClick?.Invoke();
                 }
-            });
+                else
+                {
+                    OnOuterClick?.Invoke();
+                }
+            }));
         }
     }
 }

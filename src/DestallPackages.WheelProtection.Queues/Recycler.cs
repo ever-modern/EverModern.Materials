@@ -200,7 +200,7 @@ public abstract class Recycler<T> : IDisposable
             }
         };
 
-    public void Dispose()
+    public void Cancel()
     {
         if (_isDisposed)
         {
@@ -211,7 +211,7 @@ public abstract class Recycler<T> : IDisposable
 
         foreach (var item in _pool)
         {
-            item.Dispose();
+            item.Cancel();
         }
     }
 

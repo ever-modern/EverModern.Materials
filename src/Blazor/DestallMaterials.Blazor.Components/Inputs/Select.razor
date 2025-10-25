@@ -4,7 +4,15 @@
 @typeparam TItem
 @inherits DisposableComponent
 
-<div class="autocomplete @(Error ? "errored" : "") @Class" @onclick="OpenDropdown">
+@inject IGlobalClickCatcher globalClickCatcher;
+
+<div class="autocomplete @(Error ? "errored" : "") @Class"
+     @onclick="OpenDropdown"
+     @onmouseout="() => MouseIn = false"
+     @onmouseover="() => MouseIn = true"
+     @onmouseleave="() => MouseIn = false"
+     @onmouseenter="() => MouseIn = true">
+
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="autocomplete-label">@Label</label>
@@ -54,23 +62,23 @@
 </div>
 
 @code {
-    [Inject]
-    private IGlobalClickCatcher GlobalClickCatcher { get; set; }
 
     [Parameter]
-    public Func<string, CancellationToken, Task<IEnumerable<TItem>>> SearchFunc { get; set; }
+    [EditorRequired]
+    public Func<string, CancellationToken, Task<IReadOnlyList<TItem>>> SearchFunc { get; set; }
 
     [Parameter]
     public Func<TItem, string> ToStringFunc { get; set; } = item => item?.ToString() ?? "";
 
     [Parameter]
-    public TItem Value { get; set; }
+    public TItem? Value { get; set; }
 
     [Parameter]
-    public Action<TItem> ValueChanged { get; set; }
+    [EditorRequired]
+    public Action<TItem?> ValueChanged { get; set; }
 
     [Parameter]
-    public string Label { get; set; }
+    public string Label { get; set; } = "";
 
     [Parameter]
     public bool Disabled { get; set; }
@@ -82,27 +90,29 @@
     public Action? OnClearButtonClick { get; set; }
 
     [Parameter]
-    public string Class { get; set; }
+    public string Class { get; set; } = "";
 
     [Parameter]
     public bool Error { get; set; }
 
     [Parameter]
-    public string ErrorText { get; set; }
+    public string ErrorText { get; set; } = "";
 
     [Parameter]
-    public RenderFragment<TItem> ItemTemplate { get; set; }
+    public RenderFragment<TItem>? ItemTemplate { get; set; }
 
     [Parameter]
-    public RenderFragment<TItem> ItemSelectedTemplate { get; set; }
+    public RenderFragment<TItem>? ItemSelectedTemplate { get; set; }
 
     [Parameter]
     public int MaxItems { get; set; } = 50;
 
-    private string _searchText;
+    protected bool MouseIn { get; set; }
+
+    private string _searchText = "";
     private bool _showDropdown;
-    private IEnumerable<TItem> _items = [];
-    private CancellationTokenSource _searchCts;
+    private IReadOnlyList<TItem> _items = [];
+    private CancellationTokenSource _searchCts = new();
     private int _highlightedIndex = -1;
 
     private string SearchText
@@ -113,16 +123,6 @@
             _searchText = value;
             _ = PerformSearchAsync(value);
         }
-    }
-
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-        ForLifetime(async (ct) =>
-        {
-            var keyEvent = await GlobalClickCatcher.WhenKeyPressed(ct);
-            await HandleKeyPress(keyEvent);
-        });
     }
 
     protected override void OnParametersSet()
@@ -160,25 +160,7 @@
 
         var itemsList = _items.Take(MaxItems).ToList();
 
-        switch (keyEvent.Key)
-        {
-            case "ArrowDown":
-                _highlightedIndex = (_highlightedIndex + 1) % itemsList.Count;
-                await InvokeAsync(StateHasChanged);
-                break;
 
-            case "ArrowUp":
-                _highlightedIndex = _highlightedIndex <= 0 ? itemsList.Count - 1 : _highlightedIndex - 1;
-                await InvokeAsync(StateHasChanged);
-                break;
-
-            case "Enter":
-                if (_highlightedIndex >= 0 && _highlightedIndex < itemsList.Count)
-                {
-                    SelectItem(itemsList[_highlightedIndex]);
-                }
-                break;
-        }
     }
 
     private async Task PerformSearchAsync(string searchText)
@@ -251,5 +233,41 @@
         base.BeforeDispose();
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (firstRender)
+        {
+            BindToLifetime(globalClickCatcher.OnMouseClicked((_, _) =>
+            {
+                if (MouseIn)
+                {
+                    _showDropdown = false;
+                }
+            }), globalClickCatcher.OnKeyPressed((args, _) =>
+            {
+                if (_showDropdown)
+                {
+                    var key = args.Key;
+
+                    _highlightedIndex = key switch
+                    {
+                        "ArrowDown" => (_highlightedIndex + 1) % _items.Count,
+                        "ArrowUp" => _highlightedIndex <= 0 ? _items.Count - 1 : _highlightedIndex - 1,
+                        _ => _highlightedIndex
+                    };
+
+                    if (key == "Enter")
+                    {
+                        SelectItem(_items[_highlightedIndex]);
+                    }
+
+                    StateHasChanged();
+                }
+            }));
+        }
     }
 }

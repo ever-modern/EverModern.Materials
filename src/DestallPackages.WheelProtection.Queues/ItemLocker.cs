@@ -4,7 +4,7 @@ namespace DestallMaterials.WheelProtection.Queues;
 
 public abstract class ItemLocker : IDisposable
 {
-    public abstract void Dispose();
+    public abstract void Cancel();
 }
 
 /// <summary>
@@ -36,5 +36,5 @@ public class CallbackItemLocker<T> : ItemLocker<T>
         _onDisposed = onDisposed;
     }
 
-    public override sealed void Dispose() => _onDisposed(this);
+    public override sealed void Cancel() => _onDisposed(this);
 }

@@ -152,10 +152,10 @@ else
     string ResultantContainerStyle => $"overflow:hidden; overflow-y: scroll; height: 800px; {ContainerStyle}";
 
     RenderPiece _loadedItemsPart;
-    readonly List<ModelRenderPiecePair<TLineModel>> _loadedItems = new();
+    readonly List<ModelRenderPiecePair<TLineModel>> _loadedItems = [];
 
     RenderPiece _addedItemsPart;
-    readonly List<ModelRenderPiecePair<TLineModel>> _addedItems = new();
+    readonly List<ModelRenderPiecePair<TLineModel>> _addedItems = [];
 
     readonly string _tableId = Guid.NewGuid().ToString();
 
@@ -190,7 +190,7 @@ else
     }
 
     bool? _boundAsWindow;
-    IDisposable callback;
+    IDisposable _callback = null!;
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
@@ -199,10 +199,10 @@ else
         {
             return;
         }
-        callback?.Dispose();
+        _callback?.Dispose();
         if (BoundToWindow)
         {
-            callback = await scrollSensor.SubscribeForWindowScrollAsync(async scrollState =>
+                _callback = await scrollSensor.SubscribeForWindowScrollAsync((Func<ScrollState, Task>)(async scrollState =>
             {
                 if (_loading)
                 {
@@ -212,8 +212,8 @@ else
 
                 if (itemRectangle is null)
                 {
-                    callback.Dispose();
-                    callback = null;
+                    _callback.Dispose();
+                    _callback = null;
                     return;
                 }
 
@@ -221,11 +221,11 @@ else
                 {
                     await LoadAnotherAsync(UntilDisposed);
                 }
-            });
+            }));
         }
         else
         {
-            callback = await scrollSensor.SubscribeAsync(_tableId, async elementScrollState =>
+            _callback = await scrollSensor.SubscribeAsync(_tableId, async elementScrollState =>
             {
                 if (_loading)
                 {
@@ -239,13 +239,10 @@ else
 
         }
 
-        BindToLifetime(callback);
+        BindToLifetime(_callback);
 
     }
 
     static readonly IEqualityComparer<TLineModel> _equalityComparer
         = ReferenceEqualityComparer.Instance;
-
-    static readonly Func<TLineModel, TLineModel, bool> LinesAreEqual = typeof(TLineModel) == typeof(string) ?
-        (s1, s2) => s1.Equals(s2) : (s1, s2) => LinesAreEqual(s1, s2);
 }

@@ -20,7 +20,7 @@ public readonly record struct ScrollState(
 
 public interface IElementSensor<T>
 {
-    Task<DisposableCallback> SubscribeAsync(string elementId, Func<T, Task> callback);
+    Task<Subscription> SubscribeAsync(string elementId, Func<T, Task> callback);
 }
 
 public interface IScrollSensor : IElementSensor<ScrollState>
@@ -39,7 +39,7 @@ public class JsScrollSensor : IScrollSensor
         _js = js;
     }
 
-    public async Task<DisposableCallback> SubscribeAsync(string id, Func<ScrollState, Task> callback)
+    public async Task<Subscription> SubscribeAsync(string id, Func<ScrollState, Task> callback)
     {
         byte result = 0;
         if (_subscriptions.TryGetValue(id, out var callbacks))
@@ -62,7 +62,7 @@ public class JsScrollSensor : IScrollSensor
             return null;
         }
 
-        return new DisposableCallback(() => _subscriptions[id].Remove(callback));
+        return new Subscription(() => _subscriptions[id].Remove(callback));
     }
 
     [JSInvokable]
@@ -117,7 +117,7 @@ public class JsScrollSensor : IScrollSensor
 
 public static class ScrollSensorExtensions
 {
-    public static Task<DisposableCallback> SubscribeForWindowScrollAsync(this IScrollSensor scrollSensor, Func<ScrollState, Task> callback)
+    public static Task<Subscription> SubscribeForWindowScrollAsync(this IScrollSensor scrollSensor, Func<ScrollState, Task> callback)
         => scrollSensor.SubscribeAsync("__window", callback);
 }
 

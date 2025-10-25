@@ -2,7 +2,7 @@
 
 public class SubscriptionHolder : IDisposable
 {
-    void IDisposable.Dispose()
+    void IDisposable.Cancel()
         => Release();
 
     readonly Action _onReleased;

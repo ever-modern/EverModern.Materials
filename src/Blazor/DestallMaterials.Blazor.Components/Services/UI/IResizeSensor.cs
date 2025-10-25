@@ -45,7 +45,7 @@ public class JsResizeSensor : IResizeSensor
         }
     }
 
-    public async Task<DisposableCallback> SubscribeAsync(string id, Func<ElementSize, Task> callback)
+    public async Task<Subscription> SubscribeAsync(string id, Func<ElementSize, Task> callback)
     {
         byte subscribed;
         if (_subscriptions.TryGetValue(id, out var callbacks))
@@ -68,7 +68,7 @@ public class JsResizeSensor : IResizeSensor
             return null;
         }
 
-        return new DisposableCallback(() => _subscriptions[id].Remove(callback));
+        return new Subscription(() => _subscriptions[id].Remove(callback));
 
     }
 }

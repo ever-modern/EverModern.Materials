@@ -2,7 +2,7 @@
 @typeparam TItem
 
 <div class="@cssClass">
-    <Autocomplete TItem="TItem"
+    <Select TItem="TItem"
                   Label=@Label
                   SearchFunc="async (string filterString, CancellationToken cancellationToken) => await GetItemsByFilter(filterString, default)"
                   ToStringFunc="GetItemRepresentation"
@@ -36,7 +36,7 @@
 @code {
     [Parameter]
     [EditorRequired]
-    public Func<string, CancellationToken, Task<IEnumerable<TItem>>> GetItemsByFilter { get; set; }
+    public Func<string, CancellationToken, Task<IReadOnlyList<TItem>>> GetItemsByFilter { get; set; }
 
     [Parameter]
     public Func<TItem, string> GetItemRepresentation { get; set; } = item => item?.ToString();

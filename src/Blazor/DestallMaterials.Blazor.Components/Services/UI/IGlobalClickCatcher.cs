@@ -2,29 +2,32 @@
 
 namespace DestallMaterials.Blazor.Components.Services.UI;
 
-public class DisposableCallback : IDisposable
+public class Subscription : IDisposable
 {
-    readonly Action<DisposableCallback> _onDisposed;
+    readonly Action<Subscription> _onCancelled;
 
-    public DisposableCallback(Action<DisposableCallback> onDisposed)
+    public Subscription(Action<Subscription> onDisposed)
     {
-        _onDisposed = onDisposed;
+        _onCancelled = onDisposed;
     }
 
-    public DisposableCallback(Action onDisposed)
+    public Subscription(Action onDisposed)
     {
-        _onDisposed = th => onDisposed();
+        _onCancelled = th => onDisposed();
     }
 
-    public void Dispose()
+    public void Cancel()
     {
-        _onDisposed(this);
+        _onCancelled(this);
     }
+
+    void IDisposable.Dispose()
+        => Cancel();
 }
 public interface IGlobalClickCatcher
 {
-    Task<MouseEventArgs> WhenMouseClicked(CancellationToken cancellationToken);
-    Task<KeyboardEventArgs> WhenKeyPressed(CancellationToken cancellationToken);
+    Subscription OnKeyPressed(Action<KeyboardEventArgs, Subscription> action);
+    Subscription OnMouseClicked(Action<MouseEventArgs, Subscription> action);
 }
 
 public interface IGlobalClickInvoker

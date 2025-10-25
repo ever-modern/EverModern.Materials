@@ -1,14 +1,8 @@
 ﻿namespace DestallMaterials.Blazor.Components.Containers;
 
-public abstract class DropdownMenuOption
+public abstract record DropdownMenuOption(string Text)
 {
-    public string Text;
-    public class Link : DropdownMenuOption
-    {
-        public string Href;
-    }
-    public class Button : DropdownMenuOption
-    {
-        public Action OnClick;
-    }
+    public record Link(string Text, string Href) : DropdownMenuOption(Text);
+
+    public record Button(string Text, Action OnClick) : DropdownMenuOption(Text);
 }

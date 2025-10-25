@@ -1,11 +1,7 @@
 ﻿using System.Buffers;
-using System.ComponentModel;
+using System.Collections;
 
 namespace DestallMaterials.WheelProtection.DataStructures.Buffers;
-
-using System;
-using System.Collections;
-using System.Collections.Generic;
 
 public sealed class BorrowedArray<T> : IDisposable, IReadOnlyList<T>
 {
@@ -17,14 +13,9 @@ public sealed class BorrowedArray<T> : IDisposable, IReadOnlyList<T>
     int _offset;
 
     public BorrowedArray(T[] array, int size)
-        : this(array, size, ArrayPool<T>.Shared)
-    {
-    }
+        : this(array, size, ArrayPool<T>.Shared) { }
 
-    public BorrowedArray(
-        T[] array,
-        int size,
-        ArrayPool<T> source)
+    public BorrowedArray(T[] array, int size, ArrayPool<T> source)
     {
         _source = source;
         _array = array;
@@ -32,26 +23,17 @@ public sealed class BorrowedArray<T> : IDisposable, IReadOnlyList<T>
     }
 
     public BorrowedArray(ArrayPool<T> source, int size)
-        : this(source.Rent(size), size, source)
-    {
-    }
+        : this(source.Rent(size), size, source) { }
 
     public BorrowedArray(int size)
-        : this(ArrayPool<T>.Shared.Rent(size), size, ArrayPool<T>.Shared)
-    {
-    }
-
-
+        : this(ArrayPool<T>.Shared.Rent(size), size, ArrayPool<T>.Shared) { }
 
     public BorrowedArray<T> this[Range range]
     {
         get
         {
             var (offset, count) = range.GetOffsetAndLength(_length);
-            return new(_array, count, _source)
-            {
-                _offset = offset
-            };
+            return new(_array, count, _source) { _offset = offset };
         }
     }
 
@@ -78,8 +60,7 @@ public sealed class BorrowedArray<T> : IDisposable, IReadOnlyList<T>
         }
     }
 
-    void IDisposable.Dispose()
-        => Free();
+    void IDisposable.Dispose() => Free();
 
     void EnsureAllowedIndex(int i)
     {
@@ -93,11 +74,11 @@ public sealed class BorrowedArray<T> : IDisposable, IReadOnlyList<T>
 
     int IReadOnlyCollection<T>.Count => _length;
 
-    public static implicit operator Span<T>(BorrowedArray<T> borrowedArray)
-        => borrowedArray._array.AsSpan()[borrowedArray._offset..borrowedArray._length];
+    public static implicit operator Span<T>(BorrowedArray<T> borrowedArray) =>
+        borrowedArray._array.AsSpan()[borrowedArray._offset..borrowedArray._length];
 
-    public static implicit operator ReadOnlySpan<T>(BorrowedArray<T> borrowedArray)
-        => borrowedArray._array.AsSpan()[borrowedArray._offset..borrowedArray._length];
+    public static implicit operator ReadOnlySpan<T>(BorrowedArray<T> borrowedArray) =>
+        borrowedArray._array.AsSpan()[borrowedArray._offset..borrowedArray._length];
 
     public Span<T> AsSpan() => this;
 

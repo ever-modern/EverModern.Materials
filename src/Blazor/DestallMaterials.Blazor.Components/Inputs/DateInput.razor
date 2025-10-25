@@ -11,24 +11,20 @@
 }
 
 <div class="@cssClass"
-     @onfocus="OnInputFocus"
      @onblur="OnInputBlur"
-     @onmouseout="() => _mouseIn = false"
-     @onmouseover="() => _mouseIn = true">
+     @onmouseout="() => _mouseOnInput = false"
+     @onmouseover="() => _mouseOnInput = true">
 
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="flexible-date-picker-label">@Label</label>
     }
     <div class="flexible-date-picker-input-wrapper">
-        <input type="text"
+        <input type="date"
                class="flexible-date-picker-field"
                value="@(Value != default ? Value.ToString("dd.MM.yyyy", Culture) : "")"
                placeholder="@ValueNotSetText"
-               readonly
-               @ref="_inputElement"
-               @onmouseout="() => _mouseIn = false"
-               @onmouseover="() => _mouseIn = true" />
+               @ref="_inputElement" />
         @if (Clearable && Value != default)
         {
             <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
@@ -36,18 +32,22 @@
 
         @if (_showCustomPicker)
         {
-            <div class="date-picker-dropdown date-picker-scroll-container" @onclick:stopPropagation="true">
+            <div class="date-picker-dropdown date-picker-scroll-container"
+                 @onclick:stopPropagation="true"
+                 @onmouseout="() => _mouseOnPicker = false"
+                 @onmouseover="() => _mouseOnPicker = true">
+
                 <span class="date-picker-scroll-column">
                     <div class="date-picker-scroll-label">Day</div>
                     <div class="date-picker-scroll-items" @ref="_dayScrollRef">
                         @{
                             var maxDay = Value.Year == MaxValue.Year && MaxValue.Month == Value.Month ?
-                                MaxValue.Day :
-                                31;
+                            MaxValue.Day :
+                            31;
 
                             var minDay = Value.Year == MinValue.Year && MinValue.Month == Value.Month ?
-                                MinValue.Day :
-                                1;
+                            MinValue.Day :
+                            1;
                         }
                         @for (int day = 1; day <= _daysInMonth; day++)
                         {
@@ -66,12 +66,12 @@
                     <div class="date-picker-scroll-items" @ref="_monthScrollRef">
                         @{
                             var maxMonth = Value.Year == MaxValue.Year ?
-                                MaxValue.Month :
-                                31;
+                            MaxValue.Month :
+                            31;
 
                             var minMonth = Value.Year == MinValue.Year ?
-                                MinValue.Month :
-                                1;
+                            MinValue.Month :
+                            1;
                         }
                         @for (int month = 1; month <= 12; month++)
                         {
@@ -247,19 +247,26 @@
     {
         base.OnAfterRender(firstRender);
 
-        if (firstRender)
+        BindToLifetime(clickCatcher.OnMouseClicked((_, _) =>
         {
-            ForLifetime(async ct =>
-            {
-                await clickCatcher.WhenMouseClicked(ct);
-                if (_mouseIn is false)
-                {
-                    _showCustomPicker = false;
-                    StateHasChanged();
-                }
-            });
-        }
+            _showCustomPicker = MouseIn;
+            StateHasChanged();
+        }));
     }
 
-    bool _mouseIn = false;
+    void TogglePicker(bool? show = null)
+    {
+        if (show == _showCustomPicker)
+        {
+            return;
+        }
+
+        _showCustomPicker = !_showCustomPicker;
+        StateHasChanged();
+    }
+
+    bool MouseIn => _mouseOnInput || _mouseOnPicker;
+
+    bool _mouseOnInput = false;
+    bool _mouseOnPicker = false;
 }

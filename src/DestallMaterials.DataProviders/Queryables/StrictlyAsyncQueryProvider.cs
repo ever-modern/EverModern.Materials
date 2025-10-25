@@ -37,7 +37,7 @@ class StrictlyAsyncQueryProvider : Microsoft.EntityFrameworkCore.Query.Internal.
             {
 #pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
                 resultTask
-                    .ContinueWith(_ => lockValueTask.Result.Dispose(), CancellationToken.None)
+                    .ContinueWith(_ => lockValueTask.Result.Cancel(), CancellationToken.None)
                     .GetType();
 #pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
             }
@@ -55,15 +55,15 @@ class StrictlyAsyncQueryProvider : Microsoft.EntityFrameworkCore.Query.Internal.
             if (typeof(TResult) == typeof(Task))
             {
                 return (TResult)(object)lockTask.ContinueWith(
-                    async ltTask => await (_source.ExecuteAsync<TResult>(expression, cancellationToken) as Task).ContinueWith(_ => ltTask.Result.Dispose(), TaskScheduler.Current));
+                    async ltTask => await (_source.ExecuteAsync<TResult>(expression, cancellationToken) as Task).ContinueWith(_ => ltTask.Result.Cancel(), TaskScheduler.Current));
             }
 
-            var resultTask = lockTask.ContinueWith(async lt =>
+            var resultTask = lockTask.ContinueWith((Func<Task<IDisposable>, Task<object>>)(async lt =>
             {
                 var subresult = _source.ExecuteAsync<TResult>(expression, cancellationToken);
                 if (subresult is Task subresultTask)
                 {
-                    subresultTask.ContinueWith(_ => lt.Result.Dispose()).GetType();
+                    subresultTask.ContinueWith((Action<Task>)(_ => lt.Result.Cancel())).GetType();
                     await subresultTask;
                     subresultTask.TryGetResult(out var subresultValue);
                     return subresultValue;
@@ -72,7 +72,7 @@ class StrictlyAsyncQueryProvider : Microsoft.EntityFrameworkCore.Query.Internal.
                 {
                     throw new InvalidOperationException("Executed task did not return task.");
                 }
-            });
+            }));
 
             var taskResultType = typeof(TResult).GenericTypeArguments[0];
 

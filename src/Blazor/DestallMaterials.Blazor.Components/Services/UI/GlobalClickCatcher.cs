@@ -4,22 +4,36 @@ namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public class GlobalClickCatcher : IGlobalClickCatcher, IGlobalClickInvoker
 {
-    TaskCompletionSource<MouseEventArgs> _mouseClickTcs = new();
-    TaskCompletionSource<KeyboardEventArgs> _keyClickTcs = new();
+    List<Action<MouseEventArgs>> _mouseClickCallbacks = [];
+    List<Action<KeyboardEventArgs>> _keyClickCallbacks = [];
 
-    public Task<KeyboardEventArgs> WhenKeyPressed(CancellationToken cancellationToken)
+    public Subscription OnMouseClicked(Action<MouseEventArgs, Subscription> action)
     {
         lock (this)
         {
-            return _keyClickTcs.Task;
+            Subscription? sub = null;
+            var argsAction = (MouseEventArgs args) => action(args, sub!);
+            
+            _mouseClickCallbacks.Add(argsAction);
+
+            sub = new(_ => _mouseClickCallbacks.Remove(argsAction));
+
+            return sub;
         }
     }
 
-    public Task<MouseEventArgs> WhenMouseClicked(CancellationToken cancellationToken)
+    public Subscription OnKeyPressed(Action<KeyboardEventArgs, Subscription> action)
     {
         lock (this)
         {
-            return _mouseClickTcs.Task;
+            Subscription? sub = null;
+            var argsAction = (KeyboardEventArgs args) => action(args, sub!);
+
+            _keyClickCallbacks.Add(argsAction);
+
+            sub = new(_ => _keyClickCallbacks.Remove(argsAction));
+
+            return sub;
         }
     }
 
@@ -27,17 +41,33 @@ public class GlobalClickCatcher : IGlobalClickCatcher, IGlobalClickInvoker
     {
         lock (this)
         {
-            _mouseClickTcs.TrySetResult(args);
-            _mouseClickTcs = new();
+            foreach (var callback in _mouseClickCallbacks)
+            {
+                try
+                {
+                    callback(args);
+                }
+                catch { }
+            }
+
+            _mouseClickCallbacks = [];
         }
     }
 
-    public void FireKeyClickEvent(KeyboardEventArgs eventArgs)
+    public void FireKeyClickEvent(KeyboardEventArgs args)
     {
         lock (this)
         {
-            _keyClickTcs.TrySetResult(eventArgs);
-            _keyClickTcs = new();
+            foreach (var callback in _keyClickCallbacks)
+            {
+                try
+                {
+                    callback(args);
+                }
+                catch { }
+            }
+
+            _keyClickCallbacks = [];
         }
     }
 }

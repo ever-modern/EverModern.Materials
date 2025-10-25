@@ -214,7 +214,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         if (tran is not null)
         {
             await tran.CommitAsync(cancellationToken);
-            tran.Dispose();
+            tran.Cancel();
         }
 
         HasChanges = false;
@@ -239,7 +239,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         if (tran is not null)
         {
             await tran.RollbackAsync(cancellationToken);
-            tran?.Dispose();
+            tran?.Cancel();
         }
 
         HasChanges = false;
@@ -263,7 +263,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
     }
 
 
-    public void Dispose()
+    public void Cancel()
     {
         lock (this)
         {
@@ -273,12 +273,12 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
             }
             else
             {
-                _contextInnerReservations.Dispose();
+                _contextInnerReservations.Cancel();
                 if (_reservedDbContext is not null)
                 {
-                    _reservedDbContext.Dispose();
+                    _reservedDbContext.Cancel();
                     var dbContext = _reservedDbContext.Item;
-                    dbContext.Database.CurrentTransaction?.Dispose();
+                    dbContext.Database.CurrentTransaction?.Cancel();
                 }
 
                 _disposed = true;
@@ -323,13 +323,13 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
 
             dbContext.ChangeTracker.Clear();
 
-            dbContext.Database.CurrentTransaction?.Dispose();
+            dbContext.Database.CurrentTransaction?.Cancel();
 
             var reservedDbContext = _reservedDbContext;
 
             _reservedDbContext = null;
 
-            dbContextLocker.Dispose();
+            dbContextLocker.Cancel();
         }
     }
 
@@ -340,7 +340,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
             var innerLocker = await _contextInnerReservations.OccupyAsync(_reservedDbContext.Item, ct);
             return new CallbackItemLocker<TDbContext>(
                 _reservedDbContext.Item,
-                (item) => innerLocker.Dispose());
+                (item) => innerLocker.Cancel());
         }
 
         var result = await _contextFactory(ct);
@@ -424,7 +424,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         var transaction = dbContext.Database.CurrentTransaction;
         if (transaction is null || !IsHealthy(transaction))
         {
-            transaction?.Dispose();
+            transaction?.Cancel();
             transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         }
 
@@ -495,7 +495,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
                                                         repo.FreeReservedDbContext();
                                                     }
 
-                                                    locker.Dispose();
+                                                    locker.Cancel();
                                                 }
                                             }));
 

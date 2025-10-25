@@ -20,7 +20,7 @@ public class UsageQueue<T> : IDisposable
         }
     }
 
-    public void Dispose()
+    public void Cancel()
     {
         lock (this)
         {

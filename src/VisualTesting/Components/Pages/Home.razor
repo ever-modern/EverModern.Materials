@@ -9,14 +9,68 @@
 
 <h1>DestallMaterials.Blazor.Components - Visual Testing</h1>
 
-<div style="padding: 20px; display: flex; flex-direction: column; gap: 30px;" 
-    @onclick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
-    @onmousedown="(e) => clickInvoker.FireGlobalMouseClickEvent(e)">
+<!-- SearchSelectorSingular Component Tests -->
+<section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+    <h2>SearchSelectorSingular Component</h2>
+
+    <div style="margin: 10px 0;">
+        <h3>Basic Search Selector:</h3>
+        <SearchSelectorSingular TItem="string"
+                                Label="Select a Country"
+                                GetItemsByFilter="SearchCountries"
+                                GetItemRepresentation="item => item"
+                                OnValueChanged="v => SelectedCountry = v"
+                                Value="@SelectedCountry" />
+        <p>Selected Country: <strong>@(SelectedCountry ?? "None")</strong></p>
+    </div>
+
+    <div style="margin: 10px 0;">
+        <h3>With Custom Representation:</h3>
+        <SearchSelectorSingular TItem="Person"
+                                Label="Select a Person"
+                                GetItemsByFilter="SearchPeople"
+                                GetItemRepresentation="@(p => $"{p.FirstName} {p.LastName}")"
+                                OnValueChanged="v => SelectedPerson = v"
+                                Value="@SelectedPerson" />
+        <p>Selected Person: <strong>@(SelectedPerson != null ? $"{SelectedPerson.FirstName} {SelectedPerson.LastName}" : "None")</strong></p>
+    </div>
+</section>
+
+<!-- SearchSelectorPlural Component Tests -->
+<section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+    <h2>SearchSelectorPlural Component</h2>
+
+    <div style="margin: 10px 0;">
+        <h3>Multiple Selection:</h3>
+        <SearchSelectorPlural TItem="string"
+                              Label="Select Skills"
+                              GetItemsByFilter="SearchSkills"
+                              GetItemRepresentation="item => item"
+                              OnValueSet="v => SelectedSkills = v"
+                              Value="@SelectedSkills" />
+        <p>Selected Skills: <strong>@string.Join(", ", SelectedSkills ?? Array.Empty<string>())</strong></p>
+    </div>
+
+    <div style="margin: 10px 0;">
+        <h3>With Custom Items:</h3>
+        <SearchSelectorPlural TItem="string"
+                              Label="Select Technologies"
+                              GetItemsByFilter="SearchTechnologies"
+                              GetItemRepresentation="item => item"
+                              OnValueSet="v => SelectedTechnologies = v"
+                              Value="@SelectedTechnologies" />
+        <p>Selected Technologies: <strong>@string.Join(", ", SelectedTechnologies ?? Array.Empty<string>())</strong></p>
+    </div>
+</section>
+
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 30px;"
+     @onclick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
+     @onmousedown="(e) => clickInvoker.FireGlobalMouseClickEvent(e)">
 
     <!-- Flag Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
         <h2>Flag Component (Checkbox)</h2>
-        
+
         <div style="margin: 10px 0;">
             <h3>Basic Usage:</h3>
             <Flag Label="Enable notifications" OnValueChanged="v => NotificationsEnabled = v" Value="@NotificationsEnabled" />
@@ -31,7 +85,7 @@
 
         <div style="margin: 10px 0;">
             <h3>Disabled State:</h3>
-            <Flag Label="This option is disabled" Disabled="true" OnValueChanged="v => {}" Value="true" />
+            <Flag Label="This option is disabled" Disabled="true" OnValueChanged="v => { }" Value="true" />
         </div>
 
         <div style="margin: 10px 0;">
@@ -44,7 +98,7 @@
     <!-- StringInput Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
         <h2>StringInput Component</h2>
-        
+
         <div style="margin: 10px 0;">
             <h3>Basic Text Input:</h3>
             <StringInput Label="Full Name" OnValueChanged="v => FullName = v" Value="@FullName" />
@@ -53,23 +107,23 @@
 
         <div style="margin: 10px 0;">
             <h3>With Error:</h3>
-            <StringInput Label="Email Address" 
-                         Error="@(string.IsNullOrWhiteSpace(Email) ? "Email is required" : null)" 
-                         OnValueChanged="v => Email = v" 
+            <StringInput Label="Email Address"
+                         Error="@(string.IsNullOrWhiteSpace(Email) ? "Email is required" : null)"
+                         OnValueChanged="v => Email = v"
                          Value="@Email" />
             <p>Email: <strong>@Email</strong></p>
         </div>
 
         <div style="margin: 10px 0;">
             <h3>Disabled State:</h3>
-            <StringInput Label="Disabled Field" Disabled="true" OnValueChanged="v => {}" Value="Cannot edit this" />
+            <StringInput Label="Disabled Field" Disabled="true" OnValueChanged="v => { }" Value="Cannot edit this" />
         </div>
     </section>
 
     <!-- NumberInput Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
         <h2>NumberInput Component</h2>
-        
+
         <div style="margin: 10px 0;">
             <h3>Integer Input:</h3>
             <NumberInput Label="Age" OnValueChanged="v => Age = v" Value="@Age" />
@@ -84,9 +138,9 @@
 
         <div style="margin: 10px 0;">
             <h3>With Error:</h3>
-            <NumberInput Label="Quantity (must be > 0)" 
+            <NumberInput Label="Quantity (must be > 0)"
                          Error="@(Quantity <= 0 ? "Quantity must be greater than 0" : null)"
-                         OnValueChanged="v => Quantity = v" 
+                         OnValueChanged="v => Quantity = v"
                          Value="@Quantity" />
             <p>Quantity: <strong>@Quantity</strong></p>
         </div>
@@ -95,21 +149,21 @@
     <!-- DateInput Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
         <h2>DateInput Component</h2>
-        
+
         <div style="margin: 10px 0;">
             <h3>Basic Date Picker:</h3>
-            <DateInput Label="Birth Date" 
-                       OnValueChanged="v => BirthDate = v" 
-                       Value="@BirthDate" 
+            <DateInput Label="Birth Date"
+                       OnValueChanged="v => BirthDate = v"
+                       Value="@BirthDate"
                        Clearable="true" />
             <p>Birth Date: <strong>@(BirthDate != default ? BirthDate.ToString("dd.MM.yyyy") : "Not set")</strong></p>
         </div>
 
         <div style="margin: 10px 0;">
             <h3>With Custom Placeholder:</h3>
-            <DateInput Label="Event Date" 
-                       OnValueChanged="v => EventDate = v" 
-                       Value="@EventDate" 
+            <DateInput Label="Event Date"
+                       OnValueChanged="v => EventDate = v"
+                       Value="@EventDate"
                        ValueNotSetText="Select a date..."
                        Clearable="true" />
             <p>Event Date: <strong>@(EventDate != default ? EventDate.ToString("dd.MM.yyyy") : "Not set")</strong></p>
@@ -119,12 +173,12 @@
     <!-- DateTimeInput Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
         <h2>DateTimeInput Component</h2>
-        
+
         <div style="margin: 10px 0;">
             <h3>Date and Time:</h3>
-            <DateTimeInput Label="Appointment" 
-                           OnValueChanged="v => Appointment = v" 
-                           Value="@Appointment" 
+            <DateTimeInput Label="Appointment"
+                           OnValueChanged="v => Appointment = v"
+                           Value="@Appointment"
                            PickDate="true"
                            PickTime="true" />
             <p>Appointment: <strong>@Appointment.ToString("dd.MM.yyyy HH:mm")</strong></p>
@@ -132,9 +186,9 @@
 
         <div style="margin: 10px 0;">
             <h3>Date Only:</h3>
-            <DateTimeInput Label="Meeting Date" 
-                           OnValueChanged="v => MeetingDate = v" 
-                           Value="@MeetingDate" 
+            <DateTimeInput Label="Meeting Date"
+                           OnValueChanged="v => MeetingDate = v"
+                           Value="@MeetingDate"
                            PickDate="true"
                            PickTime="false" />
             <p>Meeting Date: <strong>@MeetingDate.ToString("dd.MM.yyyy")</strong></p>
@@ -142,68 +196,16 @@
 
         <div style="margin: 10px 0;">
             <h3>Time Only:</h3>
-            <DateTimeInput Label="Reminder Time" 
-                           OnValueChanged="v => ReminderTime = v" 
-                           Value="@ReminderTime" 
+            <DateTimeInput Label="Reminder Time"
+                           OnValueChanged="v => ReminderTime = v"
+                           Value="@ReminderTime"
                            PickDate="false"
                            PickTime="true" />
             <p>Reminder Time: <strong>@ReminderTime.ToString("HH:mm")</strong></p>
         </div>
     </section>
 
-    <!-- SearchSelectorSingular Component Tests -->
-    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
-        <h2>SearchSelectorSingular Component</h2>
-        
-        <div style="margin: 10px 0;">
-            <h3>Basic Search Selector:</h3>
-            <SearchSelectorSingular TItem="string"
-                                    Label="Select a Country"
-                                    GetItemsByFilter="SearchCountries"
-                                    GetItemRepresentation="item => item"
-                                    OnValueChanged="v => SelectedCountry = v"
-                                    Value="@SelectedCountry" />
-            <p>Selected Country: <strong>@(SelectedCountry ?? "None")</strong></p>
-        </div>
-
-        <div style="margin: 10px 0;">
-            <h3>With Custom Representation:</h3>
-            <SearchSelectorSingular TItem="Person"
-                                    Label="Select a Person"
-                                    GetItemsByFilter="SearchPeople"
-                                    GetItemRepresentation="@(p => $"{p.FirstName} {p.LastName}")"
-                                    OnValueChanged="v => SelectedPerson = v"
-                                    Value="@SelectedPerson" />
-            <p>Selected Person: <strong>@(SelectedPerson != null ? $"{SelectedPerson.FirstName} {SelectedPerson.LastName}" : "None")</strong></p>
-        </div>
-    </section>
-
-    <!-- SearchSelectorPlural Component Tests -->
-    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
-        <h2>SearchSelectorPlural Component</h2>
-        
-        <div style="margin: 10px 0;">
-            <h3>Multiple Selection:</h3>
-            <SearchSelectorPlural TItem="string"
-                                  Label="Select Skills"
-                                  GetItemsByFilter="SearchSkills"
-                                  GetItemRepresentation="item => item"
-                                  OnValueSet="v => SelectedSkills = v"
-                                  Value="@SelectedSkills" />
-            <p>Selected Skills: <strong>@string.Join(", ", SelectedSkills ?? Array.Empty<string>())</strong></p>
-        </div>
-
-        <div style="margin: 10px 0;">
-            <h3>With Custom Items:</h3>
-            <SearchSelectorPlural TItem="string"
-                                  Label="Select Technologies"
-                                  GetItemsByFilter="SearchTechnologies"
-                                  GetItemRepresentation="item => item"
-                                  OnValueSet="v => SelectedTechnologies = v"
-                                  Value="@SelectedTechnologies" />
-            <p>Selected Technologies: <strong>@string.Join(", ", SelectedTechnologies ?? Array.Empty<string>())</strong></p>
-        </div>
-    </section>
+    <div></div><div><span></span></div>
 
     <!-- Interactive Test Section -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; background-color: #f0f8ff;">
@@ -214,7 +216,7 @@
         <button @onclick="StateHasChanged" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">
             Force Update
         </button>
-        
+
         <div style="margin-top: 15px; padding: 10px; background-color: white; border-radius: 4px;">
             <h3>Current Values:</h3>
             <ul>
@@ -281,7 +283,7 @@
     // Test data
     private readonly List<string> _countries = new()
     {
-        "United States", "United Kingdom", "Germany", "France", "Italy", "Spain", 
+        "United States", "United Kingdom", "Germany", "France", "Italy", "Spain",
         "Canada", "Australia", "Japan", "China", "Brazil", "India", "Russia"
     };
 
@@ -296,13 +298,13 @@
 
     private readonly List<string> _skills = new()
     {
-        "C#", "JavaScript", "Python", "Java", "TypeScript", "SQL", 
+        "C#", "JavaScript", "Python", "Java", "TypeScript", "SQL",
         "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js"
     };
 
     private readonly List<string> _technologies = new()
     {
-        ".NET", "ASP.NET Core", "Blazor", "Entity Framework", "Docker", 
+        ".NET", "ASP.NET Core", "Blazor", "Entity Framework", "Docker",
         "Kubernetes", "Azure", "AWS", "Git", "CI/CD", "Microservices"
     };
 
@@ -318,8 +320,8 @@
     {
         var filtered = string.IsNullOrWhiteSpace(filter)
             ? _people
-            : _people.Where(p => 
-                p.FirstName.Contains(filter, StringComparison.OrdinalIgnoreCase) || 
+            : _people.Where(p =>
+                p.FirstName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
                 p.LastName.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult<IEnumerable<Person>>(filtered);
     }

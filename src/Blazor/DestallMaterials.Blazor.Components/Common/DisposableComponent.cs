@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Components;
 
 namespace DestallMaterials.Blazor.Components.Common;
 
-
 public class DisposableComponent : ComponentBase, IDisposable
 {
-    DisposableList<IDisposable> BoundItems = new DisposableList<IDisposable>();
-    CancellationTokenSource _cancellationTokenSource = new();
+    readonly List<IDisposable> BoundItems = [];
+    readonly CancellationTokenSource _cancellationTokenSource = new();
+
     protected bool Disposed { get; private set; }
 
     protected DisposableComponent()
@@ -19,27 +19,26 @@ public class DisposableComponent : ComponentBase, IDisposable
     {
         BeforeDispose();
         Disposed = true;
-        BoundItems.Dispose();
+
+        foreach (var item in BoundItems)
+        {
+            try
+            {
+                item.Dispose();
+            }
+            catch { }
+        }
+
         _cancellationTokenSource.Cancel();
     }
 
-    protected virtual void BeforeDispose()
+    protected virtual void BeforeDispose() { }
+
+    protected void BindToLifetime(params ReadOnlySpan<IDisposable> disposable)
     {
-
+        ObjectDisposedException.ThrowIf(Disposed, this);
+        BoundItems.AddRange(disposable);
     }
-
-    protected void BindToLifetime(IDisposable disposable) => BoundItems.Add(disposable);
 
     public CancellationToken UntilDisposed { get; }
-
-    protected void ForLifetime(Func<CancellationToken, Task> action)
-    {
-        Task.Run(async () => 
-        {
-            while (Disposed is false)
-            {
-                await action(UntilDisposed);
-            }
-        });
-    }
 }

@@ -12,17 +12,17 @@ namespace DestallMaterials.Blazor.Components.Common
 
         protected static IUiManipulator uiManipulator { get; private set; }
 
-        protected DisposableList<IDisposable> Callbacks = new();
+        protected DisposableList<IDisposable> Callbacks = [];
 
-        protected DisposableCallback Subscribe(DisposableCallback callback)
+        protected Subscription Subscribe(Subscription callback)
         {
             Callbacks.Add(callback);
             return callback;
         }
 
-        protected DisposableCallback[] Subscribe(DisposableCallback callback1, DisposableCallback callback2, params DisposableCallback[] other)
+        protected Subscription[] Subscribe(Subscription callback1, Subscription callback2, params Subscription[] other)
         {
-            var result = new DisposableCallback[other.Length + 2];
+            var result = new Subscription[other.Length + 2];
             for (int i = 2; i < result.Length; i++)
             {
                 result[i] = other[i - 2];
