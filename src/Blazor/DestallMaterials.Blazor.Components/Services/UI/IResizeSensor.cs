@@ -8,9 +8,7 @@ public struct ElementSize
     public double Width { get; init; }
 }
 
-public interface IResizeSensor : IElementSensor<ElementSize>
-{
-}
+public interface IResizeSensor : IElementSensor<ElementSize> { }
 
 public class JsResizeSensor : IResizeSensor
 {
@@ -25,17 +23,17 @@ public class JsResizeSensor : IResizeSensor
     }
 
     [JSInvokable]
-    public async Task ReactAsync(
-        string elementId,
-        double[] elementScrollStateNumbers)
+    public async Task ReactAsync(string elementId, double[] elementScrollStateNumbers)
     {
         if (_subscriptions.TryGetValue(elementId, out var callbacks))
         {
-            ElementSize elementState = elementScrollStateNumbers?.Any() is true ? new ElementSize
-            {
-                Height = elementScrollStateNumbers[0],
-                Width = elementScrollStateNumbers[1]
-            } : new();
+            ElementSize elementState = elementScrollStateNumbers?.Any() is true
+                ? new ElementSize
+                {
+                    Height = elementScrollStateNumbers[0],
+                    Width = elementScrollStateNumbers[1],
+                }
+                : new();
 
             foreach (var callback in callbacks)
             {
@@ -55,12 +53,14 @@ public class JsResizeSensor : IResizeSensor
         }
         else
         {
-            _subscriptions[id] = new()
-            {
-                callback
-            };
+            _subscriptions[id] = [callback];
 
-            subscribed = await _js.InvokeAsync<byte?>(_subscribeCommand, id, DotNetObjectReference.Create(this)) ?? 0;
+            subscribed =
+                await _js.InvokeAsync<byte?>(
+                    _subscribeCommand,
+                    id,
+                    DotNetObjectReference.Create(this)
+                ) ?? 0;
         }
 
         if (subscribed == 0)
@@ -69,6 +69,5 @@ public class JsResizeSensor : IResizeSensor
         }
 
         return new Subscription(() => _subscriptions[id].Remove(callback));
-
     }
 }
