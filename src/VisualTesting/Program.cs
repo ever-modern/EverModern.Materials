@@ -3,13 +3,16 @@ using VisualTesting.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
+IServiceCollection services = builder.Services;
+
+services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var clickCatcher = new GlobalClickCatcher();
-builder.Services.AddSingleton<IGlobalClickCatcher>(clickCatcher);
-builder.Services.AddSingleton<IGlobalClickInvoker>(clickCatcher);
+services.AddSingleton<IGlobalClickCatcher>(clickCatcher);
+services.AddSingleton<IGlobalClickInvoker>(clickCatcher);
+services.AddScoped<IUiManipulator, JsUiManipulator>();
+
 
 var app = builder.Build();
 
