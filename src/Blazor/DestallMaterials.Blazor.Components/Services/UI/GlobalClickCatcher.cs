@@ -13,7 +13,7 @@ public class GlobalClickCatcher : IGlobalClickCatcher, IGlobalClickInvoker
         {
             Subscription? sub = null;
             var argsAction = (MouseEventArgs args) => action(args, sub!);
-            
+
             _mouseClickCallbacks.Add(argsAction);
 
             sub = new(_ => _mouseClickCallbacks.Remove(argsAction));
@@ -49,8 +49,6 @@ public class GlobalClickCatcher : IGlobalClickCatcher, IGlobalClickInvoker
                 }
                 catch { }
             }
-
-            _mouseClickCallbacks = [];
         }
     }
 
@@ -58,16 +56,22 @@ public class GlobalClickCatcher : IGlobalClickCatcher, IGlobalClickInvoker
     {
         lock (this)
         {
+            GlobalLogger.Debug(
+                $"Key {args.Key} is clicked. There are {_keyClickCallbacks.Count} callbacks to execute."
+            );
             foreach (var callback in _keyClickCallbacks)
             {
                 try
                 {
                     callback(args);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    GlobalLogger.Error(
+                        $"Key {args.Key} {callback} {callback.GetHashCode()} callback on target {callback.Target} failed executing: {ex}."
+                    );
+                }
             }
-
-            _keyClickCallbacks = [];
         }
     }
 }

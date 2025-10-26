@@ -15,7 +15,7 @@
             @for (int i = 0; i < _addedItems.Count; i++)
             {
                 var item = _addedItems[i];
-                <RenderPiece ReferenceAction="r => item.RenderPiece = r">
+                <RenderPiece ReferenceAction="@(r => item.RenderPiece = r)">
                     <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)" @oncontextmenu:preventDefault="true">
                         @Line(item.Model)
                     </tr>
@@ -26,6 +26,7 @@
     @for (int i = 0; i < _loadedItems.Count; i++)
     {
         var item = _loadedItems[i];
+
             <RenderPiece ReferenceAction="r => item.RenderPiece = r">
                 <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)" @oncontextmenu:preventDefault="true">
                     @Line(item.Model)
@@ -202,26 +203,26 @@ else
         _callback?.Dispose();
         if (BoundToWindow)
         {
-                _callback = await scrollSensor.SubscribeForWindowScrollAsync((Func<ScrollState, Task>)(async scrollState =>
+            _callback = await scrollSensor.SubscribeForWindowScrollAsync((Func<ScrollState, Task>)(async scrollState =>
+        {
+            if (_loading)
             {
-                if (_loading)
-                {
-                    return;
-                }
-                var itemRectangle = await ui.GetElementBoungingRectangle(_tableId);
+                return;
+            }
+            var itemRectangle = await ui.GetElementBoungingRectangle(_tableId);
 
-                if (itemRectangle is null)
-                {
-                    _callback.Dispose();
-                    _callback = null;
-                    return;
-                }
+            if (itemRectangle is null)
+            {
+                _callback.Dispose();
+                _callback = null;
+                return;
+            }
 
-                if ((itemRectangle.Value.Bottom - scrollState.VisibleHeight) / scrollState.VisibleHeight < LoadAtScrollRatio)
-                {
-                    await LoadAnotherAsync(UntilDisposed);
-                }
-            }));
+            if ((itemRectangle.Value.Bottom - scrollState.VisibleHeight) / scrollState.VisibleHeight < LoadAtScrollRatio)
+            {
+                await LoadAnotherAsync(UntilDisposed);
+            }
+        }));
         }
         else
         {

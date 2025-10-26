@@ -7,7 +7,7 @@
 @inject IGlobalClickCatcher clickCatcher
 
 @{
-    var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has - clear - button" : "")} {Class}";
+    var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has-clear-button" : "")} {Class}";
 }
 
 <div class="@cssClass"
@@ -88,7 +88,7 @@
                 <div class="date-picker-scroll-column">
                     <span class="date-picker-scroll-label">Year</span>
                     <div class="date-picker-scroll-items" @ref="_yearScrollRef">
-                        @for (int year = DateTime.Now.Year - 100; year <= DateTime.Now.Year + 100; year++)
+                        @for (int year = MinValue.Year; year <= MaxValue.Year; year++)
                         {
                             var currentYear = year;
                             <div class="date-picker-item @(currentYear == _selectedYear ? "selected" : "")"

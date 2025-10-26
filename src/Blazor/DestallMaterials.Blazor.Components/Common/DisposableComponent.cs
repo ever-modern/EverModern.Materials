@@ -1,4 +1,5 @@
-﻿using DestallMaterials.WheelProtection.DataStructures;
+﻿using DestallMaterials.Blazor.Components.Services.UI;
+using DestallMaterials.WheelProtection.DataStructures;
 using Microsoft.AspNetCore.Components;
 
 namespace DestallMaterials.Blazor.Components.Common;
@@ -20,16 +21,25 @@ public class DisposableComponent : ComponentBase, IDisposable
         BeforeDispose();
         Disposed = true;
 
+        GlobalLogger.Debug($"{GetType()} {GetHashCode()} component is being disposed.");
+
         foreach (var item in BoundItems)
         {
             try
             {
                 item.Dispose();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                GlobalLogger.Error(
+                    $"Error disposing to-lifetime-bound item {item.GetType()} {item.GetHashCode()}: {ex}"
+                );
+            }
         }
 
         _cancellationTokenSource.Cancel();
+
+        GlobalLogger.Debug($"{GetType()} {GetHashCode()} component has been disposed.");
     }
 
     protected virtual void BeforeDispose() { }

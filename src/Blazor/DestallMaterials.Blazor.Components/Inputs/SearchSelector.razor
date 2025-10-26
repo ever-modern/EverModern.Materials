@@ -6,12 +6,12 @@
 @{
     RenderFragment<TItem> itemTemplate = ItemTemplate ?? (row => @<text>@GetItemRepresentation(row)</text>);
 }
-<Select TItem="TItem"
-              Label=@Label
+<Autocomplete TItem="TItem"
+              Label="@(Value is null ? "" : Label)"
               SearchFunc="async (filter, ct) => await GetItemsByFilter(filter, ct)"
               ToStringFunc="GetItemRepresentation"
               MaxItems="50"
-              Value="Value"
+              Text="@(Value is null ? "" : GetItemRepresentation(Value))"
               ValueChanged="OnValueSetInner"
               Disabled=Disabled
               Clearable=MayBeEmpty
@@ -20,9 +20,8 @@
               Error="HasError"
               ErrorText=@Error
               ItemSelectedTemplate="itemTemplate"
-              ItemTemplate="itemTemplate" />
-
-
+              ItemTemplate="itemTemplate"
+              Placeholder="@Label" />
 
 @code {
     [Parameter]
@@ -30,7 +29,7 @@
     public Func<string, CancellationToken, Task<IReadOnlyList<TItem>>> GetItemsByFilter { get; set; }
 
     [Parameter]
-    public Func<TItem, string> GetItemRepresentation { get; set; } = item => item.ToString();
+    public Func<TItem, string> GetItemRepresentation { get; set; } = item => item?.ToString() ?? "";
 
     [Parameter]
     public int MaxItemsShown { get; set; }

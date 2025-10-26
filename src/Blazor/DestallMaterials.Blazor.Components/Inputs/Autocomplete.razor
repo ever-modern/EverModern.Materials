@@ -7,41 +7,66 @@
 @inject IGlobalClickCatcher globalClickCatcher;
 
 <div class="autocomplete @(Error ? "errored" : "") @Class"
-     @onclick="OpenDropdown"
+     @onclick="() => { if (_overClearButton is false) OpenDropdown(); }"
      @onmouseout="() => MouseIn = false"
      @onmouseover="() => MouseIn = true"
      @onmouseleave="() => MouseIn = false"
-     @onmouseenter="() => MouseIn = true">
+     @onmouseenter="() => MouseIn = true"
+     @onfocus="() => _hasFocus = true"
+     @onblur="() => _hasFocus = false">
 
-    @if (!string.IsNullOrEmpty(Label))
-    {
-        <label class="autocomplete-label">@Label</label>
+    @{
+        var (labelStyle, labelText) = string.IsNullOrWhiteSpace(Label) ? ("visibility: hidden", "---") : ("", Label);
     }
+
+    <label class="autocomplete-label" style="@labelStyle">@labelText</label>
+
     <div class="autocomplete-input-wrapper">
         <input type="text"
                class="autocomplete-field"
-               @bind="SearchText"
-               @bind:event="oninput"
+               @oninput="@(async (s) =>
+               {
+                   _searchText = (string)(s.Value ?? "");
+                   _visibleText = _searchText;
+                   await PerformSearchAsync(_searchText);
+               })"
                @onfocus="OnFocus"
                @onblur="OnBlurAsync"
                disabled="@Disabled"
-               placeholder="@Label" />
-        @if (Clearable && Value != null)
+               placeholder="@(Disabled ? "" : Placeholder)"
+               value="@_visibleText"
+               style="width: stretch" />
+        @if (!Disabled && Clearable && (string.IsNullOrWhiteSpace(Text) == false))
         {
-            <button type="button" class="autocomplete-clear" @onclick="Clear">×</button>
+            <button type="button" class="autocomplete-clear" @onclick="Clear"
+                    @onmouseout="() => _overClearButton = false"
+                    @onmouseover="() => _overClearButton = true"
+                    @onmouseleave="() => _overClearButton = false"
+                    @onmouseenter="() => _overClearButton = true">
+                ×
+            </button>
         }
     </div>
-    @if (_showDropdown && _items != null && _items.Any())
+    @if (_showDropdown && Options != null && Options.Any())
     {
         <ul class="autocomplete-dropdown" style="list-style-type: none">
             @{
-                var itemsList = _items.Take(MaxItems).ToList();
+                var itemsList = Options.Take(MaxItems).ToList();
                 for (int i = 0; i < itemsList.Count; i++)
                 {
                     var item = itemsList[i];
                     var index = i;
                     var highlightClass = index == _highlightedIndex ? "highlighted" : "";
-                    <li class="autocomplete-item @highlightClass" @onclick="() => SelectItem(item)">
+
+                    Action setHoveredItem = () => { if (_hoveredItem?.Equals(item) != true) { _hoveredItem = item; } };
+                    Action unsetHoveredItem = () => { if (_hoveredItem?.Equals(item) == true) { _hoveredItem = default; } };
+
+                    <li class="autocomplete-item @highlightClass"
+                        @onmouseout="unsetHoveredItem"
+                        @onmouseover="setHoveredItem"
+                        @onmouseleave="unsetHoveredItem"
+                        @onmouseenter="setHoveredItem">
+
                         @if (ItemTemplate != null)
                         {
                             @ItemTemplate(item)
@@ -71,7 +96,7 @@
     public Func<TItem, string> ToStringFunc { get; set; } = item => item?.ToString() ?? "";
 
     [Parameter]
-    public TItem? Value { get; set; }
+    public string? Text { get; set; }
 
     [Parameter]
     [EditorRequired]
@@ -107,81 +132,69 @@
     [Parameter]
     public int MaxItems { get; set; } = 50;
 
+    [Parameter]
+    public string? Placeholder { get; set; }
+
     protected bool MouseIn { get; set; }
 
     private string _searchText = "";
     private bool _showDropdown;
-    private IReadOnlyList<TItem> _items = [];
+    (string SearchText, IReadOnlyList<TItem> Items) _lastSearchResult = default;
+    private IReadOnlyList<TItem> Options => _lastSearchResult.Items ?? [];
     private CancellationTokenSource _searchCts = new();
     private int _highlightedIndex = -1;
+    private TItem? _hoveredItem;
+    private string _visibleText = "";
+    private bool _overClearButton = false;
+    private bool _hasFocus = false;
 
-    private string SearchText
-    {
-        get => _searchText;
-        set
-        {
-            _searchText = value;
-            _ = PerformSearchAsync(value);
-        }
-    }
-
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        if (Value != null)
-        {
-            _searchText = ToStringFunc(Value);
-        }
-    }
-
-    private async void OpenDropdown()
+    async void OpenDropdown()
     {
         if (Disabled)
             return;
 
         // If there are no items and search text is empty, perform an initial search
-        if (!_items.Any() && string.IsNullOrWhiteSpace(_searchText))
+        if (!Options.Any())
         {
             await PerformSearchAsync("");
         }
 
         // Open dropdown if we have items
-        if (_items.Any())
+        if (Options.Any())
         {
             _showDropdown = true;
             StateHasChanged();
         }
     }
 
-    private async Task HandleKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs keyEvent)
+    void CloseDropdown()
     {
-        if (!_showDropdown || !_items.Any())
-            return;
-
-        var itemsList = _items.Take(MaxItems).ToList();
-
-
+        _showDropdown = false;
     }
 
-    private async Task PerformSearchAsync(string searchText)
+    async Task HandleKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs keyEvent)
+    {
+        if (!_showDropdown || !Options.Any())
+            return;
+
+        var itemsList = Options.Take(MaxItems).ToList();
+    }
+
+    async Task PerformSearchAsync(string searchText)
     {
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
 
-        if (string.IsNullOrWhiteSpace(searchText))
+        if (searchText == _lastSearchResult.SearchText)
         {
-            _items = [];
-            _showDropdown = false;
-            _highlightedIndex = -1;
-            StateHasChanged();
             return;
         }
 
         try
         {
             var results = await SearchFunc(searchText, _searchCts.Token);
-            _items = results ?? [];
-            _showDropdown = _items.Any();
+            _lastSearchResult = (searchText, results);
+            _showDropdown = results.Any();
             _highlightedIndex = -1;
             StateHasChanged();
         }
@@ -191,37 +204,39 @@
         }
     }
 
-    private void OnFocus()
+    void OnFocus()
     {
-        if (_items.Any())
+        if (Options.Any())
         {
             _showDropdown = true;
         }
     }
 
-    private async Task OnBlurAsync()
+    async Task OnBlurAsync()
     {
         await Task.Delay(200); // Delay to allow click on dropdown item
-        _showDropdown = false;
+        CloseDropdown();
         _highlightedIndex = -1;
         StateHasChanged();
     }
 
-    private void SelectItem(TItem item)
+    void SelectItem(TItem item)
     {
-        Value = item;
+        Text = ToStringFunc(item);
         _searchText = ToStringFunc(item);
-        _showDropdown = false;
+        _visibleText = _searchText;
+        CloseDropdown();
         _highlightedIndex = -1;
         ValueChanged?.Invoke(item);
         StateHasChanged();
     }
 
-    private void Clear()
+    void Clear()
     {
-        Value = default;
+        Text = "";
         _searchText = "";
-        _showDropdown = false;
+        _visibleText = "";
+        CloseDropdown();
         _highlightedIndex = -1;
         OnClearButtonClick?.Invoke();
         ValueChanged?.Invoke(default);
@@ -235,34 +250,59 @@
         _searchCts?.Dispose();
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (_lastSearchResult.SearchText is null)
+        {
+            var foundItems = await SearchFunc(_searchText, default);
+            _lastSearchResult = (_searchText, foundItems);
+
+        }
+    }
+
+    static readonly IReadOnlyList<string> _sensitiveKeys = "ArrowUp ArrowDown Enter".Split(" ");
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
 
         if (firstRender)
         {
+            _searchText = Text ?? "";
+
             BindToLifetime(globalClickCatcher.OnMouseClicked((_, _) =>
             {
-                if (MouseIn)
+                if (_hoveredItem is not null)
                 {
-                    _showDropdown = false;
+                    SelectItem(_hoveredItem);
+                    _hoveredItem = default;
+                }
+                else if (MouseIn is false)
+                {
+                    CloseDropdown();
                 }
             }), globalClickCatcher.OnKeyPressed((args, _) =>
             {
-                if (_showDropdown)
+                var key = args.Key;
+                if (_sensitiveKeys.Contains(key) is false || _hasFocus)
                 {
-                    var key = args.Key;
+                    return;
+                }
+                if (Options.Any())
+                {
+                    _showDropdown = true;
 
                     _highlightedIndex = key switch
                     {
-                        "ArrowDown" => (_highlightedIndex + 1) % _items.Count,
-                        "ArrowUp" => _highlightedIndex <= 0 ? _items.Count - 1 : _highlightedIndex - 1,
+                        "ArrowDown" => (_highlightedIndex + 1) % Options.Count,
+                        "ArrowUp" => _highlightedIndex <= 0 ? Options.Count - 1 : _highlightedIndex - 1,
                         _ => _highlightedIndex
                     };
 
                     if (key == "Enter")
                     {
-                        SelectItem(_items[_highlightedIndex]);
+                        SelectItem(Options[_highlightedIndex]);
                     }
 
                     StateHasChanged();
