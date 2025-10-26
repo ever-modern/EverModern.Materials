@@ -23,6 +23,7 @@
         <input type="date"
                class="flexible-date-picker-field"
                value="@(Value != default ? Value.ToString("dd.MM.yyyy", Culture) : "")"
+               @onblur="OnInputBlur"
                placeholder="@ValueNotSetText"
                @ref="_inputElement" />
         @if (Clearable && Value != default)
@@ -167,8 +168,11 @@
         // Delay hiding to allow clicking on picker items
         Task.Delay(200).ContinueWith(_ =>
         {
-            _showCustomPicker = false;
-            InvokeAsync(StateHasChanged);
+            if ((_mouseOnInput || _mouseOnPicker) is false)
+            {
+                _showCustomPicker = false;
+                InvokeAsync(StateHasChanged);
+            }
         });
     }
 
