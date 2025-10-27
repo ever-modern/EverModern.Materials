@@ -1,11 +1,9 @@
-﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
+﻿global using MaskPart = System.Collections.Generic.List<char>;
+global using MaskParts = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.List<char>>;
 
-public record struct MaskValuePiece(char? Symbol, string? Group)
-{
-    public bool Filled => Symbol is not null || Group is not null;
-}
+namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public class Mask(ITextConstrainer constrainer)
+public class Mask(ITextConstrainer constrainer, MaskParts parts)
 {
 #if DEBUG
     public List<string> Diagnostics = [];
@@ -21,112 +19,154 @@ public class Mask(ITextConstrainer constrainer)
     /// <summary>
     /// Makes projection of mask onto a new string value, based on the difference with the previos string value.
     /// </summary>
-    /// <param name="oldValue">Previous text value</param>
-    /// <param name="newValue">New text value</param>
+    /// <param name="initValue">Previous text value</param>
+    /// <param name="targerValue">New text value</param>
     /// <returns></returns>
-    public ProjectionPiece[] MakeProjection(char?[] oldValue, char?[] newValue)
+    public (int PartIndex, int ItemIndex) ChangePart(int partIndex, IReadOnlyList<char> targerValue)
     {
-        /* This method reflects the logic of an input value getting changed.
-         * The most general case - some part of current value get selected and then user
-         * pastes something from the clipboard - pasted symbols array may be shorter or longer the selected symbols.
-         * Technique: calculate the difference first.
-         * Then apply the difference onto the old value.
-         * First, remove the symbols, that were allowed to be removed -
-         * one by one asking constrainer for allowed symbols after each deletion.
-         * If a character removed in newValue could not be removed due to constraints,
-         * skip this one and move to the next.
-         * If a symbol could be deleted, make it an empty spot and go to the next.
-         * When deletion part is complete, do the insertion, following the same principles:
-         * insert one by one, asking for constraints after each change
-         * skip invalid values
-           if constraints assume single-option values of single-option length - paste them each turn.
-            Write step reports into Diagnostics.
-        */
+        var (at, deleted, inserted) = GetChange(parts[partIndex], targerValue);
 
-        throw new NotImplementedException();
+        for (int i = 0; i < deleted; i++)
+        {
+            var constraints = constrainer.GetConstraints(initValue);
+            var (allowedValues, minLength, maxLength) = constraints[at + i];
+            DecideNoOptions(allowedValues, constraints);
+        }
     }
 
-    public static (int DiffStart, int EqualStart) FindStringDifference(string first, string second)
+    static ContentChange<char> GetChange(IReadOnlyList<char> oldValue, IReadOnlyList<char> newValue) =>
+        ContentChange<char>.Get(oldValue, newValue);
+
+    void DeleteOne(List<char?> symbols, int at)
     {
-        if (first == null || second == null)
-            throw new ArgumentNullException("Input strings cannot be null");
+        var constraints = constrainer.GetConstraints(symbols);
 
-        int minLength = Math.Min(first.Length, second.Length);
-        int diffStart = -1;
-        int equalStart = -1;
+    }
 
-        // Find where they start differing
-        for (int i = 0; i < minLength; i++)
+    /// <summary>
+    /// Paste values into spots for which there can be only one value.
+    /// </summary>
+    /// <param name="symbols"></param>
+    /// <param name="constraints"></param>
+    public static void DecideNoOptions(List<char?> symbols, IReadOnlyList<TextPartConstraint> constraints)
+    {
+        var l = constraints.Count;
+        var cIndex = 0;
+        for (int i = 0; i < l && cIndex < symbols.Count; i++)
         {
-            if (first[i] != second[i])
+            var (allowedSymbols, minLength, maxLength) = constraints[i];
+            var symbolsForConstraint = symbols[cIndex];
+            char? symbolToPaste = allowedSymbols.Count == 1 ? allowedSymbols[0] : null;
+            var addSymbols = cIndex + minLength - symbols.Count;
+            if (addSymbols > 0)
             {
-                diffStart = i;
-                break;
+                symbols.InsertRange(cIndex, Enumerable.Repeat(symbolToPaste, addSymbols));
+                cIndex += addSymbols;
             }
         }
-
-        // If no difference found in common length
-        if (diffStart == -1)
-        {
-            // Strings are equal up to minLength
-            if (first.Length == second.Length)
-            {
-                // Strings are completely equal
-                return (first.Length, first.Length);
-            }
-            else
-            {
-                // One string is prefix of the other
-                return (minLength, minLength);
-            }
-        }
-
-        // Find where they become equal again after the difference
-        for (int i = diffStart; i < minLength; i++)
-        {
-            if (first[i] == second[i])
-            {
-                equalStart = i;
-                break;
-            }
-        }
-
-        // If they don't become equal again within the common length
-        if (equalStart == -1)
-        {
-            equalStart = minLength;
-        }
-
-        return (diffStart, equalStart);
     }
 }
 
-/// <summary>
-/// Bears either a constant (already filled) or variable (not yet filled) value.
-/// </summary>
-public struct ProjectionPiece
+
+
+public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
 {
-    public string? ConstantValue { get; }
-    public TextConstraint? VariableValue { get; }
+    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish)
+    {
+        ArgumentNullException.ThrowIfNull(start);
+        ArgumentNullException.ThrowIfNull(finish);
 
-    public ProjectionPiece(string constantValue) => ConstantValue = constantValue;
+        int startLength = start.Count;
+        int finishLength = finish.Count;
 
-    public ProjectionPiece(TextConstraint variableValue) => VariableValue = variableValue;
+        // Find longest common prefix
+        int prefixLength = 0;
+        int maxPrefix = Math.Min(startLength, finishLength);
 
-    public static implicit operator ProjectionPiece(string other) => new(other);
+        if (start.Count == 0)
+        {
+            return new(0, 0, finish);
+        }
 
-    public static implicit operator ProjectionPiece(TextConstraint variable) => new(variable);
+        if (finish.Count == 0)
+        {
+            return new(0, start.Count, []);
+        }
+
+        while (
+            prefixLength < maxPrefix
+            && EqualityComparer<T>.Default.Equals(start[prefixLength], finish[prefixLength])
+        )
+        {
+            prefixLength++;
+        }
+
+        // Special case: if the entire shorter list matches the prefix
+        if (prefixLength == startLength || prefixLength == finishLength)
+        {
+            // If both lists are identical (prefix = entire length of both)
+            if (prefixLength == startLength && prefixLength == finishLength)
+            {
+                return new ContentChange<T>(0, 0, []);
+            }
+
+            // One list is entirely contained in the other as a prefix
+            int changeAt = prefixLength;
+            int elementsRemoved = startLength - prefixLength;
+            int newElementsCount = finishLength - prefixLength;
+
+            T[] newElements = new T[newElementsCount];
+            for (int i = 0; i < newElementsCount; i++)
+            {
+                newElements[i] = finish[prefixLength + i];
+            }
+
+            return new(changeAt, elementsRemoved, newElements);
+        }
+
+        // Find longest common suffix by working backwards
+        int suffixLength = 0;
+        int maxPossibleSuffix = Math.Min(startLength - prefixLength, finishLength - prefixLength);
+
+        for (int i = 1; i <= maxPossibleSuffix; i++)
+        {
+            int startIndex = startLength - i;
+            int finishIndex = finishLength - i;
+
+            if (EqualityComparer<T>.Default.Equals(start[startIndex], finish[finishIndex]))
+            {
+                suffixLength = i;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        int at = prefixLength;
+        int removed = startLength - prefixLength - suffixLength;
+        int insertedCount = finishLength - prefixLength - suffixLength;
+
+        // Extract the inserted elements
+        T[] inserted = new T[insertedCount];
+        for (int i = 0; i < insertedCount; i++)
+        {
+            inserted[i] = finish[prefixLength + i];
+        }
+
+        return new(at, removed, inserted);
+    }
 }
 
 /// <summary>
 ///
 /// </summary>
 /// <param name="AllowedSymbols"></param>
-/// <param name="MinLenght"></param>
+/// <param name="MinLength"></param>
 /// <param name="MaxLength"></param>
-public record struct TextConstraint(
+public record struct TextPartConstraint(
     IReadOnlyList<char> AllowedSymbols,
-    int MinLenght,
+    int MinLength,
     int MaxLength
 );
 
@@ -135,12 +175,12 @@ public record struct TextConstraint(
 /// </summary>
 public interface ITextConstrainer
 {
-    public IReadOnlyList<TextConstraint> GetConstraints(ReadOnlySpan<char?> currentSymbols);
+    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<char[]> currentTextParts);
 }
 
 public class PhoneNumberConstrainer : ITextConstrainer
 {
-    public IReadOnlyList<TextConstraint> GetConstraints(ReadOnlySpan<char?> currentSymbols)
+    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<char[]> currentSymbols)
     {
         /*Implement a simple phone number constraints for test purposes. */
         throw new NotImplementedException();
