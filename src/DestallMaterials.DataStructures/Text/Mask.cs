@@ -1,10 +1,14 @@
-﻿global using MaskPart = System.Collections.Generic.List<char>;
-global using MaskParts = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.List<char>>;
+﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-namespace DestallMaterials.WheelProtection.DataStructures.Text;
-
-public class Mask(ITextConstrainer constrainer, MaskParts parts)
+public class Mask<T>(
+    IConstrainer<T> constrainer,
+    IReadOnlyList<List<T>> parts,
+    IEqualityComparer<T> equalityComparer
+)
 {
+    public Mask(IConstrainer<T> textConstrainer, IReadOnlyList<List<T>> parts)
+        : this(textConstrainer, parts, EqualityComparer<T>.Default) { }
+
 #if DEBUG
     public List<string> Diagnostics = [];
 #endif
@@ -22,7 +26,7 @@ public class Mask(ITextConstrainer constrainer, MaskParts parts)
     /// <param name="initValue">Previous text value</param>
     /// <param name="targerValue">New text value</param>
     /// <returns></returns>
-    public (int PartIndex, int ItemIndex) ChangePart(int partIndex, IReadOnlyList<char> targerValue)
+    public (int PartIndex, int ItemIndex) ChangePart(int partIndex, IReadOnlyList<T> targerValue)
     {
         var (at, deleted, inserted) = GetChange(parts[partIndex], targerValue);
 
@@ -30,17 +34,16 @@ public class Mask(ITextConstrainer constrainer, MaskParts parts)
         {
             var constraints = constrainer.GetConstraints(initValue);
             var (allowedValues, minLength, maxLength) = constraints[at + i];
-            DecideNoOptions(allowedValues, constraints);
+            DecideSingleOptions(allowedValues, constraints);
         }
     }
 
-    static ContentChange<char> GetChange(IReadOnlyList<char> oldValue, IReadOnlyList<char> newValue) =>
-        ContentChange<char>.Get(oldValue, newValue);
+    static ContentChange<T> GetChange(IReadOnlyList<T> oldValue, IReadOnlyList<T> newValue) =>
+        ContentChange<T>.Get(oldValue, newValue);
 
-    void DeleteOne(List<char?> symbols, int at)
+    void DeleteOne(List<T> symbols, int at)
     {
         var constraints = constrainer.GetConstraints(symbols);
-
     }
 
     /// <summary>
@@ -48,7 +51,10 @@ public class Mask(ITextConstrainer constrainer, MaskParts parts)
     /// </summary>
     /// <param name="symbols"></param>
     /// <param name="constraints"></param>
-    public static void DecideNoOptions(List<char?> symbols, IReadOnlyList<TextPartConstraint> constraints)
+    public static void DecideSingleOptions(
+        List<T> symbols,
+        IReadOnlyList<MaskPartConstraint<T>> constraints
+    )
     {
         var l = constraints.Count;
         var cIndex = 0;
@@ -56,18 +62,9 @@ public class Mask(ITextConstrainer constrainer, MaskParts parts)
         {
             var (allowedSymbols, minLength, maxLength) = constraints[i];
             var symbolsForConstraint = symbols[cIndex];
-            char? symbolToPaste = allowedSymbols.Count == 1 ? allowedSymbols[0] : null;
-            var addSymbols = cIndex + minLength - symbols.Count;
-            if (addSymbols > 0)
-            {
-                symbols.InsertRange(cIndex, Enumerable.Repeat(symbolToPaste, addSymbols));
-                cIndex += addSymbols;
-            }
         }
     }
 }
-
-
 
 public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
 {
@@ -161,11 +158,11 @@ public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inse
 /// <summary>
 ///
 /// </summary>
-/// <param name="AllowedSymbols"></param>
+/// <param name="AllowedValues"></param>
 /// <param name="MinLength"></param>
 /// <param name="MaxLength"></param>
-public record struct TextPartConstraint(
-    IReadOnlyList<char> AllowedSymbols,
+public record struct MaskPartConstraint<T>(
+    IReadOnlyList<T> AllowedValues,
     int MinLength,
     int MaxLength
 );
@@ -173,14 +170,18 @@ public record struct TextPartConstraint(
 /// <summary>
 /// Returns constraints on text values, based on already present text content.
 /// </summary>
-public interface ITextConstrainer
+public interface IConstrainer<T>
 {
-    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<IReadOnlyList<char>> currentTextParts);
+    public IReadOnlyList<MaskPartConstraint<T>> GetConstraints(
+        IReadOnlyList<IReadOnlyList<T>> currentTextParts
+    );
 }
 
-public class PhoneNumberConstrainer : ITextConstrainer
+public class PhoneNumberConstrainer : IConstrainer<char>
 {
-    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<IReadOnlyList<char>> currentSymbols)
+    public IReadOnlyList<MaskPartConstraint<char>> GetConstraints(
+        IReadOnlyList<IReadOnlyList<char>> currentSymbols
+    )
     {
         /*Implement a simple phone number constraints for test purposes. */
         throw new NotImplementedException();
