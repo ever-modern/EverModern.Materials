@@ -1,0 +1,17 @@
+﻿@using DestallMaterials.Blazor.Components.Common
+@using DestallMaterials.Blazor.Components.Services.UI
+
+@inherits DisposableComponent
+
+@inject IUiManipulator ui
+@inject IGlobalClickCatcher globalClickCatcher
+
+
+<input type="text"
+       @oninput="(ev) => OnInput((string)(ev.Value ?? string.Empty))"
+       @onclick="OnClick"
+       @onfocus="OnClick"
+       class="masked-input"
+       value="@_displayText"
+       id="@_inputId" />
+

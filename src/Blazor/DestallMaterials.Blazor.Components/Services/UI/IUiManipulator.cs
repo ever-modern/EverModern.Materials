@@ -23,4 +23,6 @@ public interface IUiManipulator
     Task DisableDefaultEventHandling(string elementId, string eventType);
 
     Task<ElementBoungingRectangle?> GetElementBoungingRectangle(string elementId);
+
+    IInputManipulator Inputs { get; }
 }

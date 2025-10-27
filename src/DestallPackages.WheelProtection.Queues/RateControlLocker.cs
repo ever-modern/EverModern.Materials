@@ -11,5 +11,5 @@ public class RateControlLocker : ContinuationToken, IDisposable
         _onDisposed = onDisposed;
     }
 
-    public override void Cancel() => _onDisposed();
+    public override void Dispose() => _onDisposed();
 }

@@ -1,0 +1,580 @@
+﻿@using DestallMaterials.Blazor.Components.Services.UI
+@using Microsoft.JSInterop
+
+@inject IJSRuntime js
+
+@inject IUiManipulator ui
+
+<input type="text"
+       @ref="inputElement"
+       @onkeydown="OnKeyDown"
+       @onclick="OnClick"
+       @onfocus="OnFocus"
+       class="masked-input"
+       @bind-value="currentDisplayValue"
+       @bind-value:event="oninput" />
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string Mask { get; set; } = "";
+
+    [Parameter]
+    [EditorRequired]
+    public Action<char?[]> OnValueChanged { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public Func<char?[], char[][]> AllowedSymbols { get; set; }
+
+    [Parameter] 
+    public string Value { get; set; } = "";
+
+    private ElementReference inputElement;
+    private int currentPosition = 0;
+    private int currentGroupIndex = -1;
+    private bool isFocused = false;
+    private List<MaskElement> maskElements = new List<MaskElement>();
+    private char?[] currentValues = Array.Empty<char?>();
+    private IJSObjectReference jsModule;
+    private string currentDisplayValue = "";
+    private string inputValue = "";
+
+    private string InputValue
+    {
+        get => currentDisplayValue;
+        set
+        {
+            if (value != currentDisplayValue)
+            {
+                Console.WriteLine($"InputValue setter called with: '{value}'");
+                OnInputChange(new ChangeEventArgs { Value = value });
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine($"OnInitialized called for component with Mask: '{Mask}'");
+        ParseMask();
+        InitializeValues();
+        Console.WriteLine($"OnInitialized completed for component");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine($"OnAfterRenderAsync called with firstRender: {firstRender} for Mask: '{Mask}'");
+        if (firstRender)
+        {
+            // For now, no JavaScript setup needed - using pure Blazor events
+            Console.WriteLine($"OnAfterRenderAsync completed for Mask: '{Mask}'");
+        }
+    }
+
+    // Add a simple test method to ensure rendering works
+    protected override bool ShouldRender()
+    {
+        Console.WriteLine($"ShouldRender called for Mask: '{Mask}' - returning true");
+        return true;
+    }
+
+
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine($"OnParametersSet called for component with Mask: '{Mask}'");
+        if (Mask != null)
+        {
+            ParseMask();
+            InitializeValues();
+        }
+        Console.WriteLine($"OnParametersSet completed for component");
+    }
+
+    private void ParseMask()
+    {
+        Console.WriteLine($"Parsing mask: '{Mask}'");
+
+        if (string.IsNullOrEmpty(Mask))
+            return;
+
+        maskElements = new List<MaskElement>();
+        var inputIndex = 0;
+        var i = 0;
+        var groupIndex = -1;
+
+        while (i < Mask.Length)
+        {
+            Console.WriteLine($"Processing char at position {i}: '{Mask[i]}'");
+
+            if (Mask[i] == '{')
+            {
+                var groupEnd = Mask.IndexOf('}', i + 1);
+                Console.WriteLine($"Found group start at {i}, end at {groupEnd}");
+                if (groupEnd > i + 1)
+                {
+                    groupIndex++;
+                    for (var j = i + 1; j < groupEnd; j++)
+                    {
+                        if (Mask[j] == 'x')
+                        {
+                            maskElements.Add(new MaskElement
+                            {
+                                Type = MaskElementType.Input,
+                                InputIndex = inputIndex++,
+                                GroupIndex = groupIndex,
+                                GroupStart = i + 1,
+                                GroupEnd = groupEnd - 1
+                            });
+                            Console.WriteLine($"Added input element at position {j}, input index {inputIndex - 1}");
+                        }
+                    }
+                    i = groupEnd + 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            else if (Mask[i] == 'x')
+            {
+                maskElements.Add(new MaskElement
+                {
+                    Type = MaskElementType.Input,
+                    InputIndex = inputIndex++,
+                    GroupIndex = -1,
+                    GroupStart = -1,
+                    GroupEnd = -1
+                });
+                Console.WriteLine($"Added input element, input index {inputIndex - 1}");
+                i++;
+            }
+            else
+            {
+                maskElements.Add(new MaskElement
+                {
+                    Type = MaskElementType.Separator,
+                    Separator = Mask[i],
+                    InputIndex = -1,
+                    GroupIndex = -1,
+                    GroupStart = -1,
+                    GroupEnd = -1
+                });
+                Console.WriteLine($"Added separator element: '{Mask[i]}'");
+                i++;
+            }
+        }
+
+        Console.WriteLine($"Total mask elements parsed: {maskElements.Count}");
+    }
+
+    private void InitializeValues()
+    {
+        if (maskElements == null) return;
+
+        var inputCount = maskElements.Count(x => x.Type == MaskElementType.Input);
+        currentValues = new char?[inputCount];
+
+        if (!string.IsNullOrEmpty(Value) && Value.Length <= inputCount)
+        {
+            for (int i = 0; i < Math.Min(Value.Length, inputCount); i++)
+            {
+                currentValues[i] = Value[i];
+            }
+        }
+
+        currentDisplayValue = "";
+        UpdateDisplayValue();
+    }
+
+    private void OnInputChange(ChangeEventArgs e)
+    {
+        Console.WriteLine($"OnInputChange called with: {e.Value}");
+
+        if (maskElements == null || maskElements.Count == 0)
+        {
+            Console.WriteLine("No mask elements available");
+            return;
+        }
+
+        var inputText = e.Value?.ToString() ?? "";
+        Console.WriteLine($"Processing input: '{inputText}', maskElements count: {maskElements.Count}");
+
+        // Clear all current values first
+        for (int i = 0; i < currentValues.Length; i++)
+        {
+            currentValues[i] = null;
+        }
+
+        // Extract input characters from the new display value
+        var inputChars = new List<char>();
+        foreach (char c in inputText)
+        {
+            if (char.IsControl(c)) continue;
+
+            // Check if this character is a separator in the mask
+            var isSeparator = maskElements.Any(m => m.Type == MaskElementType.Separator && m.Separator == c);
+            Console.WriteLine($"Char '{c}' is separator: {isSeparator}");
+            if (!isSeparator)
+            {
+                inputChars.Add(c);
+            }
+        }
+
+        Console.WriteLine($"Extracted input chars: [{string.Join(",", inputChars)}]");
+
+        // Update current values based on input characters
+        var validPosition = 0;
+        var allowedChars = GetAllowedChars();
+
+        foreach (char inputChar in inputChars)
+        {
+            if (validPosition < currentValues.Length && IsCharAllowed(inputChar, validPosition))
+            {
+                // Check for single symbol auto-type
+                if (allowedChars.Length == 1 && allowedChars[0].Length == 1)
+                {
+                    currentValues[validPosition] = allowedChars[0][0];
+                    Console.WriteLine($"Auto-typing '{allowedChars[0][0]}' at position {validPosition}");
+                }
+                else
+                {
+                    currentValues[validPosition] = inputChar;
+                    Console.WriteLine($"Setting '{inputChar}' at position {validPosition}");
+                }
+                validPosition++;
+            }
+        }
+
+        Console.WriteLine($"Valid positions filled: {validPosition}");
+
+        // Update current position
+        currentPosition = Math.Min(validPosition, currentValues.Length - 1);
+        var currentElement = GetMaskElementAtPosition(currentPosition);
+        if (currentElement != null)
+        {
+            currentGroupIndex = currentElement.GroupIndex;
+        }
+
+        UpdateDisplayValue();
+        NotifyValueChanged();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace")
+        {
+            HandleBackspace();
+        }
+        else if (e.Key == "Delete")
+        {
+            HandleDelete();
+        }
+        else if (e.Key.Length == 1 && !char.IsControl(e.Key[0]))
+        {
+            await HandleCharacterInput(e.Key[0]);
+        }
+        else if (e.Key == "ArrowLeft")
+        {
+            MoveCaret(-1);
+            await UpdateCaretPosition();
+        }
+        else if (e.Key == "ArrowRight")
+        {
+            MoveCaret(1);
+            await UpdateCaretPosition();
+        }
+        else if (e.Key == "Home")
+        {
+            MoveCaretToStart();
+            await UpdateCaretPosition();
+        }
+        else if (e.Key == "End")
+        {
+            MoveCaretToEnd();
+            await UpdateCaretPosition();
+        }
+    }
+
+    private async Task OnClick(MouseEventArgs e)
+    {
+        HandleClickPosition(e.OffsetX);
+        await UpdateCaretPosition();
+    }
+
+    private void OnFocus(FocusEventArgs e)
+    {
+        isFocused = true;
+        StateHasChanged();
+    }
+
+    private void HandleBackspace()
+    {
+        if (currentPosition > 0)
+        {
+            currentPosition--;
+            currentValues[currentPosition] = null;
+            MoveToPreviousInputPosition();
+            UpdateDisplayValue();
+            NotifyValueChanged();
+        }
+    }
+
+    private void HandleDelete()
+    {
+        if (currentPosition < currentValues.Length)
+        {
+            currentValues[currentPosition] = null;
+            UpdateDisplayValue();
+            NotifyValueChanged();
+        }
+    }
+
+    private async Task HandleCharacterInput(char c)
+    {
+        if (currentPosition >= currentValues.Length) return;
+
+        if (!IsCharAllowed(c, currentPosition)) return;
+
+        // Check for single symbol auto-type
+        var allowedChars = GetAllowedChars();
+        if (allowedChars.Length == 1 && allowedChars[0].Length == 1)
+        {
+            // Only one allowed character, auto-type it
+            currentValues[currentPosition] = allowedChars[0][0];
+        }
+        else
+        {
+            currentValues[currentPosition] = c;
+        }
+
+        currentPosition++;
+        MoveToNextInputPosition();
+        UpdateDisplayValue();
+        NotifyValueChanged();
+        await UpdateCaretPosition();
+    }
+
+    private void HandleClickPosition(double offsetX)
+    {
+        var relativeX = offsetX;
+        var runningX = 0.0;
+
+        foreach (var element in maskElements)
+        {
+            var elementWidth = CalculateElementWidth(element);
+
+            if (relativeX >= runningX && relativeX < runningX + elementWidth)
+            {
+                if (element.Type == MaskElementType.Input)
+                {
+                    currentPosition = element.InputIndex;
+                    currentGroupIndex = element.GroupIndex;
+                }
+                break;
+            }
+
+            runningX += elementWidth;
+        }
+    }
+
+    private void MoveCaret(int direction)
+    {
+        var newPosition = currentPosition + direction;
+
+        while (newPosition >= 0 && newPosition < currentValues.Length)
+        {
+            var element = GetMaskElementAtPosition(newPosition);
+            if (element != null && element.Type == MaskElementType.Input)
+            {
+                currentPosition = newPosition;
+                currentGroupIndex = element.GroupIndex;
+                break;
+            }
+            newPosition += direction;
+        }
+    }
+
+    private void MoveCaretToStart()
+    {
+        var firstInput = maskElements.FirstOrDefault(x => x.Type == MaskElementType.Input);
+        if (firstInput != null)
+        {
+            currentPosition = firstInput.InputIndex;
+            currentGroupIndex = firstInput.GroupIndex;
+        }
+    }
+
+    private void MoveCaretToEnd()
+    {
+        var lastInput = maskElements.Where(x => x.Type == MaskElementType.Input).LastOrDefault();
+        if (lastInput != null)
+        {
+            currentPosition = lastInput.InputIndex;
+            currentGroupIndex = lastInput.GroupIndex;
+        }
+    }
+
+    private void MoveToNextInputPosition()
+    {
+        var nextInput = maskElements
+            .Where(x => x.Type == MaskElementType.Input && x.InputIndex > currentPosition)
+            .FirstOrDefault();
+
+        if (nextInput != null)
+        {
+            currentPosition = nextInput.InputIndex;
+            currentGroupIndex = nextInput.GroupIndex;
+        }
+    }
+
+    private void MoveToPreviousInputPosition()
+    {
+        var prevInput = maskElements
+            .Where(x => x.Type == MaskElementType.Input && x.InputIndex < currentPosition)
+            .OrderByDescending(x => x.InputIndex)
+            .FirstOrDefault();
+
+        if (prevInput != null)
+        {
+            currentPosition = prevInput.InputIndex;
+            currentGroupIndex = prevInput.GroupIndex;
+        }
+    }
+
+    private async Task UpdateCaretPosition()
+    {
+        if (jsModule != null && isFocused)
+        {
+            try
+            {
+                await jsModule.InvokeVoidAsync("setCaretPosition", inputElement, currentPosition);
+            }
+            catch (JSException)
+            {
+                // Fallback to CSS-based positioning
+            }
+        }
+    }
+
+    private async Task UpdateDisplayValue()
+    {
+        Console.WriteLine($"UpdateDisplayValue called, maskElements count: {maskElements?.Count ?? 0}");
+
+        if (maskElements == null || maskElements.Count == 0)
+        {
+            currentDisplayValue = string.Empty;
+            Console.WriteLine("No mask elements, setting display value to empty");
+            return;
+        }
+
+        var result = new System.Text.StringBuilder();
+        foreach (var element in maskElements)
+        {
+            if (element.Type == MaskElementType.Separator)
+            {
+                result.Append(element.Separator);
+            }
+            else if (element.InputIndex < currentValues.Length)
+            {
+                var value = currentValues[element.InputIndex];
+                result.Append(value?.ToString() ?? "_");
+            }
+        }
+
+        var newDisplayValue = result.ToString();
+        Console.WriteLine($"New display value: '{newDisplayValue}' (previous: '{currentDisplayValue}')");
+
+        if (newDisplayValue != currentDisplayValue)
+        {
+            currentDisplayValue = newDisplayValue;
+            StateHasChanged();
+
+            // Set the input value programmatically
+            await SetInputValue(currentDisplayValue);
+            Console.WriteLine("Display value updated, StateHasChanged called, input value set");
+        }
+        else
+        {
+            Console.WriteLine("Display value unchanged, no update needed");
+        }
+    }
+
+    private async Task SetInputValue(string value)
+    {
+        try
+        {
+            if (jsModule != null)
+            {
+                await jsModule.InvokeVoidAsync("setInputValue", inputElement, value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to set input value: {ex.Message}");
+        }
+    }
+
+    private void NotifyValueChanged()
+    {
+        // Build typed value with underscores for empty positions
+        var typedValue = string.Join("", currentValues.Select(x => x?.ToString() ?? "_"));
+        Value = typedValue; // Update the bound value
+        OnValueChanged?.Invoke(currentValues);
+    }
+
+    private MaskElement? GetCurrentInputElement()
+    {
+        return maskElements.FirstOrDefault(x => x.Type == MaskElementType.Input && x.InputIndex == currentPosition);
+    }
+
+    private MaskElement? GetMaskElementAtPosition(int position)
+    {
+        return maskElements.FirstOrDefault(x => x.Type == MaskElementType.Input && x.InputIndex == position);
+    }
+
+    private char[][] GetAllowedChars()
+    {
+        try
+        {
+            return AllowedSymbols?.Invoke(currentValues) ?? new[] { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".ToCharArray() };
+        }
+        catch
+        {
+            return new[] { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".ToCharArray() };
+        }
+    }
+
+    private bool IsCharAllowed(char c, int position)
+    {
+        var allowedChars = GetAllowedChars();
+        foreach (var charArray in allowedChars)
+        {
+            if (charArray.Contains(c))
+                return true;
+        }
+        return false;
+    }
+
+    private double CalculateElementWidth(MaskElement element)
+    {
+        return element.Type == MaskElementType.Separator ? 10 : 12;
+    }
+
+    public class MaskElement
+    {
+        public MaskElementType Type { get; set; }
+        public char? Separator { get; set; }
+        public int InputIndex { get; set; }
+        public int GroupIndex { get; set; }
+        public int GroupStart { get; set; }
+        public int GroupEnd { get; set; }
+    }
+
+    public enum MaskElementType
+    {
+        Input,
+        Separator
+    }
+}

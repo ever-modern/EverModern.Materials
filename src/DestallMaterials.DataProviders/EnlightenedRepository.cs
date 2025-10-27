@@ -273,10 +273,10 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
             }
             else
             {
-                _contextInnerReservations.Cancel();
+                _contextInnerReservations.Dispose();
                 if (_reservedDbContext is not null)
                 {
-                    _reservedDbContext.Cancel();
+                    _reservedDbContext.Dispose();
                     var dbContext = _reservedDbContext.Item;
                     dbContext.Database.CurrentTransaction?.Cancel();
                 }
@@ -329,7 +329,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
 
             _reservedDbContext = null;
 
-            dbContextLocker.Cancel();
+            dbContextLocker.Dispose();
         }
     }
 
@@ -340,7 +340,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
             var innerLocker = await _contextInnerReservations.OccupyAsync(_reservedDbContext.Item, ct);
             return new CallbackItemLocker<TDbContext>(
                 _reservedDbContext.Item,
-                (item) => innerLocker.Cancel());
+                (item) => innerLocker.Dispose());
         }
 
         var result = await _contextFactory(ct);
@@ -495,7 +495,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
                                                         repo.FreeReservedDbContext();
                                                     }
 
-                                                    locker.Cancel();
+                                                    locker.Dispose();
                                                 }
                                             }));
 

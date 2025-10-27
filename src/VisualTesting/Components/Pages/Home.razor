@@ -13,7 +13,7 @@
      @onmousedown="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
      @onkeydown="e => clickInvoker.FireKeyClickEvent(e)">
 
-    <!-- SearchSelectorSingular Component Tests -->
+    @* <!-- SearchSelectorSingular Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
         <h2>SearchSelectorSingular Component</h2>
 
@@ -38,11 +38,21 @@
             <p>Event date: <strong>@(EventDate == default ? "None" : EventDate)</strong></p>
         </div>
 
-    </section>
+    </section> *@
+
+    @{
+        const string mask = "***-**-*";
+        char[] commonAllowedSymbols = Enumerable.Range(0, 70000).Where(i => i >= (int)'0' && i <= (int)'9').Select(i => (char)i).ToArray();
+        char[][] allowedSymbols = mask.Where(c => c == '*').Select(i => commonAllowedSymbols).ToArray();
+    }
+    <MaskedInput Mask="@mask" AllowedSymbols="(_) => allowedSymbols" OnValueChanged="v => _maskResult = v" />
 
 </div>
 
 @code {
+
+    char?[] _maskResult = [];
+
     // Person class for testing
     public class Person
     {

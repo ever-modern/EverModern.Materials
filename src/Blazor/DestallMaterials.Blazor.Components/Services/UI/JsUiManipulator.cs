@@ -10,7 +10,10 @@ public class JsUiManipulator : IUiManipulator
     public JsUiManipulator(IJSRuntime runtime)
     {
         this._runtime = runtime;
+        Inputs = new JsInputManipulator(runtime);
     }
+
+    public IInputManipulator Inputs { get; }
 
     public async Task ScrollItem_X(string id, double deltaX)
     {

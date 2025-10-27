@@ -28,7 +28,7 @@ public class RatesDistributor<T>
         {
             if (rateController.TryTakeImmediately(out var locker) is true)
             {
-                var result = new CallbackItemLocker<T>(item, (_) => locker.Cancel());
+                var result = new CallbackItemLocker<T>(item, (_) => locker.Dispose());
                 return result;
             }
         }
@@ -48,13 +48,13 @@ public class RatesDistributor<T>
             if (other != firstCompleted && (other.IsCanceled == false))
             {
                 other
-                    .ContinueWith(t => t.Result.Result.Cancel())
+                    .ContinueWith(t => t.Result.Result.Dispose())
                     .GetType();
             }
         }
 
         return new CallbackItemLocker<T>(
             firstCompleted.Result.Value,
-            (_) => firstCompleted.Result.Result.Cancel());
+            (_) => firstCompleted.Result.Result.Dispose());
     }
 }

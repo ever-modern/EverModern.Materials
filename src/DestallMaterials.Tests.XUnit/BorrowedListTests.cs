@@ -15,9 +15,9 @@ public class BorrowedListTests : IDisposable
         _list = new BorrowedList<int>();
     }
 
-    public void Cancel()
+    public void Dispose()
     {
-        _list?.Cancel();
+        _list?.Dispose();
     }
 
     [Fact]
@@ -420,7 +420,7 @@ public class BorrowedListTests : IDisposable
         _list.Add(2);
 
         // Act
-        _list.Cancel();
+        _list.Dispose();
 
         // Assert - All operations should throw ObjectDisposedException
         Assert.Throws<ObjectDisposedException>(() => _list.Add(3));
@@ -433,8 +433,8 @@ public class BorrowedListTests : IDisposable
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Act & Assert
-        _list.Cancel();
-        _list.Cancel(); // Should not throw
+        _list.Dispose();
+        _list.Dispose(); // Should not throw
     }
 
     [Theory]

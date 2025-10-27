@@ -6,7 +6,7 @@ namespace DestallMaterials.WheelProtection.Queues;
 
 public abstract class ContinuationToken : IDisposable
 {
-    public abstract void Cancel();
+    public abstract void Dispose();
 }
 
 public interface ICompletionRateController
