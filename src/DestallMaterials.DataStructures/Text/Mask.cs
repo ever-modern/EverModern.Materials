@@ -175,12 +175,12 @@ public record struct TextPartConstraint(
 /// </summary>
 public interface ITextConstrainer
 {
-    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<char[]> currentTextParts);
+    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<IReadOnlyList<char>> currentTextParts);
 }
 
 public class PhoneNumberConstrainer : ITextConstrainer
 {
-    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<char[]> currentSymbols)
+    public IReadOnlyList<TextPartConstraint> GetConstraints(IReadOnlyList<IReadOnlyList<char>> currentSymbols)
     {
         /*Implement a simple phone number constraints for test purposes. */
         throw new NotImplementedException();
