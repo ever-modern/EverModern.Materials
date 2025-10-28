@@ -1105,19 +1105,21 @@ public class MaskTests
     {
         private readonly Mask<char> _mask;
         private readonly List<List<char>> _originalParts;
+        private readonly IReadOnlyList<List<char>> _parts;
 
-        public UserInputEmulator(Mask<char> mask)
+        public UserInputEmulator(Mask<char> mask, IReadOnlyList<List<char>> parts)
         {
             _mask = mask;
-            _originalParts = mask.Parts.Select(p => new List<char>(p)).ToList();
+            _parts = parts;
+            _originalParts = parts.Select(p => new List<char>(p)).ToList();
         }
 
         /// <summary>
         /// Simulates typing a character at a specific position in a part
         /// </summary>
-        public MaskChangeResult TypeCharacter(int partIndex, char character, int position = -1)
+        public (int PartIndex, int ItemIndex) TypeCharacter(int partIndex, char character, int position = -1)
         {
-            var currentPart = new List<char>(_mask.Parts[partIndex]);
+            var currentPart = new List<char>(_parts[partIndex]);
             
             if (position == -1 || position >= currentPart.Count)
             {
@@ -1136,9 +1138,9 @@ public class MaskTests
         /// <summary>
         /// Simulates removing a character at a specific position from a part
         /// </summary>
-        public MaskChangeResult RemoveCharacter(int partIndex, int position)
+        public (int PartIndex, int ItemIndex) RemoveCharacter(int partIndex, int position)
         {
-            var currentPart = new List<char>(_mask.Parts[partIndex]);
+            var currentPart = new List<char>(_parts[partIndex]);
             
             if (position >= 0 && position < currentPart.Count)
             {
@@ -1151,9 +1153,9 @@ public class MaskTests
         /// <summary>
         /// Simulates selecting and removing multiple characters from a part
         /// </summary>
-        public MaskChangeResult RemoveRange(int partIndex, int startIndex, int count)
+        public (int PartIndex, int ItemIndex) RemoveRange(int partIndex, int startIndex, int count)
         {
-            var currentPart = new List<char>(_mask.Parts[partIndex]);
+            var currentPart = new List<char>(_parts[partIndex]);
             
             if (startIndex >= 0 && startIndex < currentPart.Count)
             {
@@ -1167,9 +1169,9 @@ public class MaskTests
         /// <summary>
         /// Simulates selecting text and replacing it with new content
         /// </summary>
-        public MaskChangeResult ReplaceRange(int partIndex, int startIndex, int count, List<char> newContent)
+        public (int PartIndex, int ItemIndex) ReplaceRange(int partIndex, int startIndex, int count, List<char> newContent)
         {
-            var currentPart = new List<char>(_mask.Parts[partIndex]);
+            var currentPart = new List<char>(_parts[partIndex]);
             
             if (startIndex >= 0 && startIndex < currentPart.Count)
             {
@@ -1191,7 +1193,7 @@ public class MaskTests
         /// </summary>
         public void Reset()
         {
-            for (int i = 0; i < _mask.Parts.Count && i < _originalParts.Count; i++)
+            for (int i = 0; i < _parts.Count && i < _originalParts.Count; i++)
             {
                 _mask.ChangePart(i, new List<char>(_originalParts[i]));
             }
@@ -1202,7 +1204,7 @@ public class MaskTests
         /// </summary>
         public string GetCurrentStateAsString(string separator = "-")
         {
-            return string.Join(separator, _mask.Parts.Select(p => new string(p.ToArray())));
+            return string.Join(separator, _parts.Select(p => new string(p.ToArray())));
         }
     }
 
@@ -1222,7 +1224,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } // Year
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove first character from day first digit part (position 0)
         var result = emulator.RemoveCharacter(0, 0);
@@ -1246,7 +1248,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove character from middle of year (position 1 of 4)
         var result = emulator.RemoveCharacter(4, 1);
@@ -1270,7 +1272,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove last character from year (position 3)
         var result = emulator.RemoveCharacter(4, 3);
@@ -1294,7 +1296,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type '2' on the left (at beginning of first part)
         var result = emulator.TypeCharacter(0, '2', 0);
@@ -1319,7 +1321,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Try to type in middle of year (should respect MaxLength)
         var result = emulator.TypeCharacter(4, '3', 2);
@@ -1343,7 +1345,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type '3' at the end of day first digit part (should fail due to MaxLength=1)
         var result = emulator.TypeCharacter(0, '3', -1);
@@ -1366,7 +1368,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Select and erase first 2 digits of year
         var result = emulator.RemoveRange(4, 0, 2);
@@ -1390,7 +1392,7 @@ public class MaskTests
             new List<char> { '2', '0', '2', '4' } 
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Replace day second digit '5' with '1' (change 25 to 21)
         var result = emulator.ReplaceRange(1, 0, 1, new List<char> { '1' });
@@ -1426,7 +1428,7 @@ public class MaskTests
         parts[11].Add('4'); parts[12].Add('5'); parts[13].Add('6'); parts[14].Add('7'); // Line number
         
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove first character from country code ('+')
         var result = emulator.RemoveCharacter(0, 0);
@@ -1451,7 +1453,7 @@ public class MaskTests
         parts[0].AddRange("+1".ToCharArray());
         parts[1].Add('5'); parts[2].Add('5'); parts[3].Add('5');
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove character from middle of area code
         var result = emulator.RemoveCharacter(2, 0);
@@ -1473,7 +1475,7 @@ public class MaskTests
         }
         
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type country code '+' then '1'
         var result1 = emulator.TypeCharacter(0, '+', -1);
@@ -1498,7 +1500,7 @@ public class MaskTests
         
         parts[1].Add('5'); parts[2].Add('5'); parts[3].Add('5'); // Area code
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Select and erase entire area code
         var result = emulator.RemoveRange(1, 0, 3);
@@ -1521,7 +1523,7 @@ public class MaskTests
         
         parts[1].Add('4'); parts[2].Add('0'); parts[3].Add('0'); // Invalid area code (starts with 4)
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Replace invalid area code with valid one
         var result = emulator.ReplaceRange(1, 0, 3, new List<char> { '5', '5', '5' });
@@ -1550,7 +1552,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }       // TLD
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove first character from local part ('u')
         var result = emulator.RemoveCharacter(0, 0);
@@ -1575,7 +1577,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove 'm' from domain (middle character)
         var result = emulator.RemoveCharacter(2, 1);
@@ -1600,7 +1602,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove last character from TLD ('m')
         var result = emulator.RemoveCharacter(4, 2);
@@ -1625,7 +1627,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type 'u' at the beginning of local part
         var result = emulator.TypeCharacter(0, 'u', 0);
@@ -1650,7 +1652,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type 'e' in middle of local part (between 's' and 'e')
         var result = emulator.TypeCharacter(0, 'e', 2);
@@ -1675,7 +1677,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type 's' at the end of local part
         var result = emulator.TypeCharacter(0, 's', -1);
@@ -1700,7 +1702,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Select and erase middle characters from local part
         var result = emulator.RemoveRange(0, 1, 2);
@@ -1725,7 +1727,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Replace domain 'gmail' with 'yahoo'
         var result = emulator.ReplaceRange(2, 0, 5, new List<char> { 'y', 'a', 'h', 'o', 'o' });
@@ -1750,7 +1752,7 @@ public class MaskTests
             new List<char> { 'c', 'o', 'm' }
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type @ symbol in the @ part
         var result = emulator.TypeCharacter(1, '@', 0);
@@ -1779,7 +1781,7 @@ public class MaskTests
             new List<char>()  // Year
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Simulate user typing "15-03-2025"
         emulator.TypeCharacter(0, '1', 0); // Type '1' in day first
@@ -1813,7 +1815,7 @@ public class MaskTests
             parts.Add(new List<char>());
         }
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Simulate user typing "+1 (555) 123-4567"
         emulator.TypeCharacter(0, '+', 0);
@@ -1858,7 +1860,7 @@ public class MaskTests
             new List<char>()  // TLD
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Simulate user typing "john.doe@example.com"
         // Type local part
@@ -1913,7 +1915,7 @@ public class MaskTests
             new List<char> { '9', '9', '9', '9' } // Invalid year
         };
         var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask);
+        var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Select all and replace with valid date
         // Replace day part with valid values
