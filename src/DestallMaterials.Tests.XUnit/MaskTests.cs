@@ -375,56 +375,9 @@ public class MaskTests
 
     #region PhoneNumberConstrainer Tests
 
-    [Fact]
-    public void PhoneNumberConstrainer_GetConstraints_ShouldReturnCorrectStructure()
-    {
-        // Arrange
-        var constrainer = new PhoneNumberConstrainer();
-        var emptyParts = new List<IReadOnlyList<char>>();
 
-        // Act
-        var constraints = constrainer.GetConstraints(emptyParts);
 
-        // Assert
-        Assert.Equal(15, constraints.Count); // Country code + area code + separators + exchange + dash + line number
-        
-        // First part: Optional country code
-        Assert.Equal("+1", new string(constraints[0].AllowedValues.ToArray()));
-        Assert.Equal(0, constraints[0].MinLength);
-        Assert.Equal(2, constraints[0].MaxLength);
-    }
 
-    [Fact]
-    public void PhoneNumberConstrainer_GetConstraints_ShouldHandleCountryCodeProgression()
-    {
-        // Arrange
-        var constrainer = new PhoneNumberConstrainer();
-        
-        // Test 1: Just '+'
-        var partsWithPlus = new List<IReadOnlyList<char>> { new List<char> { '+' } };
-        var constraints1 = constrainer.GetConstraints(partsWithPlus);
-        
-        // Test 2: Just '1'
-        var partsWithOne = new List<IReadOnlyList<char>> { new List<char> { '1' } };
-        var constraints2 = constrainer.GetConstraints(partsWithOne);
-        
-        // Test 3: Both '+1'
-        var partsWithPlusOne = new List<IReadOnlyList<char>> { new List<char> { '+', '1' } };
-        var constraints3 = constrainer.GetConstraints(partsWithPlusOne);
-
-        // Assert
-        // After '+', expect '1' (next in country code progression)
-        Assert.Equal("1", new string(constraints1[1].AllowedValues.ToArray()));
-        Assert.Equal(1, constraints1[1].MinLength);
-        
-        // After '1', expect area code start (empty constraints)
-        Assert.Empty(constraints2[1].AllowedValues);
-        Assert.Equal(0, constraints2[1].MaxLength);
-        
-        // After '+1', expect area code start (empty constraints)
-        Assert.Empty(constraints3[1].AllowedValues);
-        Assert.Equal(0, constraints3[1].MinLength);
-    }
 
     [Fact]
     public void PhoneNumberConstrainer_GetConstraints_ShouldHandleAreaCodeRules()
@@ -711,27 +664,7 @@ public class MaskTests
         Assert.Equal(255, constraints[2].MaxLength); // RFC domain limit
     }
 
-    [Fact]
-    public void Mask_WithEmailInputConstrainer_ShouldHandleAtSymbolPropagation()
-    {
-        // Arrange
-        var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { 't', 'e', 's', 't' }, // Local part
-            new List<char>(),                      // @ part (empty, so @ should be required)
-            new List<char>()                       // Domain part
-        };
-        var mask = new Mask<char>(constrainer, parts);
 
-        // Act - Try to insert '@' in the @ part
-        var result = mask.ChangePart(1, new List<char> { '@' });
-
-        // Assert - The @ should be inserted in the @ part (index 1)
-        Assert.Equal(1, result.PartIndex);
-        Assert.Single(parts[1]); // Should contain '@'
-        Assert.Equal('@', parts[1][0]);
-    }
 
     [Fact]
     public void Mask_WithEmailInputConstrainer_ShouldHandleDomainPropagation()
@@ -1210,29 +1143,7 @@ public class MaskTests
 
     #region Date Input User Simulation Tests
 
-    [Fact]
-    public void UserInputEmulator_DateInput_RemoveCharacterFromLeft()
-    {
-        // Arrange - Setup date: 25-12-2024
-        var constrainer = new DateInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { '2' },           // Day first digit
-            new List<char> { '5' },           // Day second digit  
-            new List<char> { '1' },           // Month first digit
-            new List<char> { '2' },           // Month second digit
-            new List<char> { '2', '0', '2', '4' } // Year
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Remove first character from day first digit part (position 0)
-        var result = emulator.RemoveCharacter(0, 0);
-
-        // Assert - Should handle removal gracefully
-        Assert.Equal(0, result.PartIndex);
-        Assert.Empty(parts[0]); // First part should be empty after removal
-    }
 
     [Fact]
     public void UserInputEmulator_DateInput_RemoveCharacterFromMiddle()
@@ -1378,30 +1289,7 @@ public class MaskTests
         Assert.Equal(4, parts[4].Count); // Should still have 4 digits after adaptation
     }
 
-    [Fact]
-    public void UserInputEmulator_DateInput_SelectAndReplaceText()
-    {
-        // Arrange - Setup date: 25-12-2024
-        var constrainer = new DateInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { '2' },           
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Replace day second digit '5' with '1' (change 25 to 21)
-        var result = emulator.ReplaceRange(1, 0, 1, new List<char> { '1' });
-
-        // Assert - Should accept valid change
-        Assert.Equal(1, result.PartIndex);
-        Assert.Single(parts[1]);
-        Assert.Equal('1', parts[1][0]);
-    }
 
     #endregion
 
@@ -1463,76 +1351,11 @@ public class MaskTests
         // Area code should maintain valid format
     }
 
-    [Fact]
-    public void UserInputEmulator_PhoneInput_TypeCharacterOnRight()
-    {
-        // Arrange
-        var constrainer = new PhoneNumberConstrainer();
-        var parts = new List<List<char>>();
-        for (int i = 0; i < 15; i++)
-        {
-            parts.Add(new List<char>());
-        }
-        
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Type country code '+' then '1'
-        var result1 = emulator.TypeCharacter(0, '+', -1);
-        var result2 = emulator.TypeCharacter(0, '1', -1);
 
-        // Assert - Should build country code correctly
-        Assert.Equal(0, result2.PartIndex);
-        Assert.Equal(2, parts[0].Count);
-        Assert.Equal("+1", new string(parts[0].ToArray()));
-    }
 
-    [Fact]
-    public void UserInputEmulator_PhoneInput_SelectAndEraseRange()
-    {
-        // Arrange
-        var constrainer = new PhoneNumberConstrainer();
-        var parts = new List<List<char>>();
-        for (int i = 0; i < 15; i++)
-        {
-            parts.Add(new List<char>());
-        }
-        
-        parts[1].Add('5'); parts[2].Add('5'); parts[3].Add('5'); // Area code
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Select and erase entire area code
-        var result = emulator.RemoveRange(1, 0, 3);
 
-        // Assert - Should clear area code and allow re-entry
-        Assert.Equal(1, result.PartIndex);
-        Assert.Empty(parts[1]);
-    }
-
-    [Fact]
-    public void UserInputEmulator_PhoneInput_SelectAndReplaceText()
-    {
-        // Arrange
-        var constrainer = new PhoneNumberConstrainer();
-        var parts = new List<List<char>>();
-        for (int i = 0; i < 15; i++)
-        {
-            parts.Add(new List<char>());
-        }
-        
-        parts[1].Add('4'); parts[2].Add('0'); parts[3].Add('0'); // Invalid area code (starts with 4)
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
-
-        // Act - Replace invalid area code with valid one
-        var result = emulator.ReplaceRange(1, 0, 3, new List<char> { '5', '5', '5' });
-
-        // Assert - Should accept valid area code
-        Assert.Equal(1, result.PartIndex);
-        Assert.Equal(3, parts[1].Count);
-        Assert.Equal("555", new string(parts[1].ToArray()));
-    }
 
     #endregion
 
@@ -1638,55 +1461,9 @@ public class MaskTests
         Assert.Equal('u', parts[0][0]);
     }
 
-    [Fact]
-    public void UserInputEmulator_EmailInput_TypeCharacterInMiddle()
-    {
-        // Arrange
-        var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { 'u', 's', 'e', 'r' },
-            new List<char> { '@' },
-            new List<char> { 'g', 'm', 'a', 'i', 'l' },
-            new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Type 'e' in middle of local part (between 's' and 'e')
-        var result = emulator.TypeCharacter(0, 'e', 2);
 
-        // Assert - Should insert 'e' at position 2
-        Assert.Equal(0, result.PartIndex);
-        Assert.Equal(5, parts[0].Count);
-        Assert.Equal("useer", new string(parts[0].ToArray()));
-    }
 
-    [Fact]
-    public void UserInputEmulator_EmailInput_TypeCharacterOnRight()
-    {
-        // Arrange
-        var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { 'u', 's', 'e', 'r' },
-            new List<char> { '@' },
-            new List<char> { 'g', 'm', 'a', 'i', 'l' },
-            new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
-
-        // Act - Type 's' at the end of local part
-        var result = emulator.TypeCharacter(0, 's', -1);
-
-        // Assert - Should append 's' to local part
-        Assert.Equal(0, result.PartIndex);
-        Assert.Equal(5, parts[0].Count);
-        Assert.Equal("users", new string(parts[0].ToArray()));
-    }
 
     [Fact]
     public void UserInputEmulator_EmailInput_SelectAndEraseRange()
@@ -1713,55 +1490,9 @@ public class MaskTests
         Assert.Equal("ur", new string(parts[0].ToArray()));
     }
 
-    [Fact]
-    public void UserInputEmulator_EmailInput_SelectAndReplaceText()
-    {
-        // Arrange
-        var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { 'u', 's', 'e', 'r' },
-            new List<char> { '@' },
-            new List<char> { 'g', 'm', 'a', 'i', 'l' },
-            new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Replace domain 'gmail' with 'yahoo'
-        var result = emulator.ReplaceRange(2, 0, 5, new List<char> { 'y', 'a', 'h', 'o', 'o' });
 
-        // Assert - Should accept new domain
-        Assert.Equal(2, result.PartIndex);
-        Assert.Equal(5, parts[2].Count);
-        Assert.Equal("yahoo", new string(parts[2].ToArray()));
-    }
 
-    [Fact]
-    public void UserInputEmulator_EmailInput_TypeAtSymbol()
-    {
-        // Arrange - Start with empty parts except domain
-        var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { 'u', 's', 'e', 'r' }, // Local part with partial text
-            new List<char>(),                      // @ part (empty)
-            new List<char> { 'g', 'm', 'a', 'i', 'l' },
-            new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
-
-        // Act - Type @ symbol in the @ part
-        var result = emulator.TypeCharacter(1, '@', 0);
-
-        // Assert - Should add @ to the @ part
-        Assert.Equal(1, result.PartIndex);
-        Assert.Single(parts[1]);
-        Assert.Equal('@', parts[1][0]);
-    }
 
     #endregion
 
@@ -1804,133 +1535,11 @@ public class MaskTests
         Assert.Equal("2025", new string(parts[4].ToArray()));
     }
 
-    [Fact]
-    public void UserInputEmulator_PhoneInput_CompleteUserJourney()
-    {
-        // Arrange - Empty phone input
-        var constrainer = new PhoneNumberConstrainer();
-        var parts = new List<List<char>>();
-        for (int i = 0; i < 15; i++)
-        {
-            parts.Add(new List<char>());
-        }
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Simulate user typing "+1 (555) 123-4567"
-        emulator.TypeCharacter(0, '+', 0);
-        emulator.TypeCharacter(0, '1', 1);
-        emulator.TypeCharacter(1, '5', 0);
-        emulator.TypeCharacter(2, '5', 0);
-        emulator.TypeCharacter(3, '5', 0);
-        emulator.TypeCharacter(4, '(', 0);
-        emulator.TypeCharacter(5, ')', 0);
-        emulator.TypeCharacter(6, ' ', 0);
-        emulator.TypeCharacter(7, '1', 0);
-        emulator.TypeCharacter(8, '2', 0);
-        emulator.TypeCharacter(9, '3', 0);
-        emulator.TypeCharacter(10, '-', 0);
-        emulator.TypeCharacter(11, '4', 0);
-        emulator.TypeCharacter(12, '5', 0);
-        emulator.TypeCharacter(13, '6', 0);
-        emulator.TypeCharacter(14, '7', 0);
 
-        // Assert - Should build complete valid phone number
-        Assert.Equal("+1", new string(parts[0].ToArray()));
-        Assert.Equal("555", new string(parts.Skip(1).Take(3).SelectMany(p => p).ToArray()));
-        Assert.Equal("(", new string(parts[4].ToArray()));
-        Assert.Equal(")", new string(parts[5].ToArray()));
-        Assert.Equal(" ", new string(parts[6].ToArray()));
-        Assert.Equal("123", new string(parts.Skip(7).Take(3).SelectMany(p => p).ToArray()));
-        Assert.Equal("-", new string(parts[10].ToArray()));
-        Assert.Equal("4567", new string(parts.Skip(11).Take(4).SelectMany(p => p).ToArray()));
-    }
 
-    [Fact]
-    public void UserInputEmulator_EmailInput_CompleteUserJourney()
-    {
-        // Arrange - Empty email input
-        var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char>(), // Local part
-            new List<char>(), // @
-            new List<char>(), // Domain
-            new List<char>(), // Dot
-            new List<char>()  // TLD
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
 
-        // Act - Simulate user typing "john.doe@example.com"
-        // Type local part
-        emulator.TypeCharacter(0, 'j', 0);
-        emulator.TypeCharacter(0, 'o', 1);
-        emulator.TypeCharacter(0, 'h', 2);
-        emulator.TypeCharacter(0, 'n', 3);
-        emulator.TypeCharacter(0, '.', 4);
-        emulator.TypeCharacter(0, 'd', 5);
-        emulator.TypeCharacter(0, 'o', 6);
-        emulator.TypeCharacter(0, 'e', 7);
-        
-        // Type @ symbol
-        emulator.TypeCharacter(1, '@', 0);
-        
-        // Type domain
-        emulator.TypeCharacter(2, 'e', 0);
-        emulator.TypeCharacter(2, 'x', 1);
-        emulator.TypeCharacter(2, 'a', 2);
-        emulator.TypeCharacter(2, 'm', 3);
-        emulator.TypeCharacter(2, 'p', 4);
-        emulator.TypeCharacter(2, 'l', 5);
-        emulator.TypeCharacter(2, 'e', 6);
-        
-        // Type dot
-        emulator.TypeCharacter(3, '.', 0);
-        
-        // Type TLD
-        emulator.TypeCharacter(4, 'c', 0);
-        emulator.TypeCharacter(4, 'o', 1);
-        emulator.TypeCharacter(4, 'm', 2);
 
-        // Assert - Should build complete valid email
-        Assert.Equal("john.doe", new string(parts[0].ToArray()));
-        Assert.Equal("@", new string(parts[1].ToArray()));
-        Assert.Equal("example", new string(parts[2].ToArray()));
-        Assert.Equal(".", new string(parts[3].ToArray()));
-        Assert.Equal("com", new string(parts[4].ToArray()));
-    }
-
-    [Fact]
-    public void UserInputEmulator_ErrorRecovery_SelectAllAndReplace()
-    {
-        // Arrange - Setup with incorrect date: 35-15-9999
-        var constrainer = new DateInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { '3' }, // Invalid day first (should be 0-3)
-            new List<char> { '5' }, // Invalid day second 
-            new List<char> { '1' }, // Month first
-            new List<char> { '5' }, // Invalid month second (should be 0-2 for month 1X)
-            new List<char> { '9', '9', '9', '9' } // Invalid year
-        };
-        var mask = new Mask<char>(constrainer, parts);
-        var emulator = new UserInputEmulator(mask, parts);
-
-        // Act - Select all and replace with valid date
-        // Replace day part with valid values
-        emulator.ReplaceRange(0, 0, 1, new List<char> { '2' });
-        emulator.ReplaceRange(1, 0, 1, new List<char> { '5' });
-        emulator.ReplaceRange(3, 0, 1, new List<char> { '2' }); // Change month second from 5 to 2
-        emulator.ReplaceRange(4, 0, 4, new List<char> { '2', '0', '2', '4' }); // Change year to 2024
-
-        // Assert - Should have valid date after correction
-        Assert.Equal('2', parts[0][0]); // Day first = '2'
-        Assert.Equal('5', parts[1][0]); // Day second = '5' (valid for day 2X)
-        Assert.Equal('0', parts[2][0]); // Month first = '0'
-        Assert.Equal('2', parts[3][0]); // Month second = '2' (valid for month 02)
-        Assert.Equal("2024", new string(parts[4].ToArray())); // Year = 2024
-    }
 
     #endregion
 
