@@ -36,7 +36,7 @@ public class Mask<T>(
         {
             var deleteIndex = at;
             DeleteItem(partIndex, deleteIndex);
-            
+
             // After deletion, the parts array changes, so we need to get fresh constraints
             var constraints = constrainer.GetConstraints(parts);
             if (partIndex < constraints.Count)
@@ -87,7 +87,7 @@ public class Mask<T>(
     (int PartIndex, int ItemIndex) InsertItem(int position, T item)
     {
         var currentPosition = position;
-        
+
         while (currentPosition < parts.Count)
         {
             var constraints = constrainer.GetConstraints(parts);
@@ -95,7 +95,7 @@ public class Mask<T>(
                 break;
 
             var constraint = constraints[currentPosition];
-            
+
             // Check if the item is allowed
             if (!constraint.AllowedValues.Contains(item, equalityComparer))
             {
@@ -107,7 +107,9 @@ public class Mask<T>(
             // Check if this part has reached its max length
             if (parts[currentPosition].Count >= constraint.MaxLength)
             {
-                Log($"Part {currentPosition} reached max length {constraint.MaxLength}, trying next");
+                Log(
+                    $"Part {currentPosition} reached max length {constraint.MaxLength}, trying next"
+                );
                 currentPosition++;
                 continue;
             }
@@ -115,7 +117,7 @@ public class Mask<T>(
             // Add the item to this part
             parts[currentPosition].Add(item);
             Log($"Added {item} to part {currentPosition}");
-            
+
             return (currentPosition, parts[currentPosition].Count - 1);
         }
 
@@ -128,16 +130,19 @@ public class Mask<T>(
     /// <param name="partIndex">Index of the part whose constraints changed</param>
     /// <param name="newConstraints">New constraints for this part</param>
     /// <returns>Tuple (PartIndex, ItemIndex) of where the adjustment propagated to</returns>
-    public (int PartIndex, int ItemIndex) UpdateConstraints(int partIndex, MaskPartConstraint<T> newConstraints)
+    public (int PartIndex, int ItemIndex) UpdateConstraints(
+        int partIndex,
+        MaskPartConstraint<T> newConstraints
+    )
     {
         Log($"Updating constraints for part {partIndex}");
-        
+
         if (partIndex < 0 || partIndex >= parts.Count)
             return (-1, -1);
 
         var part = parts[partIndex];
         var currentValues = new List<T>(part);
-        
+
         // Clear the part
         part.Clear();
 
@@ -146,10 +151,9 @@ public class Mask<T>(
         {
             var valueIndexInOld = -1;
             var constraints = constrainer.GetConstraints(parts);
-            var allowedValuesList = partIndex < constraints.Count 
-                ? constraints[partIndex].AllowedValues 
-                : null;
-            
+            var allowedValuesList =
+                partIndex < constraints.Count ? constraints[partIndex].AllowedValues : null;
+
             if (allowedValuesList != null)
             {
                 // Find index of value in old constraint's allowed values
@@ -173,7 +177,7 @@ public class Mask<T>(
             {
                 // No valid value found, try to insert at next part
                 var firstAllowed = newConstraints.AllowedValues.FirstOrDefault();
-                if (firstAllowed != null)
+                if (firstAllowed is not null)
                 {
                     var result = InsertItem(partIndex + 1, firstAllowed);
                     if (result != (-1, -1))
@@ -185,7 +189,7 @@ public class Mask<T>(
         // Ensure min length is satisfied (only if there are allowed values)
         while (part.Count < newConstraints.MinLength && newConstraints.AllowedValues.Count > 0)
         {
-            part.Add(newConstraints.AllowedValues.First());
+            part.Add(newConstraints.AllowedValues[0]);
         }
 
         return (partIndex, part.Count > 0 ? part.Count - 1 : 0);
@@ -216,9 +220,14 @@ public class Mask<T>(
     /// <param name="partIndex">Index of the part</param>
     /// <param name="change">ContentChange describing what changed</param>
     /// <returns>Tuple (PartIndex, ItemIndex) of where the change propagated to</returns>
-    public (int PartIndex, int ItemIndex) ProcessContentChange(int partIndex, ContentChange<T> change)
+    public (int PartIndex, int ItemIndex) ProcessContentChange(
+        int partIndex,
+        ContentChange<T> change
+    )
     {
-        Log($"Processing ContentChange: part={partIndex}, at={change.At}, removed={change.Removed}, inserted={change.Inserted.Count}");
+        Log(
+            $"Processing ContentChange: part={partIndex}, at={change.At}, removed={change.Removed}, inserted={change.Inserted.Count}"
+        );
 
         // Process removals first
         for (int i = 0; i < change.Removed; i++)
@@ -244,22 +253,26 @@ public class Mask<T>(
     /// </summary>
     /// <param name="symbols"></param>
     /// <param name="constraints"></param>
-    public static void DecideSingleOptions(
-        List<T> symbols,
-        MaskPartConstraint<T> constraints
-    )
+    public static void DecideSingleOptions(List<T> symbols, MaskPartConstraint<T> constraints)
     {
         // If the part is empty and has min length > 0, add the first allowed value
         if (symbols.Count < constraints.MinLength && constraints.AllowedValues.Count > 0)
         {
-            symbols.Add(constraints.AllowedValues.First());
+            symbols.Add(constraints.AllowedValues[0]);
         }
     }
 }
 
 public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
 {
-    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish)
+    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish) =>
+        Get(start, finish, EqualityComparer<T>.Default);
+
+    public static ContentChange<T> Get(
+        IReadOnlyList<T> start,
+        IReadOnlyList<T> finish,
+        IEqualityComparer<T> equalityComparer
+    )
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentNullException.ThrowIfNull(finish);
@@ -283,7 +296,7 @@ public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inse
 
         while (
             prefixLength < maxPrefix
-            && EqualityComparer<T>.Default.Equals(start[prefixLength], finish[prefixLength])
+            && equalityComparer.Equals(start[prefixLength], finish[prefixLength])
         )
         {
             prefixLength++;
@@ -321,7 +334,7 @@ public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inse
             int startIndex = startLength - i;
             int finishIndex = finishLength - i;
 
-            if (EqualityComparer<T>.Default.Equals(start[startIndex], finish[finishIndex]))
+            if (equalityComparer.Equals(start[startIndex], finish[finishIndex]))
             {
                 suffixLength = i;
             }
@@ -398,83 +411,55 @@ public class DateInputConstrainer : IConstrainer<char>
         var constraints = new List<MaskPartConstraint<char>>();
 
         // Day first digit: 0-3
-        constraints.Add(new MaskPartConstraint<char>(
-            "0123".ToCharArray(),
-            1, 1
-        ));
+        constraints.Add(new MaskPartConstraint<char>("0123".ToCharArray(), 1, 1));
 
         // Day second digit: 0-9 (but depends on first digit)
-        var firstDayDigit = currentTextParts.Count > 0 && currentTextParts[0].Count > 0 
-            ? currentTextParts[0][0] 
-            : '0';
-        
+        var firstDayDigit =
+            currentTextParts.Count > 0 && currentTextParts[0].Count > 0
+                ? currentTextParts[0][0]
+                : '0';
+
         if (firstDayDigit == '0' || firstDayDigit == '1')
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "0123456789".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
         }
         else if (firstDayDigit == '2')
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "0123456789".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
         }
         else if (firstDayDigit == '3')
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "01".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("01".ToCharArray(), 1, 1));
         }
         else
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "0123456789".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
         }
 
         // Month first digit: 0-1
-        constraints.Add(new MaskPartConstraint<char>(
-            "01".ToCharArray(),
-            1, 1
-        ));
+        constraints.Add(new MaskPartConstraint<char>("01".ToCharArray(), 1, 1));
 
         // Month second digit: depends on first digit
-        var firstMonthDigit = currentTextParts.Count > 2 && currentTextParts[2].Count > 0
-            ? currentTextParts[2][0]
-            : '0';
+        var firstMonthDigit =
+            currentTextParts.Count > 2 && currentTextParts[2].Count > 0
+                ? currentTextParts[2][0]
+                : '0';
 
         if (firstMonthDigit == '0')
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "123456789".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("123456789".ToCharArray(), 1, 1));
         }
         else if (firstMonthDigit == '1')
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "012".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("012".ToCharArray(), 1, 1));
         }
         else
         {
-            constraints.Add(new MaskPartConstraint<char>(
-                "0123456789".ToCharArray(),
-                1, 1
-            ));
+            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
         }
 
         // Year: 4 digits
-        constraints.Add(new MaskPartConstraint<char>(
-            "0123456789".ToCharArray(),
-            4, 4
-        ));
+        constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 4, 4));
 
         return constraints;
     }
