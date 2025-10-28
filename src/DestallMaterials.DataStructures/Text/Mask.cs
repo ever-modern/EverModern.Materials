@@ -387,8 +387,174 @@ public class PhoneNumberConstrainer : IConstrainer<char>
         IReadOnlyList<IReadOnlyList<char>> currentSymbols
     )
     {
-        /*Implement a simple phone number constraints for test purposes. */
-        throw new NotImplementedException();
+        // Phone number format: +1 (XXX) XXX-XXXX or XXX-XXX-XXXX
+        // Fixed structure with 14 parts:
+        // Part 0: Country code indicator (+ or 1 or digits)
+        // Parts 1-3: Area code (XXX)
+        // Parts 4-6: Separators '(', ')', ' '
+        // Parts 7-9: Exchange code (XXX)
+        // Part 10: '-'
+        // Parts 11-14: Line number (XXXX)
+
+        var constraints = new List<MaskPartConstraint<char>>();
+
+        // Part 0: Country code or start of area code
+        if (currentSymbols.Count > 0 && currentSymbols[0].Count > 0)
+        {
+            var firstChar = currentSymbols[0][0];
+            if (firstChar == '+')
+            {
+                constraints.Add(new MaskPartConstraint<char>("1".ToCharArray(), 1, 1));
+            }
+            else if (firstChar == '1')
+            {
+                constraints.Add(new MaskPartConstraint<char>(Array.Empty<char>(), 0, 0));
+            }
+            else
+            {
+                // Allow digits for area code start
+                constraints.Add(new MaskPartConstraint<char>("123456789".ToCharArray(), 1, 1));
+            }
+        }
+        else
+        {
+            constraints.Add(new MaskPartConstraint<char>("+123456789".ToCharArray(), 0, 1));
+        }
+
+        // Parts 1-3: Area code (XXX)
+        for (int i = 0; i < 3; i++)
+        {
+            var allowedValues = i == 0 ? "123456789" : "0123456789";
+            constraints.Add(new MaskPartConstraint<char>(allowedValues.ToCharArray(), 1, 1));
+        }
+
+        // Parts 4-6: Separators
+        constraints.Add(new MaskPartConstraint<char>("(".ToCharArray(), 0, 1));
+        constraints.Add(new MaskPartConstraint<char>(")".ToCharArray(), 0, 1));
+        constraints.Add(new MaskPartConstraint<char>(" ".ToCharArray(), 0, 1));
+
+        // Parts 7-9: Exchange code
+        for (int i = 0; i < 3; i++)
+        {
+            var allowedValues = i == 0 ? "123456789" : "0123456789";
+            constraints.Add(new MaskPartConstraint<char>(allowedValues.ToCharArray(), 1, 1));
+        }
+
+        // Part 10: Dash
+        constraints.Add(new MaskPartConstraint<char>("-".ToCharArray(), 0, 1));
+
+        // Parts 11-14: Line number
+        for (int i = 0; i < 4; i++)
+        {
+            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
+        }
+
+        return constraints;
+    }
+}
+
+/// <summary>
+/// Email input constrainer for testing Mask functionality
+/// </summary>
+public class EmailInputConstrainer : IConstrainer<char>
+{
+    public IReadOnlyList<MaskPartConstraint<char>> GetConstraints(
+        IReadOnlyList<IReadOnlyList<char>> currentTextParts
+    )
+    {
+        // Email format: local@domain.tld
+        // Progressive validation with 5 parts:
+        // Part 0: Local part (before @)
+        // Part 1: @ symbol
+        // Part 2: Domain part (before .)
+        // Part 3: Dot separator
+        // Part 4: TLD part
+
+        var constraints = new List<MaskPartConstraint<char>>();
+
+        // Analyze current state
+        int atIndex = -1;
+        for (int i = 0; i < currentTextParts.Count; i++)
+        {
+            if (currentTextParts[i].Contains('@'))
+            {
+                atIndex = i;
+                break;
+            }
+        }
+
+        if (atIndex == -1)
+        {
+            // No @ found yet, we're in the local part
+            constraints.Add(new MaskPartConstraint<char>(
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-@".ToCharArray(),
+                0, 64
+            ));
+            constraints.Add(new MaskPartConstraint<char>("@".ToCharArray(), 0, 1));
+            constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
+            constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
+            constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
+        }
+        else
+        {
+            // @ found, determine structure
+            if (atIndex == 0)
+            {
+                // Part 0 is @, so local part should be empty
+                constraints.Add(new MaskPartConstraint<char>(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
+                    0, 64
+                ));
+            }
+            else
+            {
+                // Part 0 has local part content
+                constraints.Add(new MaskPartConstraint<char>(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
+                    1, 64
+                ));
+            }
+
+            // Part 1: @ symbol (required)
+            constraints.Add(new MaskPartConstraint<char>("@".ToCharArray(), 1, 1));
+
+            // Check for domain dot
+            int dotIndex = -1;
+            for (int i = atIndex + 1; i < currentTextParts.Count; i++)
+            {
+                if (currentTextParts[i].Contains('.'))
+                {
+                    dotIndex = i;
+                    break;
+                }
+            }
+
+            if (dotIndex == -1)
+            {
+                // No dot found, domain part only
+                constraints.Add(new MaskPartConstraint<char>(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
+                    0, 255
+                ));
+                constraints.Add(new MaskPartConstraint<char>(".".ToCharArray(), 0, 1));
+                constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
+            }
+            else
+            {
+                // Domain and TLD parts
+                constraints.Add(new MaskPartConstraint<char>(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
+                    1, 255
+                ));
+                constraints.Add(new MaskPartConstraint<char>(".".ToCharArray(), 1, 1));
+                constraints.Add(new MaskPartConstraint<char>(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray(),
+                    2, 63
+                ));
+            }
+        }
+
+        return constraints;
     }
 }
 
@@ -419,22 +585,22 @@ public class DateInputConstrainer : IConstrainer<char>
                 ? currentTextParts[0][0]
                 : '0';
 
-        if (firstDayDigit == '0' || firstDayDigit == '1')
+        // Logic for day constraints:
+        // If first digit is 0: second digit can be 1-9 (days 01-09)
+        // If first digit is 1: second digit can be 0-9 (days 10-19) 
+        // If first digit is 2: second digit can be 0-9 (days 20-29)
+        // If first digit is 3: second digit can be 0-1 (days 30-31)
+        // Any other value: allow 0-9 (fallback)
+        string daySecondDigitConstraints = firstDayDigit switch
         {
-            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
-        }
-        else if (firstDayDigit == '2')
-        {
-            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
-        }
-        else if (firstDayDigit == '3')
-        {
-            constraints.Add(new MaskPartConstraint<char>("01".ToCharArray(), 1, 1));
-        }
-        else
-        {
-            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
-        }
+            '0' => "123456789",  // Days 01-09
+            '1' => "0123456789", // Days 10-19
+            '2' => "0123456789", // Days 20-29
+            '3' => "01",         // Days 30-31
+            _ => "0123456789"    // Fallback
+        };
+        
+        constraints.Add(new MaskPartConstraint<char>(daySecondDigitConstraints.ToCharArray(), 1, 1));
 
         // Month first digit: 0-1
         constraints.Add(new MaskPartConstraint<char>("01".ToCharArray(), 1, 1));
