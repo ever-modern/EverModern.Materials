@@ -1,7 +1,4 @@
 using DestallMaterials.WheelProtection.DataStructures.Text;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace DestallMaterials.Tests.XUnit;
 
@@ -102,7 +99,7 @@ public class MaskTests
             new List<char> { '1' },
             new List<char> { '1' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
 
         // Act
@@ -110,7 +107,7 @@ public class MaskTests
 
         // Assert
         Assert.Equal(5, constraints.Count);
-        
+
         // Day first digit: 0-3
         Assert.Equal("0123", new string(constraints[0].AllowedValues.ToArray()));
         Assert.Equal(1, constraints[0].MinLength);
@@ -148,7 +145,7 @@ public class MaskTests
             new List<char> { '1' },
             new List<char> { '1' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
 
         // Act
@@ -156,12 +153,12 @@ public class MaskTests
 
         // Assert
         Assert.Equal(5, constraints.Count);
-        
+
         // Day first digit: 0-3
-        Assert.Equal("0123", new string(constraints[0].AllowedValues.ToArray()));
+        Assert.Equal("0123", new string([.. constraints[0].AllowedValues]));
 
         // Day second digit: 0-1 (since first digit is 3, max day is 31)
-        Assert.Equal("01", new string(constraints[1].AllowedValues.ToArray()));
+        Assert.Equal("01", new string([.. constraints[1].AllowedValues]));
         Assert.Equal(1, constraints[1].MinLength);
         Assert.Equal(1, constraints[1].MaxLength);
     }
@@ -177,7 +174,7 @@ public class MaskTests
             new List<char> { '5' },
             new List<char> { '0' }, // First digit is 0, so second digit can be 1-9
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
 
         // Act
@@ -185,7 +182,7 @@ public class MaskTests
 
         // Assert
         Assert.Equal(5, constraints.Count);
-        
+
         // Month second digit: 1-9 (since first digit is 0)
         Assert.Equal("123456789", new string(constraints[3].AllowedValues.ToArray()));
         Assert.Equal(1, constraints[3].MinLength);
@@ -203,9 +200,9 @@ public class MaskTests
             new List<char> { }, // Empty part to allow '4' insertion
             new List<char> { },
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change first part from empty to '4'
         var result = mask.ChangePart(0, new List<char> { '4' });
@@ -229,9 +226,9 @@ public class MaskTests
             new List<char> { '1' },
             new List<char> { },
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Try to change first part to '4', which is not allowed (max is 3)
         // The mask should skip to the next part
@@ -254,9 +251,9 @@ public class MaskTests
             new List<char> { '1' },
             new List<char> { '0' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change constraint for second part to only allow '0' and '1'
         var newConstraint = new MaskPartConstraint<char>("01".ToCharArray(), 1, 1);
@@ -280,9 +277,9 @@ public class MaskTests
             new List<char> { '5' }, // Invalid value for day (should be 0-1 when first digit is 3)
             new List<char> { '0' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change constraint for second part to only allow '0' and '1'
         var newConstraint = new MaskPartConstraint<char>("01".ToCharArray(), 1, 1);
@@ -306,9 +303,9 @@ public class MaskTests
             new List<char> { '5' },
             new List<char> { '0' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change constraint for second part to allow no values
         var newConstraint = new MaskPartConstraint<char>(Array.Empty<char>(), 0, 0);
@@ -330,13 +327,13 @@ public class MaskTests
             new List<char> { '5' },
             new List<char> { '0' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Test FindClosestValue through reflection or by creating a testable method
         // For now, we'll test through UpdateConstraints which uses FindClosestValue
-        
+
         // Act - Change constraint to allow '5' and '6'
         var newConstraint = new MaskPartConstraint<char>("56".ToCharArray(), 1, 1);
         var result = mask.UpdateConstraints(1, newConstraint);
@@ -359,9 +356,9 @@ public class MaskTests
             new List<char> { '2' },
             new List<char> { '0' },
             new List<char> { '2' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Replace '2' with '3' in second part
         var change = new ContentChange<char>(0, 1, new List<char> { '3' });
@@ -387,9 +384,9 @@ public class MaskTests
         var parts = new List<IReadOnlyList<char>>
         {
             new List<char> { '+', '1' }, // Country code complete
-            new List<char>(),           // Empty to allow area code
-            new List<char>(),           // Empty for second digit
-            new List<char>()            // Empty for third digit
+            new List<char>(), // Empty to allow area code
+            new List<char>(), // Empty for second digit
+            new List<char>(), // Empty for third digit
         };
 
         // Act
@@ -431,7 +428,7 @@ public class MaskTests
     {
         // Arrange
         var constrainer = new PhoneNumberConstrainer();
-        
+
         // Test with no separators
         var parts = new List<IReadOnlyList<char>>();
         for (int i = 0; i < 15; i++)
@@ -447,15 +444,15 @@ public class MaskTests
         Assert.Equal("(", new string(constraints[4].AllowedValues.ToArray())); // Opening paren
         Assert.Equal(0, constraints[4].MinLength);
         Assert.Equal(1, constraints[4].MaxLength);
-        
+
         Assert.Equal(")", new string(constraints[5].AllowedValues.ToArray())); // Closing paren
         Assert.Equal(0, constraints[5].MinLength);
         Assert.Equal(1, constraints[5].MaxLength);
-        
+
         Assert.Equal(" ", new string(constraints[6].AllowedValues.ToArray())); // Space
         Assert.Equal(0, constraints[6].MinLength);
         Assert.Equal(1, constraints[6].MaxLength);
-        
+
         Assert.Equal("-", new string(constraints[10].AllowedValues.ToArray())); // Dash
         Assert.Equal(0, constraints[10].MinLength);
         Assert.Equal(1, constraints[10].MaxLength);
@@ -495,7 +492,7 @@ public class MaskTests
         {
             parts.Add(new List<char>());
         }
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Try to insert '0' in first area code digit (should fail and propagate)
         var result = mask.ChangePart(2, new List<char> { '0' });
@@ -522,7 +519,7 @@ public class MaskTests
 
         // Assert
         Assert.Equal(5, constraints.Count); // Local part, @, domain, dot, TLD
-        
+
         // Part 0: Local part
         Assert.Contains('a', constraints[0].AllowedValues);
         Assert.Contains('0', constraints[0].AllowedValues);
@@ -537,16 +534,19 @@ public class MaskTests
     {
         // Arrange
         var constrainer = new EmailInputConstrainer();
-        
+
         // Test without @ symbol
-        var partsWithoutAt = new List<IReadOnlyList<char>> { new List<char> { 'u', 's', 'e', 'r' } };
-        var constraints1 = constrainer.GetConstraints(partsWithoutAt);
-        
-        // Test with @ symbol
-        var partsWithAt = new List<IReadOnlyList<char>> 
-        { 
+        var partsWithoutAt = new List<IReadOnlyList<char>>
+        {
             new List<char> { 'u', 's', 'e', 'r' },
-            new List<char> { '@' }
+        };
+        var constraints1 = constrainer.GetConstraints(partsWithoutAt);
+
+        // Test with @ symbol
+        var partsWithAt = new List<IReadOnlyList<char>>
+        {
+            new List<char> { 'u', 's', 'e', 'r' },
+            new List<char> { '@' },
         };
         var constraints2 = constrainer.GetConstraints(partsWithAt);
 
@@ -554,7 +554,7 @@ public class MaskTests
         // Without @: @ symbol is optional
         Assert.Equal("@", new string(constraints1[1].AllowedValues.ToArray()));
         Assert.Equal(0, constraints1[1].MinLength);
-        
+
         // With @: @ symbol becomes required
         Assert.Equal("@", new string(constraints2[1].AllowedValues.ToArray()));
         Assert.Equal(1, constraints2[1].MinLength);
@@ -569,7 +569,7 @@ public class MaskTests
         {
             new List<char> { 'u', 's', 'e', 'r' },
             new List<char> { '@' },
-            new List<char> { 'g', 'm', 'a', 'i', 'l' }
+            new List<char> { 'g', 'm', 'a', 'i', 'l' },
         };
 
         // Act
@@ -582,7 +582,7 @@ public class MaskTests
         Assert.Contains('.', constraints[2].AllowedValues);
         Assert.Equal(0, constraints[2].MinLength);
         Assert.Equal(255, constraints[2].MaxLength);
-        
+
         // Part 3: Dot separator (optional so far)
         Assert.Equal(".", new string(constraints[3].AllowedValues.ToArray()));
         Assert.Equal(0, constraints[3].MinLength);
@@ -599,7 +599,7 @@ public class MaskTests
             new List<char> { '@' },
             new List<char> { 'g', 'm', 'a', 'i', 'l' },
             new List<char> { '.' },
-            new List<char> { 'c', 'o' }
+            new List<char> { 'c', 'o' },
         };
 
         // Act
@@ -645,7 +645,7 @@ public class MaskTests
         {
             new List<char> { 'u', 's', 'e', 'r' },
             new List<char> { '@' },
-            new List<char> { 'd', 'o', 'm', 'a', 'i', 'n', '-' }
+            new List<char> { 'd', 'o', 'm', 'a', 'i', 'n', '-' },
         };
 
         // Act
@@ -664,29 +664,27 @@ public class MaskTests
         Assert.Equal(255, constraints[2].MaxLength); // RFC domain limit
     }
 
-
-
     [Fact]
     public void Mask_WithEmailInputConstrainer_ShouldHandleDomainPropagation()
     {
         // Arrange
         var constrainer = new EmailInputConstrainer();
-        var parts = new List<List<char>>
-        {
-            new List<char> { 'u', 's', 'e', 'r' },
-            new List<char> { '@' },
-            new List<char>(), // Empty domain part
-            new List<char> { '.' }, // Dot present
-            new List<char> { 'c' }  // TLD started with 'c'
-        };
-        var mask = new Mask<char>(constrainer, parts);
+        List<List<char>> parts =
+        [
+            ['u', 's', 'e', 'r'],
+            ['@'],
+            [], // Empty domain part
+            ['.'], // Dot present
+            ['c'], // TLD started with 'c'
+        ];
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Try to insert '@' in domain part (should fail, propagate or stay)
-        var result = mask.ChangePart(2, new List<char> { '@' });
+        var (PartIndex, ItemIndex) = mask.ChangePart(2, ['@']);
 
         // Assert - @ should not be allowed in domain part
         // The mask should handle this gracefully
-        Assert.True(result.PartIndex >= 2);
+        Assert.True(PartIndex >= 2);
     }
 
     #endregion
@@ -698,15 +696,15 @@ public class MaskTests
     {
         // Arrange
         var constrainer = new DateInputConstrainer();
-        
+
         // Test case: first digit is '3', so second digit should be 0-1 only (days 30-31)
         var partsWithThirdDigit = new List<IReadOnlyList<char>>
         {
-            new List<char> { '3' },           // First day digit is 3
-            new List<char> { '1' },           // Second day digit currently 1
-            new List<char> { '1' },           // Month first digit
-            new List<char> { '2' },           // Month second digit
-            new List<char> { '2', '0', '2', '4' } // Year
+            new List<char> { '3' }, // First day digit is 3
+            new List<char> { '1' }, // Second day digit currently 1
+            new List<char> { '1' }, // Month first digit
+            new List<char> { '2' }, // Month second digit
+            new List<char> { '2', '0', '2', '4' }, // Year
         };
 
         // Act
@@ -723,16 +721,16 @@ public class MaskTests
     {
         // Arrange
         var constrainer = new DateInputConstrainer();
-        
+
         // Test all possible first digits and their expected constraints
         var testCases = new[]
         {
             ('0', "123456789"), // Days 01-09
             ('1', "0123456789"), // Days 10-19
             ('2', "0123456789"), // Days 20-29
-            ('3', "01"),         // Days 30-31
+            ('3', "01"), // Days 30-31
             ('4', "0123456789"), // Fallback
-            ('9', "0123456789")  // Fallback
+            ('9', "0123456789"), // Fallback
         };
 
         foreach (var (firstDigit, expectedConstraints) in testCases)
@@ -744,7 +742,7 @@ public class MaskTests
                 new List<char> { '0' }, // Default second digit
                 new List<char> { '1' },
                 new List<char> { '2' },
-                new List<char> { '2', '0', '2', '4' }
+                new List<char> { '2', '0', '2', '4' },
             };
 
             // Act
@@ -754,7 +752,10 @@ public class MaskTests
             var actualConstraints = new string(constraints[1].AllowedValues.ToArray());
             Assert.Equal(expectedConstraints, actualConstraints);
             // Assert that the test case description is clear
-            Assert.True(true, $"Tested first digit '{firstDigit}' with constraints '{expectedConstraints}'");
+            Assert.True(
+                true,
+                $"Tested first digit '{firstDigit}' with constraints '{expectedConstraints}'"
+            );
         }
     }
 
@@ -765,13 +766,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char>(),          // First day digit (empty)
-            new List<char> { '1' },    // Second day digit (1)
-            new List<char>(),          // First month digit (empty)
-            new List<char> { '1' },    // Second month digit (1)
-            new List<char> { '2', '0', '0', '0' } // Year (2000)
+            new List<char>(), // First day digit (empty)
+            new List<char> { '1' }, // Second day digit (1)
+            new List<char>(), // First month digit (empty)
+            new List<char> { '1' }, // Second month digit (1)
+            new List<char> { '2', '0', '0', '0' }, // Year (2000)
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Try to change first part to '4' (invalid, should propagate)
         var result = mask.ChangePart(0, new List<char> { '4' });
@@ -779,7 +780,7 @@ public class MaskTests
         // Assert - The constraint for first day digit is 0-3, so '4' should not be allowed
         // It should propagate to the next part if possible
         Assert.True(result.PartIndex >= 0);
-        
+
         // Part 0 should remain empty since '4' is not allowed (0-3 only)
         Assert.Empty(parts[0]);
     }
@@ -791,13 +792,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char>(),          // First day digit (empty)
-            new List<char> { '1' },    // Second day digit (1)
-            new List<char>(),          // First month digit (empty)
-            new List<char> { '1' },    // Second month digit (1)
-            new List<char> { '2', '0', '0', '0' } // Year (2000)
+            new List<char>(), // First day digit (empty)
+            new List<char> { '1' }, // Second day digit (1)
+            new List<char>(), // First month digit (empty)
+            new List<char> { '1' }, // Second month digit (1)
+            new List<char> { '2', '0', '0', '0' }, // Year (2000)
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change first part to '2' (valid)
         var result = mask.ChangePart(0, new List<char> { '2' });
@@ -815,16 +816,16 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '2' },           // Day first digit
-            new List<char> { '9' },           // Day second digit
-            new List<char> { '0' },           // Month first digit
-            new List<char> { '2' },           // Month second digit
-            new List<char> { '2', '0', '2', '4' } // Year
+            new List<char> { '2' }, // Day first digit
+            new List<char> { '9' }, // Day second digit
+            new List<char> { '0' }, // Month first digit
+            new List<char> { '2' }, // Month second digit
+            new List<char> { '2', '0', '2', '4' }, // Year
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Simulate constraint change where day second digit constraints change
-        // In this case, if we changed the first day digit from 2 to 1, the second digit 
+        // In this case, if we changed the first day digit from 2 to 1, the second digit
         // should still allow 0-9, so 9 should remain valid
         var newConstraint = new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1);
         var result = mask.UpdateConstraints(1, newConstraint);
@@ -842,13 +843,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '3' },           // Day first digit is 3
-            new List<char> { '9' },           // Day second digit is 9 (invalid for day 3X)
-            new List<char> { '0' },           // Month first digit
-            new List<char> { '2' },           // Month second digit
-            new List<char> { '2', '0', '2', '4' } // Year
+            new List<char> { '3' }, // Day first digit is 3
+            new List<char> { '9' }, // Day second digit is 9 (invalid for day 3X)
+            new List<char> { '0' }, // Month first digit
+            new List<char> { '2' }, // Month second digit
+            new List<char> { '2', '0', '2', '4' }, // Year
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Update constraint to only allow 0-1 (correct for day starting with 3)
         var newConstraint = new MaskPartConstraint<char>("01".ToCharArray(), 1, 1);
@@ -870,10 +871,10 @@ public class MaskTests
         // Arrange
         var oldValue = new List<char> { '1', '2', '3' };
         var newValue = new List<char> { '1', '4', '5', '3' };
-        
+
         // Act
         var change = ContentChange<char>.Get(oldValue, newValue);
-        
+
         // Assert
         // Should remove '2' and insert '4', '5' at position 1
         Assert.Equal(1, change.At);
@@ -890,13 +891,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '1', '2' },  // First part with 2 items
+            new List<char> { '1', '2' }, // First part with 2 items
             new List<char> { '3' },
             new List<char>(),
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change first part from [1,2] to [3] (remove 1, replace 2 with 3)
         var result = mask.ChangePart(0, new List<char> { '3' });
@@ -915,13 +916,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '1' },  // First part with 1 item
+            new List<char> { '1' }, // First part with 1 item
             new List<char> { '2' },
             new List<char>(),
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Change first part from [1] to [1,2,3] (insert 2,3)
         var result = mask.ChangePart(0, new List<char> { '1', '2', '3' });
@@ -947,9 +948,9 @@ public class MaskTests
             new List<char>(),
             new List<char>(),
             new List<char>(),
-            new List<char>()
+            new List<char>(),
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Try to change a part that exists but has different behavior
         var result = mask.ChangePart(4, new List<char> { '2', '0', '2', '4' });
@@ -969,9 +970,9 @@ public class MaskTests
             new List<char> { '2' },
             new List<char>(),
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Set constraint with empty allowed values
         var newConstraint = new MaskPartConstraint<char>(Array.Empty<char>(), 0, 1);
@@ -993,9 +994,9 @@ public class MaskTests
             new List<char> { '2' },
             new List<char>(),
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act & Assert - Test FindClosestValue through UpdateConstraints
         var newConstraint = new MaskPartConstraint<char>(Array.Empty<char>(), 0, 1);
@@ -1012,13 +1013,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '1', '2', '3' },  // Already at max length for day
+            new List<char> { '1', '2', '3' }, // Already at max length for day
             new List<char> { '2' },
             new List<char>(),
             new List<char> { '1' },
-            new List<char> { '2', '0', '2', '4' }
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
 
         // Act - Try to insert another item (should fail or propagate)
         var result = mask.ChangePart(0, new List<char> { '4' });
@@ -1036,11 +1037,11 @@ public class MaskTests
     /// </summary>
     public class UserInputEmulator
     {
-        private readonly Mask<char> _mask;
+        private readonly GarbageMask<char> _mask;
         private readonly List<List<char>> _originalParts;
         private readonly IReadOnlyList<List<char>> _parts;
 
-        public UserInputEmulator(Mask<char> mask, IReadOnlyList<List<char>> parts)
+        public UserInputEmulator(GarbageMask<char> mask, IReadOnlyList<List<char>> parts)
         {
             _mask = mask;
             _parts = parts;
@@ -1050,10 +1051,14 @@ public class MaskTests
         /// <summary>
         /// Simulates typing a character at a specific position in a part
         /// </summary>
-        public (int PartIndex, int ItemIndex) TypeCharacter(int partIndex, char character, int position = -1)
+        public (int PartIndex, int ItemIndex) TypeCharacter(
+            int partIndex,
+            char character,
+            int position = -1
+        )
         {
             var currentPart = new List<char>(_parts[partIndex]);
-            
+
             if (position == -1 || position >= currentPart.Count)
             {
                 // Type at the end
@@ -1064,7 +1069,7 @@ public class MaskTests
                 // Insert at specific position
                 currentPart.Insert(position, character);
             }
-            
+
             return _mask.ChangePart(partIndex, currentPart);
         }
 
@@ -1074,12 +1079,12 @@ public class MaskTests
         public (int PartIndex, int ItemIndex) RemoveCharacter(int partIndex, int position)
         {
             var currentPart = new List<char>(_parts[partIndex]);
-            
+
             if (position >= 0 && position < currentPart.Count)
             {
                 currentPart.RemoveAt(position);
             }
-            
+
             return _mask.ChangePart(partIndex, currentPart);
         }
 
@@ -1089,23 +1094,28 @@ public class MaskTests
         public (int PartIndex, int ItemIndex) RemoveRange(int partIndex, int startIndex, int count)
         {
             var currentPart = new List<char>(_parts[partIndex]);
-            
+
             if (startIndex >= 0 && startIndex < currentPart.Count)
             {
                 int actualCount = Math.Min(count, currentPart.Count - startIndex);
                 currentPart.RemoveRange(startIndex, actualCount);
             }
-            
+
             return _mask.ChangePart(partIndex, currentPart);
         }
 
         /// <summary>
         /// Simulates selecting text and replacing it with new content
         /// </summary>
-        public (int PartIndex, int ItemIndex) ReplaceRange(int partIndex, int startIndex, int count, List<char> newContent)
+        public (int PartIndex, int ItemIndex) ReplaceRange(
+            int partIndex,
+            int startIndex,
+            int count,
+            List<char> newContent
+        )
         {
             var currentPart = new List<char>(_parts[partIndex]);
-            
+
             if (startIndex >= 0 && startIndex < currentPart.Count)
             {
                 int actualCount = Math.Min(count, currentPart.Count - startIndex);
@@ -1117,7 +1127,7 @@ public class MaskTests
                 // Append at the end
                 currentPart.AddRange(newContent);
             }
-            
+
             return _mask.ChangePart(partIndex, currentPart);
         }
 
@@ -1152,13 +1162,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '2' },           
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
+            new List<char> { '2' },
+            new List<char> { '5' },
+            new List<char> { '1' },
+            new List<char> { '2' },
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove character from middle of year (position 1 of 4)
@@ -1176,13 +1186,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '2' },           
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
+            new List<char> { '2' },
+            new List<char> { '5' },
+            new List<char> { '1' },
+            new List<char> { '2' },
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove last character from year (position 3)
@@ -1200,13 +1210,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char>(),                  // Empty day first digit
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
+            new List<char>(), // Empty day first digit
+            new List<char> { '5' },
+            new List<char> { '1' },
+            new List<char> { '2' },
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type '2' on the left (at beginning of first part)
@@ -1225,13 +1235,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '2' },           
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
+            new List<char> { '2' },
+            new List<char> { '5' },
+            new List<char> { '1' },
+            new List<char> { '2' },
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Try to type in middle of year (should respect MaxLength)
@@ -1249,13 +1259,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '2' },           
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
+            new List<char> { '2' },
+            new List<char> { '5' },
+            new List<char> { '1' },
+            new List<char> { '2' },
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type '3' at the end of day first digit part (should fail due to MaxLength=1)
@@ -1272,13 +1282,13 @@ public class MaskTests
         var constrainer = new DateInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char> { '2' },           
-            new List<char> { '5' },           
-            new List<char> { '1' },           
-            new List<char> { '2' },           
-            new List<char> { '2', '0', '2', '4' } 
+            new List<char> { '2' },
+            new List<char> { '5' },
+            new List<char> { '1' },
+            new List<char> { '2' },
+            new List<char> { '2', '0', '2', '4' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Select and erase first 2 digits of year
@@ -1288,8 +1298,6 @@ public class MaskTests
         Assert.Equal(4, result.PartIndex);
         Assert.Equal(4, parts[4].Count); // Should still have 4 digits after adaptation
     }
-
-
 
     #endregion
 
@@ -1305,17 +1313,25 @@ public class MaskTests
         {
             parts.Add(new List<char>());
         }
-        
+
         // Fill with partial phone number
         parts[0].AddRange("+1".ToCharArray()); // Country code
-        parts[1].Add('5'); parts[2].Add('5'); parts[3].Add('5'); // Area code
-        parts[4].Add('('); parts[5].Add(')'); // Separators
+        parts[1].Add('5');
+        parts[2].Add('5');
+        parts[3].Add('5'); // Area code
+        parts[4].Add('(');
+        parts[5].Add(')'); // Separators
         parts[6].Add(' '); // Space
-        parts[7].Add('1'); parts[8].Add('2'); parts[9].Add('3'); // Exchange
+        parts[7].Add('1');
+        parts[8].Add('2');
+        parts[9].Add('3'); // Exchange
         parts[10].Add('-'); // Dash
-        parts[11].Add('4'); parts[12].Add('5'); parts[13].Add('6'); parts[14].Add('7'); // Line number
-        
-        var mask = new Mask<char>(constrainer, parts);
+        parts[11].Add('4');
+        parts[12].Add('5');
+        parts[13].Add('6');
+        parts[14].Add('7'); // Line number
+
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove first character from country code ('+')
@@ -1337,10 +1353,12 @@ public class MaskTests
         {
             parts.Add(new List<char>());
         }
-        
+
         parts[0].AddRange("+1".ToCharArray());
-        parts[1].Add('5'); parts[2].Add('5'); parts[3].Add('5');
-        var mask = new Mask<char>(constrainer, parts);
+        parts[1].Add('5');
+        parts[2].Add('5');
+        parts[3].Add('5');
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove character from middle of area code
@@ -1350,12 +1368,6 @@ public class MaskTests
         Assert.Equal(2, result.PartIndex);
         // Area code should maintain valid format
     }
-
-
-
-
-
-
 
     #endregion
 
@@ -1369,12 +1381,12 @@ public class MaskTests
         var parts = new List<List<char>>
         {
             new List<char> { 'u', 's', 'e', 'r' }, // Local part
-            new List<char> { '@' },                // @ symbol
+            new List<char> { '@' }, // @ symbol
             new List<char> { 'g', 'm', 'a', 'i', 'l' }, // Domain
-            new List<char> { '.' },                // Dot
-            new List<char> { 'c', 'o', 'm' }       // TLD
+            new List<char> { '.' }, // Dot
+            new List<char> { 'c', 'o', 'm' }, // TLD
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove first character from local part ('u')
@@ -1397,9 +1409,9 @@ public class MaskTests
             new List<char> { '@' },
             new List<char> { 'g', 'm', 'a', 'i', 'l' },
             new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
+            new List<char> { 'c', 'o', 'm' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove 'm' from domain (middle character)
@@ -1422,9 +1434,9 @@ public class MaskTests
             new List<char> { '@' },
             new List<char> { 'g', 'm', 'a', 'i', 'l' },
             new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
+            new List<char> { 'c', 'o', 'm' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Remove last character from TLD ('m')
@@ -1443,13 +1455,13 @@ public class MaskTests
         var constrainer = new EmailInputConstrainer();
         var parts = new List<List<char>>
         {
-            new List<char>(),                      // Empty local part
+            new List<char>(), // Empty local part
             new List<char> { '@' },
             new List<char> { 'g', 'm', 'a', 'i', 'l' },
             new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
+            new List<char> { 'c', 'o', 'm' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Type 'u' at the beginning of local part
@@ -1460,10 +1472,6 @@ public class MaskTests
         Assert.Single(parts[0]);
         Assert.Equal('u', parts[0][0]);
     }
-
-
-
-
 
     [Fact]
     public void UserInputEmulator_EmailInput_SelectAndEraseRange()
@@ -1476,9 +1484,9 @@ public class MaskTests
             new List<char> { '@' },
             new List<char> { 'g', 'm', 'a', 'i', 'l' },
             new List<char> { '.' },
-            new List<char> { 'c', 'o', 'm' }
+            new List<char> { 'c', 'o', 'm' },
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Select and erase middle characters from local part
@@ -1489,10 +1497,6 @@ public class MaskTests
         Assert.Equal(2, parts[0].Count);
         Assert.Equal("ur", new string(parts[0].ToArray()));
     }
-
-
-
-
 
     #endregion
 
@@ -1509,9 +1513,9 @@ public class MaskTests
             new List<char>(), // Day second
             new List<char>(), // Month first
             new List<char>(), // Month second
-            new List<char>()  // Year
+            new List<char>(), // Year
         };
-        var mask = new Mask<char>(constrainer, parts);
+        var mask = new GarbageMask<char>(constrainer, parts);
         var emulator = new UserInputEmulator(mask, parts);
 
         // Act - Simulate user typing "15-03-2025"
@@ -1519,7 +1523,7 @@ public class MaskTests
         emulator.TypeCharacter(1, '5', 0); // Type '5' in day second
         emulator.TypeCharacter(2, '0', 0); // Type '0' in month first
         emulator.TypeCharacter(3, '3', 0); // Type '3' in month second
-        
+
         // Year typing (4 digits)
         emulator.TypeCharacter(4, '2', 0);
         emulator.TypeCharacter(4, '0', 1);
@@ -1534,12 +1538,6 @@ public class MaskTests
         Assert.Equal(4, parts[4].Count); // Year has 4 digits
         Assert.Equal("2025", new string(parts[4].ToArray()));
     }
-
-
-
-
-
-
 
     #endregion
 

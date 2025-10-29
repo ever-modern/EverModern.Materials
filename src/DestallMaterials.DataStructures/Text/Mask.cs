@@ -1,12 +1,225 @@
 ﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public class Mask<T>(
+public interface IMask<TSymbol>
+    where TSymbol : struct
+{
+    IReadOnlyList<TSymbol?> Slots { get; }
+
+    int AcceptChange(ContentChange<TSymbol> contentChange);
+}
+
+public record struct SlotConstraint<T>(IReadOnlyList<T?> Options)
+    where T : struct;
+
+public class Mask<TSymbol>(
+    ISlotConstraintsSource<TSymbol> constraintsSource,
+    IReadOnlyList<TSymbol?> initialSlots,
+    IEqualityComparer<TSymbol?> equalityComparer
+) : IMask<TSymbol>
+    where TSymbol : struct
+{
+    public IReadOnlyList<TSymbol?> Slots => _slots;
+
+    IReadOnlyList<SlotConstraint<TSymbol>> Constraints => constraintsSource.GetConstraints(_slots);
+
+    readonly TSymbol?[] _slots = [.. initialSlots];
+
+    public int AcceptChange(ContentChange<TSymbol> contentChange)
+    {
+        var (at, removed, inserted) = contentChange;
+
+        if (at >= _slots.Length)
+        {
+            throw new InvalidOperationException("Can't change beyond slots count.");
+        }
+
+        var options = Constraints;
+        var currentSlotIndex = at;
+        for (int i = 0; i < removed; i++)
+        {
+            var slotOptions = options[i].Options;
+            currentSlotIndex = at - i;
+            _slots[currentSlotIndex] = slotOptions.Count == 1 ? slotOptions[0] : null;
+            AutosetAll();
+        }
+
+        options = Constraints;
+
+        for (int i = 0; i < inserted.Count || currentSlotIndex == _slots.Length; )
+        {
+            var slotOptions = options[currentSlotIndex].Options;
+            var insertedValue = inserted[i];
+
+            if (slotOptions.Count == 1)
+            {
+                _slots[currentSlotIndex] = slotOptions[0];
+            }
+            else if (slotOptions.Count == 0)
+            {
+                _slots[currentSlotIndex] = null;
+            }
+            else
+            {
+                _slots[currentSlotIndex] = slotOptions.Contains(insertedValue)
+                    ? insertedValue
+                    : _slots[currentSlotIndex];
+
+                currentSlotIndex++;
+
+                AutosetAll();
+            }
+        }
+
+        return currentSlotIndex;
+    }
+
+    bool AutosetAll()
+    {
+        var result = false;
+        var currentConstraints = Constraints;
+        for (int i = 0; i < _slots.Length; i++)
+        {
+            var slotValue = _slots[i];
+            var options = currentConstraints[i].Options;
+            var newSlotValue = slotValue;
+            if (options.Count == 1)
+            {
+                _slots[i] = options[0];
+            }
+            else if (options.Count == 0)
+            {
+                _slots[i] = null;
+            }
+            else if (options.Contains(slotValue) is false)
+            {
+                newSlotValue = options[^1];
+            }
+
+            result = result || equalityComparer.Equals(newSlotValue, slotValue);
+        }
+
+        if (result == false)
+        {
+            return false;
+        }
+
+        return AutosetAll();
+    }
+}
+
+public interface ISlotConstraintsSource<TSymbol>
+    where TSymbol : struct
+{
+    IReadOnlyList<SlotConstraint<TSymbol>> GetConstraints(IReadOnlyList<TSymbol?> currentFilling);
+}
+
+public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
+{
+    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish) =>
+        Get(start, finish, EqualityComparer<T>.Default);
+
+    public static ContentChange<T> Get(
+        IReadOnlyList<T> start,
+        IReadOnlyList<T> finish,
+        IEqualityComparer<T> equalityComparer
+    )
+    {
+        ArgumentNullException.ThrowIfNull(start);
+        ArgumentNullException.ThrowIfNull(finish);
+
+        int startLength = start.Count;
+        int finishLength = finish.Count;
+
+        // Find longest common prefix
+        int prefixLength = 0;
+        int maxPrefix = Math.Min(startLength, finishLength);
+
+        if (start.Count == 0)
+        {
+            return new(0, 0, finish);
+        }
+
+        if (finish.Count == 0)
+        {
+            return new(0, start.Count, []);
+        }
+
+        while (
+            prefixLength < maxPrefix
+            && equalityComparer.Equals(start[prefixLength], finish[prefixLength])
+        )
+        {
+            prefixLength++;
+        }
+
+        // Special case: if the entire shorter list matches the prefix
+        if (prefixLength == startLength || prefixLength == finishLength)
+        {
+            // If both lists are identical (prefix = entire length of both)
+            if (prefixLength == startLength && prefixLength == finishLength)
+            {
+                return new ContentChange<T>(0, 0, []);
+            }
+
+            // One list is entirely contained in the other as a prefix
+            int changeAt = prefixLength;
+            int elementsRemoved = startLength - prefixLength;
+            int newElementsCount = finishLength - prefixLength;
+
+            T[] newElements = new T[newElementsCount];
+            for (int i = 0; i < newElementsCount; i++)
+            {
+                newElements[i] = finish[prefixLength + i];
+            }
+
+            return new(changeAt, elementsRemoved, newElements);
+        }
+
+        // Find longest common suffix by working backwards
+        int suffixLength = 0;
+        int maxPossibleSuffix = Math.Min(startLength - prefixLength, finishLength - prefixLength);
+
+        for (int i = 1; i <= maxPossibleSuffix; i++)
+        {
+            int startIndex = startLength - i;
+            int finishIndex = finishLength - i;
+
+            if (equalityComparer.Equals(start[startIndex], finish[finishIndex]))
+            {
+                suffixLength = i;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        int at = prefixLength;
+        int removed = startLength - prefixLength - suffixLength;
+        int insertedCount = finishLength - prefixLength - suffixLength;
+
+        // Extract the inserted elements
+        T[] inserted = new T[insertedCount];
+        for (int i = 0; i < insertedCount; i++)
+        {
+            inserted[i] = finish[prefixLength + i];
+        }
+
+        return new(at, removed, inserted);
+    }
+}
+
+
+#region Garbage
+
+[Obsolete]
+public class GarbageMask<T>(
     IConstrainer<T> constrainer,
     IReadOnlyList<List<T>> parts,
     IEqualityComparer<T> equalityComparer
 )
 {
-    public Mask(IConstrainer<T> textConstrainer, IReadOnlyList<List<T>> parts)
+    public GarbageMask(IConstrainer<T> textConstrainer, IReadOnlyList<List<T>> parts)
         : this(textConstrainer, parts, EqualityComparer<T>.Default) { }
 
 #if DEBUG
@@ -263,101 +476,6 @@ public class Mask<T>(
     }
 }
 
-public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
-{
-    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish) =>
-        Get(start, finish, EqualityComparer<T>.Default);
-
-    public static ContentChange<T> Get(
-        IReadOnlyList<T> start,
-        IReadOnlyList<T> finish,
-        IEqualityComparer<T> equalityComparer
-    )
-    {
-        ArgumentNullException.ThrowIfNull(start);
-        ArgumentNullException.ThrowIfNull(finish);
-
-        int startLength = start.Count;
-        int finishLength = finish.Count;
-
-        // Find longest common prefix
-        int prefixLength = 0;
-        int maxPrefix = Math.Min(startLength, finishLength);
-
-        if (start.Count == 0)
-        {
-            return new(0, 0, finish);
-        }
-
-        if (finish.Count == 0)
-        {
-            return new(0, start.Count, []);
-        }
-
-        while (
-            prefixLength < maxPrefix
-            && equalityComparer.Equals(start[prefixLength], finish[prefixLength])
-        )
-        {
-            prefixLength++;
-        }
-
-        // Special case: if the entire shorter list matches the prefix
-        if (prefixLength == startLength || prefixLength == finishLength)
-        {
-            // If both lists are identical (prefix = entire length of both)
-            if (prefixLength == startLength && prefixLength == finishLength)
-            {
-                return new ContentChange<T>(0, 0, []);
-            }
-
-            // One list is entirely contained in the other as a prefix
-            int changeAt = prefixLength;
-            int elementsRemoved = startLength - prefixLength;
-            int newElementsCount = finishLength - prefixLength;
-
-            T[] newElements = new T[newElementsCount];
-            for (int i = 0; i < newElementsCount; i++)
-            {
-                newElements[i] = finish[prefixLength + i];
-            }
-
-            return new(changeAt, elementsRemoved, newElements);
-        }
-
-        // Find longest common suffix by working backwards
-        int suffixLength = 0;
-        int maxPossibleSuffix = Math.Min(startLength - prefixLength, finishLength - prefixLength);
-
-        for (int i = 1; i <= maxPossibleSuffix; i++)
-        {
-            int startIndex = startLength - i;
-            int finishIndex = finishLength - i;
-
-            if (equalityComparer.Equals(start[startIndex], finish[finishIndex]))
-            {
-                suffixLength = i;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        int at = prefixLength;
-        int removed = startLength - prefixLength - suffixLength;
-        int insertedCount = finishLength - prefixLength - suffixLength;
-
-        // Extract the inserted elements
-        T[] inserted = new T[insertedCount];
-        for (int i = 0; i < insertedCount; i++)
-        {
-            inserted[i] = finish[prefixLength + i];
-        }
-
-        return new(at, removed, inserted);
-    }
-}
 
 /// <summary>
 ///
@@ -486,10 +604,13 @@ public class EmailInputConstrainer : IConstrainer<char>
         if (atIndex == -1)
         {
             // No @ found yet, we're in the local part
-            constraints.Add(new MaskPartConstraint<char>(
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-@".ToCharArray(),
-                0, 64
-            ));
+            constraints.Add(
+                new MaskPartConstraint<char>(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-@".ToCharArray(),
+                    0,
+                    64
+                )
+            );
             constraints.Add(new MaskPartConstraint<char>("@".ToCharArray(), 0, 1));
             constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
             constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
@@ -501,18 +622,24 @@ public class EmailInputConstrainer : IConstrainer<char>
             if (atIndex == 0)
             {
                 // Part 0 is @, so local part should be empty
-                constraints.Add(new MaskPartConstraint<char>(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
-                    0, 64
-                ));
+                constraints.Add(
+                    new MaskPartConstraint<char>(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
+                        0,
+                        64
+                    )
+                );
             }
             else
             {
                 // Part 0 has local part content
-                constraints.Add(new MaskPartConstraint<char>(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
-                    1, 64
-                ));
+                constraints.Add(
+                    new MaskPartConstraint<char>(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
+                        1,
+                        64
+                    )
+                );
             }
 
             // Part 1: @ symbol (required)
@@ -532,25 +659,34 @@ public class EmailInputConstrainer : IConstrainer<char>
             if (dotIndex == -1)
             {
                 // No dot found, domain part only
-                constraints.Add(new MaskPartConstraint<char>(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
-                    0, 255
-                ));
+                constraints.Add(
+                    new MaskPartConstraint<char>(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
+                        0,
+                        255
+                    )
+                );
                 constraints.Add(new MaskPartConstraint<char>(".".ToCharArray(), 0, 1));
                 constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
             }
             else
             {
                 // Domain and TLD parts
-                constraints.Add(new MaskPartConstraint<char>(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
-                    1, 255
-                ));
+                constraints.Add(
+                    new MaskPartConstraint<char>(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
+                        1,
+                        255
+                    )
+                );
                 constraints.Add(new MaskPartConstraint<char>(".".ToCharArray(), 1, 1));
-                constraints.Add(new MaskPartConstraint<char>(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray(),
-                    2, 63
-                ));
+                constraints.Add(
+                    new MaskPartConstraint<char>(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray(),
+                        2,
+                        63
+                    )
+                );
             }
         }
 
@@ -587,20 +723,22 @@ public class DateInputConstrainer : IConstrainer<char>
 
         // Logic for day constraints:
         // If first digit is 0: second digit can be 1-9 (days 01-09)
-        // If first digit is 1: second digit can be 0-9 (days 10-19) 
+        // If first digit is 1: second digit can be 0-9 (days 10-19)
         // If first digit is 2: second digit can be 0-9 (days 20-29)
         // If first digit is 3: second digit can be 0-1 (days 30-31)
         // Any other value: allow 0-9 (fallback)
         string daySecondDigitConstraints = firstDayDigit switch
         {
-            '0' => "123456789",  // Days 01-09
+            '0' => "123456789", // Days 01-09
             '1' => "0123456789", // Days 10-19
             '2' => "0123456789", // Days 20-29
-            '3' => "01",         // Days 30-31
-            _ => "0123456789"    // Fallback
+            '3' => "01", // Days 30-31
+            _ => "0123456789", // Fallback
         };
-        
-        constraints.Add(new MaskPartConstraint<char>(daySecondDigitConstraints.ToCharArray(), 1, 1));
+
+        constraints.Add(
+            new MaskPartConstraint<char>(daySecondDigitConstraints.ToCharArray(), 1, 1)
+        );
 
         // Month first digit: 0-1
         constraints.Add(new MaskPartConstraint<char>("01".ToCharArray(), 1, 1));
@@ -630,3 +768,4 @@ public class DateInputConstrainer : IConstrainer<char>
         return constraints;
     }
 }
+#endregion

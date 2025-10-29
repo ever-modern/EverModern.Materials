@@ -1,5 +1,6 @@
 ﻿using DestallMaterials.Blazor.Components.Common;
 using DestallMaterials.Blazor.Components.Services.UI;
+using DestallMaterials.WheelProtection.DataStructures.Text;
 using Microsoft.AspNetCore.Components;
 
 namespace DestallMaterials.Blazor.Components.Inputs;
@@ -15,10 +16,6 @@ public partial class MaskedInput
 
     [Parameter]
     [EditorRequired]
-    public string Mask { get; set; } = "";
-
-    [Parameter]
-    [EditorRequired]
     public Action<char?[]> OnValueChanged { get; set; }
 
     [Parameter]
@@ -27,24 +24,17 @@ public partial class MaskedInput
 
     [Parameter]
     public char SymbolSign { get; set; } = '*';
+    
+    [Parameter]
+    [EditorRequired]
+    public GarbageMask<char> Mask { get; set; }
 
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
 
-        _symbols = Mask.Where((c) => c == SymbolSign)
-            .Select(
-                (c, i) =>
-                {
-                    if (_symbols.Length > i)
-                    {
-                        return _symbols[i];
-                    }
-                    return null;
-                }
-            )
-            .ToArray();
-
+        Mask.ChangePart();
+        
         _displayText = FormatMask();
     }
 
@@ -165,11 +155,6 @@ public partial class MaskedInput
         _lastPosition = position;
     }
 
-    int ReplaceSymbols(int at, int count, ReadOnlySpan<char> symbols)
-    {
-        for (int i = 0; i < count; i++) { }
-    }
-
     int GetDifference(string initial, string target)
     {
         for (int i = 0; i < initial.Length; i++)
@@ -210,28 +195,4 @@ public partial class MaskedInput
         await Js.SetSelectionRangeAsync(_inputId, (uint)start, (uint)end);
 }
 
-/// <summary>
-/// Converts 
-/// </summary>
-public class Mask
-{
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="mask">Value in format of </param>
-    /// <param name="calculateAllowedSymbols"></param>
-    public Mask(
-        IEnumerable<MaskBrick> structure,
-        Func<char?[], char[][]> calculateAllowedSymbols
-    ) 
-    {
-        /*Fill the properties.*/
-    }
-
-
-    public static IReadOnlyList<MaskBrick> ParseTemplate(string template)
-    {
-
-    }
-}
 
