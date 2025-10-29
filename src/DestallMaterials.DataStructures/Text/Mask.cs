@@ -1,16 +1,5 @@
 ﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public interface IMask<TSymbol>
-    where TSymbol : struct
-{
-    IReadOnlyList<TSymbol?> Slots { get; }
-
-    int AcceptChange(ContentChange<TSymbol> contentChange);
-}
-
-public record struct SlotConstraint<T>(IReadOnlyList<T?> Options)
-    where T : struct;
-
 public class Mask<TSymbol>(
     ISlotConstraintsSource<TSymbol> constraintsSource,
     IReadOnlyList<TSymbol?> initialSlots,
@@ -35,12 +24,18 @@ public class Mask<TSymbol>(
 
         var options = Constraints;
         var currentSlotIndex = at;
-        for (int i = 0; i < removed; i++)
+        for (int i = 0; i < removed && currentSlotIndex >= 0; i++)
         {
             var slotOptions = options[i].Options;
             currentSlotIndex = at - i;
             _slots[currentSlotIndex] = slotOptions.Count == 1 ? slotOptions[0] : null;
+            currentSlotIndex--;
             AutosetAll();
+        }
+
+        if (currentSlotIndex < 0)
+        {
+            currentSlotIndex = 0;
         }
 
         options = Constraints;
@@ -70,12 +65,12 @@ public class Mask<TSymbol>(
             }
         }
 
-        return currentSlotIndex;
+        return currentSlotIndex; // carret position is +1
     }
 
     bool AutosetAll()
     {
-        var result = false;
+        var changed = false;
         var currentConstraints = Constraints;
         for (int i = 0; i < _slots.Length; i++)
         {
@@ -84,131 +79,25 @@ public class Mask<TSymbol>(
             var newSlotValue = slotValue;
             if (options.Count == 1)
             {
-                _slots[i] = options[0];
+                newSlotValue = options[0];
             }
             else if (options.Count == 0)
             {
-                _slots[i] = null;
+                newSlotValue= null;
             }
-            else if (options.Contains(slotValue) is false)
+            else if (slotValue is not null && options.Contains(slotValue) is false)
             {
-                newSlotValue = options[^1];
+                newSlotValue = options[^1];                
             }
 
-            result = result || equalityComparer.Equals(newSlotValue, slotValue);
+            _slots[i] = newSlotValue;
+
+            changed = changed || (equalityComparer.Equals(newSlotValue, slotValue) is false);
         }
 
-        if (result == false)
-        {
-            return false;
-        }
-
-        return AutosetAll();
+        return changed && AutosetAll();
     }
 }
-
-public interface ISlotConstraintsSource<TSymbol>
-    where TSymbol : struct
-{
-    IReadOnlyList<SlotConstraint<TSymbol>> GetConstraints(IReadOnlyList<TSymbol?> currentFilling);
-}
-
-public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
-{
-    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish) =>
-        Get(start, finish, EqualityComparer<T>.Default);
-
-    public static ContentChange<T> Get(
-        IReadOnlyList<T> start,
-        IReadOnlyList<T> finish,
-        IEqualityComparer<T> equalityComparer
-    )
-    {
-        ArgumentNullException.ThrowIfNull(start);
-        ArgumentNullException.ThrowIfNull(finish);
-
-        int startLength = start.Count;
-        int finishLength = finish.Count;
-
-        // Find longest common prefix
-        int prefixLength = 0;
-        int maxPrefix = Math.Min(startLength, finishLength);
-
-        if (start.Count == 0)
-        {
-            return new(0, 0, finish);
-        }
-
-        if (finish.Count == 0)
-        {
-            return new(0, start.Count, []);
-        }
-
-        while (
-            prefixLength < maxPrefix
-            && equalityComparer.Equals(start[prefixLength], finish[prefixLength])
-        )
-        {
-            prefixLength++;
-        }
-
-        // Special case: if the entire shorter list matches the prefix
-        if (prefixLength == startLength || prefixLength == finishLength)
-        {
-            // If both lists are identical (prefix = entire length of both)
-            if (prefixLength == startLength && prefixLength == finishLength)
-            {
-                return new ContentChange<T>(0, 0, []);
-            }
-
-            // One list is entirely contained in the other as a prefix
-            int changeAt = prefixLength;
-            int elementsRemoved = startLength - prefixLength;
-            int newElementsCount = finishLength - prefixLength;
-
-            T[] newElements = new T[newElementsCount];
-            for (int i = 0; i < newElementsCount; i++)
-            {
-                newElements[i] = finish[prefixLength + i];
-            }
-
-            return new(changeAt, elementsRemoved, newElements);
-        }
-
-        // Find longest common suffix by working backwards
-        int suffixLength = 0;
-        int maxPossibleSuffix = Math.Min(startLength - prefixLength, finishLength - prefixLength);
-
-        for (int i = 1; i <= maxPossibleSuffix; i++)
-        {
-            int startIndex = startLength - i;
-            int finishIndex = finishLength - i;
-
-            if (equalityComparer.Equals(start[startIndex], finish[finishIndex]))
-            {
-                suffixLength = i;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        int at = prefixLength;
-        int removed = startLength - prefixLength - suffixLength;
-        int insertedCount = finishLength - prefixLength - suffixLength;
-
-        // Extract the inserted elements
-        T[] inserted = new T[insertedCount];
-        for (int i = 0; i < insertedCount; i++)
-        {
-            inserted[i] = finish[prefixLength + i];
-        }
-
-        return new(at, removed, inserted);
-    }
-}
-
 
 #region Garbage
 
@@ -475,7 +364,6 @@ public class GarbageMask<T>(
         }
     }
 }
-
 
 /// <summary>
 ///
