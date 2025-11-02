@@ -57,13 +57,13 @@ public record struct ContentChange<T>(
             if (prefixLength == startLength && prefixLength == finishLength)
             {
                 // Both lists are identical, but we might have a caret position change
-                // Use lastChanged to determine if there was actually a change at a specific position
-                if (lastChanged >= 0 && lastChanged < startLength)
+                // Use carretAt to determine if there was actually a change at a specific position
+                if (carretAt >= 0 && carretAt < startLength)
                 {
                     // There's a specific position where something happened
                     // This could be a deletion and reinsertion of the same character(s)
                     // We'll report that position with an empty change
-                    return new ContentChange<T>(lastChanged, 0, []);
+                    return new ContentChange<T>(carretAt, 0, []);
                 }
                 return new ContentChange<T>(0, 0, []);
             }
@@ -112,17 +112,17 @@ public record struct ContentChange<T>(
             inserted[i] = finish[prefixLength + i];
         }
 
-        // Use lastChanged to refine the result when appropriate
+        // Use carretAt to refine the result when appropriate
         // This helps distinguish cases where the content appears the same
         // but the change happened at different positions
-        if (lastChanged >= 0 && insertedCount > 0)
+        if (carretAt >= 0 && insertedCount > 0)
         {
-            // If there's an insertion and lastChanged is valid,
+            // If there's an insertion and carretAt is valid,
             // we can use it to potentially adjust where we report the change
             // This is especially useful for cases with repeated characters
-            if (lastChanged >= at && lastChanged < at + insertedCount + 1)
+            if (carretAt >= at && carretAt < at + insertedCount + 1)
             {
-                // The change is reported at or near where lastChanged occurred
+                // The change is reported at or near where carretAt occurred
                 // Keep the current 'at' position as it's calculated correctly
             }
         }

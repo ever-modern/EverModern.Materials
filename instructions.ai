@@ -926,9 +926,9 @@ Successfully migrated MaskTests from `DestallMaterials.Mask.Tests` to `DestallMa
 **Agent**: MiniMax Agent
 **Date**: 2025-10-29
 
-## ContentChange Method Enhancement - lastChanged Parameter Implementation (2025-11-03)
+## ContentChange Method Enhancement - carretAt Parameter Implementation (2025-11-03)
 
-Successfully enhanced the ContentChange<T> method to utilize the `lastChanged` parameter for distinguishing between similar changes in scenarios with repeated characters.
+Successfully enhanced the ContentChange<T> method to utilize the `carretAt` parameter for distinguishing between similar changes in scenarios with repeated characters.
 
 **Problem Addressed:**
 The original `ContentChange<T>.Get()` method could not distinguish between:
@@ -940,14 +940,14 @@ Both operations resulted in the same final text "***/***", making them indisting
 **Solution Implemented:**
 
 1. **Enhanced ContentChange.cs** (`src/DestallMaterials.DataStructures/Text/ContentChange.cs`):
-   - Modified the `Get()` method to utilize the existing `lastChanged` parameter
+   - Modified the `Get()` method to utilize the existing `carretAt` parameter
    - Added logic to handle cases where start and finish appear identical
-   - When start and finish are identical but `lastChanged` is specified, reports the change at the `lastChanged` position
-   - Preserves backward compatibility - works exactly the same when `lastChanged` is not provided
+   - When start and finish are identical but `carretAt` is specified, reports the change at the `carretAt` position
+   - Preserves backward compatibility - works exactly the same when `carretAt` is not provided
    - Added comments explaining the enhanced logic
 
 2. **Comprehensive Test Suite** (`src/DestallMaterials.Mask.Tests/MaskTests.cs`):
-   - Added 6 new test methods in "ContentChange with lastChanged Parameter Tests" region
+   - Added 6 new test methods in "ContentChange with carretAt Parameter Tests" region
    - `ContentChange_Get_WithLastChanged_ShouldDistinguishLastCharRemoval`: Tests last position change
    - `ContentChange_Get_WithLastChanged_ShouldDistinguishPreLastCharRemoval`: Tests pre-last position change
    - `ContentChange_Get_WithoutLastChanged_TreatsIdenticalContentAsNoChange`: Verifies backward compatibility
@@ -959,8 +959,8 @@ Both operations resulted in the same final text "***/***", making them indisting
 
 **Before:**
 ```csharp
-// lastChanged parameter was ignored
-public static ContentChange<T> Get(..., int lastChanged = -1)
+// carretAt parameter was ignored
+public static ContentChange<T> Get(..., int carretAt = -1)
 {
     // ... implementation that never used lastChanged
 }
@@ -972,14 +972,14 @@ public static ContentChange<T> Get(..., int lastChanged = -1)
 {
     // ... existing logic ...
     
-    // Enhanced logic to utilize lastChanged
+    // Enhanced logic to utilize carretAt
     if (prefixLength == startLength && prefixLength == finishLength)
     {
         // Both lists are identical, but we might have a caret position change
-        if (lastChanged >= 0 && lastChanged < startLength)
+        if (carretAt >= 0 && carretAt < startLength)
         {
             // There's a specific position where something happened
-            return new ContentChange<T>(lastChanged, 0, []);
+            return new ContentChange<T>(carretAt, 0, []);
         }
         return new ContentChange<T>(0, 0, []);
     }
@@ -1001,7 +1001,7 @@ public static ContentChange<T> Get(..., int lastChanged = -1)
 var change1 = ContentChange<char>.Get(
     start: "***/***".ToCharArray(), 
     finish: "***/***".ToCharArray(), 
-    lastChanged: 7  // caret at end
+    carretAt: 7  // caret at end
 );
 // Result: ContentChange(At: 7, Removed: 0, Inserted: [])
 
@@ -1009,7 +1009,7 @@ var change1 = ContentChange<char>.Get(
 var change2 = ContentChange<char>.Get(
     start: "***/***".ToCharArray(), 
     finish: "***/***".ToCharArray(), 
-    lastChanged: 6  // caret at position 6
+    carretAt: 6  // caret at position 6
 );
 // Result: ContentChange(At: 6, Removed: 0, Inserted: [])
 
@@ -1026,6 +1026,6 @@ var change2 = ContentChange<char>.Get(
 - Tests are properly formatted and ready to run
 - Ready for commit and push pending successful build verification
 
-**Commit**: [Pending] - "Enhance ContentChange method with lastChanged parameter utilization"
+**Commit**: [Pending] - "Enhance ContentChange method with carretAt parameter utilization"
 **Agent**: MiniMax Agent
 **Date**: 2025-11-03
