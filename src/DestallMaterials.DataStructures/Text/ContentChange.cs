@@ -12,14 +12,14 @@ public record struct ContentChange<T>(
     IReadOnlyList<T> Inserted
 )
 {
-    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish, int lastChanged = -1) =>
-        Get(start, finish, EqualityComparer<T>.Default, lastChanged);
+    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish, int carretAt = -1) =>
+        Get(start, finish, EqualityComparer<T>.Default, carretAt);
 
     public static ContentChange<T> Get(
         IReadOnlyList<T> start,
         IReadOnlyList<T> finish,
         IEqualityComparer<T> equalityComparer,
-        int lastChanged = -1
+        int carretAt = -1
     )
     {
         ArgumentNullException.ThrowIfNull(start);
