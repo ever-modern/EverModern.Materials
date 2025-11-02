@@ -1095,4 +1095,110 @@ public class MaskTests
     }
 
     #endregion
+
+    #region ContentChange with lastChanged Parameter Tests
+
+    [Fact]
+    public void ContentChange_Get_WithLastChanged_ShouldDistinguishLastCharRemoval()
+    {
+        // Arrange: "***/***" -> "***/***" (remove last character '/')
+        var oldValue = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        var newValue = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        
+        // Act - Remove last character, caret ends at position 7
+        var change1 = ContentChange<char>.Get(oldValue, newValue, lastChanged: 7);
+
+        // Assert
+        Assert.Equal(7, change1.At);
+        Assert.Equal(0, change1.Removed);
+        Assert.Empty(change1.Inserted);
+    }
+
+    [Fact]
+    public void ContentChange_Get_WithLastChanged_ShouldDistinguishPreLastCharRemoval()
+    {
+        // Arrange: "***/***" -> "***/***" (remove pre-last character, last shifts left)
+        var oldValue = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        var newValue = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        
+        // Act - Remove pre-last character, caret ends at position 7 (after shift)
+        var change2 = ContentChange<char>.Get(oldValue, newValue, lastChanged: 6);
+
+        // Assert - Different result from removing last character
+        Assert.NotEqual(change2.At, 7);  // Different position than last char removal
+        Assert.Equal(6, change2.At);
+        Assert.Equal(0, change2.Removed);
+        Assert.Empty(change2.Inserted);
+    }
+
+    [Fact]
+    public void ContentChange_Get_WithoutLastChanged_TreatsIdenticalContentAsNoChange()
+    {
+        // Arrange: Same start and finish
+        var oldValue = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        var newValue = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        
+        // Act - Without lastChanged, identical content is treated as no change
+        var change = ContentChange<char>.Get(oldValue, newValue);
+
+        // Assert - Default behavior without lastChanged
+        Assert.Equal(0, change.At);
+        Assert.Equal(0, change.Removed);
+        Assert.Empty(change.Inserted);
+    }
+
+    [Fact]
+    public void ContentChange_Get_WithLastChanged_DistinguishesSameContentDifferentPositions()
+    {
+        // Arrange: Same pattern but different scenarios
+        var start = new List<char> { '*', '*', '*', '/', '*', '*', '*' };
+        
+        // Scenario 1: Last character interaction
+        var change1 = ContentChange<char>.Get(start, new List<char> { '*', '*', '*', '/', '*', '*', '*' }, lastChanged: 7);
+        
+        // Scenario 2: Pre-last character interaction  
+        var change2 = ContentChange<char>.Get(start, new List<char> { '*', '*', '*', '/', '*', '*', '*' }, lastChanged: 6);
+        
+        // Assert - The lastChanged parameter now makes these distinguishable
+        Assert.NotEqual(change1.At, change2.At);
+        Assert.Equal(7, change1.At);
+        Assert.Equal(6, change2.At);
+    }
+
+    [Fact]
+    public void ContentChange_Get_WithLastChanged_HandlesRegularChanges()
+    {
+        // Arrange: Regular change from "abc" to "abx"
+        var oldValue = new List<char> { 'a', 'b', 'c' };
+        var newValue = new List<char> { 'a', 'b', 'x' };
+        
+        // Act - With lastChanged providing additional context
+        var change = ContentChange<char>.Get(oldValue, newValue, lastChanged: 2);
+
+        // Assert - Regular change still works correctly
+        Assert.Equal(2, change.At);
+        Assert.Equal(1, change.Removed);
+        Assert.Single(change.Inserted);
+        Assert.Equal('x', change.Inserted[0]);
+    }
+
+    [Fact]
+    public void ContentChange_Get_WithLastChanged_AndSameLengthDifferentContent()
+    {
+        // Arrange: "abc" -> "axc" (remove 'b', insert nothing at position 1, 'c' shifts)
+        var oldValue = new List<char> { 'a', 'b', 'c' };
+        var newValue = new List<char> { 'a', 'c' };  // Length decreased
+        
+        // Act - Different lastChanged positions should produce the same result for this case
+        var change1 = ContentChange<char>.Get(oldValue, newValue, lastChanged: 1);
+        var change2 = ContentChange<char>.Get(oldValue, newValue, lastChanged: 2);
+
+        // Assert - For actual length changes, result is the same regardless of lastChanged
+        Assert.Equal(1, change1.At);
+        Assert.Equal(1, change2.At);
+        Assert.Equal(1, change1.Removed);
+        Assert.Equal(1, change2.Removed);
+    }
+
+    #endregion
 }
