@@ -20,19 +20,22 @@ public class JsInputManipulator : IInputManipulator
     )
     {
         const string commandName = $"{_module}.getCarretPosition";
-        var result = await _jSRuntime.InvokeAsync<uint?>(commandName, cancellationToken, [inputId]) ?? 0;
+        var result =
+            await _jSRuntime.InvokeAsync<uint?>(commandName, cancellationToken, [inputId]) ?? 0;
         return result;
     }
 
-    public async Task SetCaretPositionAsync(
+    public Task SetCaretPositionAsync(
         string inputId,
         uint position,
         CancellationToken cancellationToken = default
-    )
-    {
-        const string commandName = $"{_module}.setCaretPosition";
-        await _jSRuntime.InvokeVoidAsync(commandName, cancellationToken, [inputId, position]);
-    }
+    ) =>
+        SetSelectionRangeAsync(
+            inputId: inputId,
+            start: position,
+            end: position,
+            cancellationToken: cancellationToken
+        );
 
     public async Task SetSelectionRangeAsync(
         string inputId,
@@ -49,5 +52,15 @@ public class JsInputManipulator : IInputManipulator
     {
         const string commandName = $"{_module}.blur";
         await _jSRuntime.InvokeVoidAsync(commandName, cancellationToken, [inputId]);
+    }
+
+    public async Task SetInputValueAsync(
+        string inputId,
+        string value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        const string commandName = $"{_module}.setValue";
+        await _jSRuntime.InvokeVoidAsync(commandName, cancellationToken, [inputId, value]);
     }
 }

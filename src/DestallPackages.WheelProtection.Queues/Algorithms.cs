@@ -8,7 +8,7 @@ namespace DestallMaterials.WheelProtection.Queues
     {
         public static IReadOnlyList<CallConstraint> OptimizeConstraints(this IEnumerable<CallConstraint> constraints)
         {
-            constraints = constraints.OrderByDescending(c => c.Period).ToArray();
+            constraints = [.. constraints.OrderByDescending(c => c.Period)];
 
             var result = constraints.Where(constraint =>
             {

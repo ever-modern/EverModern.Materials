@@ -58,7 +58,7 @@ public static class StringExtensions
         {
             return input;
         }
-        return new string(input.Skip(undesiredBeginning.Length).ToArray()).MustNotStartWith(
+        return new string([.. input.Skip(undesiredBeginning.Length)]).MustNotStartWith(
             undesiredBeginning
         );
     }
@@ -73,7 +73,7 @@ public static class StringExtensions
         {
             return input;
         }
-        return new string(input.Take(input.Length - undesiredEnding.Length).ToArray());
+        return new string([.. input.Take(input.Length - undesiredEnding.Length)]);
     }
 
     public static string MustNotEndWith(this string input, char undesiredEnding)
@@ -86,7 +86,7 @@ public static class StringExtensions
         {
             return input;
         }
-        return new string(input.Take(input.Length - 1).ToArray());
+        return new string([.. input.Take(input.Length - 1)]);
     }
 
     public static string MustNotEndWith(this string input, IEnumerable<char> undesiredEndings)
@@ -95,7 +95,7 @@ public static class StringExtensions
         {
             return input;
         }
-        IList<char> inputString = input.ToList();
+        IList<char> inputString = [.. input];
         foreach (var undesiredEnding in undesiredEndings)
         {
             if (inputString[inputString.Count - 1] != undesiredEnding)
@@ -104,7 +104,7 @@ public static class StringExtensions
             }
             inputString.RemoveAt(inputString.Count - 1);
         }
-        return new string(inputString.ToArray());
+        return new string([.. inputString]);
     }
 
     public static string MustNotStartWith(this string input, IEnumerable<char> undesiredBeginnings)
@@ -113,7 +113,7 @@ public static class StringExtensions
         {
             return input;
         }
-        IList<char> inputString = input.ToList();
+        IList<char> inputString = [.. input];
         foreach (var undesiredBeginning in undesiredBeginnings)
         {
             if (inputString.Count == 0)
@@ -126,7 +126,7 @@ public static class StringExtensions
             }
             inputString.RemoveAt(0);
         }
-        return new string(inputString.ToArray());
+        return new string([.. inputString]);
     }
 
     public static string MustEndWith(this string input, char desiredEnding)

@@ -12,9 +12,7 @@ public class RatesDistributor<T>
 
     public RatesDistributor(IEnumerable<KeyValuePair<T, IEnumerable<CallConstraint>>> callConstraints, IChronos nowProvider)
     {
-        _rateControllers = callConstraints
-            .Select(cc => KeyValuePair.Create(new CompletionRateController(cc.Value, nowProvider), cc.Key))
-            .ToArray();
+        _rateControllers = [.. callConstraints.Select(cc => KeyValuePair.Create(new CompletionRateController(cc.Value, nowProvider), cc.Key))];
     }
 
     public RatesDistributor(IEnumerable<KeyValuePair<T, IEnumerable<CallConstraint>>> callConstraints) 

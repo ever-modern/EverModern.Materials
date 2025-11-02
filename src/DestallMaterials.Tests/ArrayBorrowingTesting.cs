@@ -11,9 +11,7 @@ public class ArrayBorrowingTesting
     {
         const int size = 100;
 
-        int[] arr = (0..size)
-            .AsSequence()
-            .ToArray();
+        int[] arr = [.. (0..size).AsSequence()];
 
         var borrowedArray = new BorrowedArray<int>(arr, size);
 
@@ -40,9 +38,7 @@ public class ArrayBorrowingTesting
     {
         const int size = 100;
 
-        int[] arr = (0..size)
-            .AsSequence(size)
-            .ToArray();
+        int[] arr = [.. (0..size).AsSequence(size)];
 
         var borrowedArray = new BorrowedArray<int>(arr, size);
 

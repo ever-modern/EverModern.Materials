@@ -2,6 +2,7 @@
 @using DestallMaterials.Blazor.Components.Inputs
 @using System.Globalization
 @using DestallMaterials.Blazor.Components.Services.UI
+@using DestallMaterials.WheelProtection.DataStructures.Text
 
 @inject IGlobalClickInvoker clickInvoker
 
@@ -41,136 +42,27 @@
     </section> *@
 
     @{
-        const string mask = "***-**-*";
-        char[] commonAllowedSymbols = Enumerable.Range(0, 70000).Where(i => i >= (int)'0' && i <= (int)'9').Select(i => (char)i).ToArray();
-        char[][] allowedSymbols = mask.Where(c => c == '*').Select(i => commonAllowedSymbols).ToArray();
+        var cSource = new StaticConstraintsSource();
     }
-    <MaskedInput Mask="@mask" AllowedSymbols="(_) => allowedSymbols" OnValueChanged="v => _maskResult = v" />
+    <MaskedInput OnValueChanged="@(v => {  _maskResult = v.ToArray(); })"
+                 ConstraintsSource="cSource"
+                 FormatMask="vs => new string(vs.Select(c => c ?? '*').ToArray())"
+                 Value="_maskResult" />
 
 </div>
 
 @code {
 
-    char?[] _maskResult = [];
+    char?[] _maskResult = new char?[7];
 
-    // Person class for testing
-    public class Person
+    class StaticConstraintsSource : ISlotConstraintsSource<char>
     {
-        public string FirstName { get; set; } = "";
-        public string LastName { get; set; } = "";
-    }
-    // Flag component values
-    bool NotificationsEnabled { get; set; } = true;
-    bool TermsAccepted { get; set; } = false;
-    bool RequiredCheck { get; set; } = false;
+        public int Length => 7;
+        static char?[] _numbers = ['0', '1', '2', '3', '4'];
 
-    // StringInput values
-    string FullName { get; set; } = "";
-    string Email { get; set; } = "";
-
-    // NumberInput values
-    int Age { get; set; } = 25;
-    decimal Price { get; set; } = 99.99m;
-    int Quantity { get; set; } = 0;
-
-    // DatePicker values
-    DateOnly BirthDate { get; set; } = default;
-    DateOnly EventDate { get; set; } = default;
-
-    // DateTimeInput values
-    DateTime Appointment { get; set; } = DateTime.Now.AddDays(7);
-    DateTime MeetingDate { get; set; } = DateTime.Now;
-    DateTime ReminderTime { get; set; } = DateTime.Now;
-
-    // SearchSelectorSingular values
-    string? SelectedCountry { get; set; }
-    Person? SelectedPerson { get; set; }
-
-    // SearchSelectorPlural values
-    string[] SelectedSkills { get; set; } = Array.Empty<string>();
-    string[] SelectedTechnologies { get; set; } = Array.Empty<string>();
-
-    // Test data
-    private readonly List<string> _countries = new()
-    {
-        "United States", "United Kingdom", "Germany", "France", "Italy", "Spain",
-        "Canada", "Australia", "Japan", "China", "Brazil", "India", "Russia"
-    };
-
-    private readonly List<Person> _people = new()
-    {
-        new Person { FirstName = "John", LastName = "Doe" },
-        new Person { FirstName = "Jane", LastName = "Smith" },
-        new Person { FirstName = "Bob", LastName = "Johnson" },
-        new Person { FirstName = "Alice", LastName = "Williams" },
-        new Person { FirstName = "Charlie", LastName = "Brown" }
-    };
-
-    private readonly List<string> _skills = new()
-    {
-        "C#", "JavaScript", "Python", "Java", "TypeScript", "SQL",
-        "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js"
-    };
-
-    private readonly List<string> _technologies = new()
-    {
-        ".NET", "ASP.NET Core", "Blazor", "Entity Framework", "Docker",
-        "Kubernetes", "Azure", "AWS", "Git", "CI/CD", "Microservices"
-    };
-
-    private Task<IReadOnlyList<string>> SearchCountries(string filter, CancellationToken ct)
-    {
-        var filtered = string.IsNullOrWhiteSpace(filter)
-            ? _countries
-            : _countries.Where(c => c.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult<IReadOnlyList<string>>(filtered);
-    }
-
-    private Task<IReadOnlyList<Person>> SearchPeople(string filter, CancellationToken ct)
-    {
-        var filtered = string.IsNullOrWhiteSpace(filter)
-            ? _people
-            : _people.Where(p =>
-                p.FirstName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                p.LastName.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult<IReadOnlyList<Person>>(filtered);
-    }
-
-    private Task<IReadOnlyList<string>> SearchSkills(string filter, CancellationToken ct)
-    {
-        var filtered = string.IsNullOrWhiteSpace(filter)
-            ? _skills
-            : _skills.Where(s => s.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult<IReadOnlyList<string>>(filtered);
-    }
-
-    private Task<IReadOnlyList<string>> SearchTechnologies(string filter, CancellationToken ct)
-    {
-        var filtered = string.IsNullOrWhiteSpace(filter)
-            ? _technologies
-            : _technologies.Where(t => t.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult<IReadOnlyList<string>>(filtered);
-    }
-
-    void ResetAllValues()
-    {
-        NotificationsEnabled = false;
-        TermsAccepted = false;
-        RequiredCheck = false;
-        FullName = "";
-        Email = "";
-        Age = 0;
-        Price = 0m;
-        Quantity = 0;
-        BirthDate = default;
-        EventDate = default;
-        Appointment = DateTime.Now;
-        MeetingDate = DateTime.Now;
-        ReminderTime = DateTime.Now;
-        SelectedCountry = null;
-        SelectedPerson = null;
-        SelectedSkills = Array.Empty<string>();
-        SelectedTechnologies = Array.Empty<string>();
-        StateHasChanged();
+        public IReadOnlyList<SlotConstraint<char>> GetConstraints(IReadOnlyList<char?> currentFilling)
+            => [
+                _numbers, _numbers, _numbers, '/', _numbers, _numbers, _numbers
+            ];
     }
 }

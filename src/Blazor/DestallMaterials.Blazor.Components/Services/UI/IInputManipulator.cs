@@ -18,4 +18,10 @@ public interface IInputManipulator
         uint end,
         CancellationToken cancellationToken = default
     );
+
+    Task SetInputValueAsync(
+        string inputId,
+        string value,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -18,11 +18,11 @@ public static class SemanticsExtensions
         {
                 typeof(uint), typeof(int), typeof(long), typeof(ulong), typeof(short), typeof(ushort), typeof(byte)
         };
-        NumberTypes = WholeNumberTypes.Concat(FractionalTypes).ToArray();
-        PrimitiveTypes = new Type[]
+        NumberTypes = [.. WholeNumberTypes, .. FractionalTypes];
+        PrimitiveTypes = [.. new Type[]
         {
                 typeof(string), typeof(DateTime), typeof(bool)
-        }.Union(NumberTypes).ToArray();
+        }.Union(NumberTypes)];
     }
 
     public static List<ITypeSymbol> AllBaseClassesHierarchy(this ITypeSymbol symbol)
@@ -225,7 +225,7 @@ public static class SemanticsExtensions
         {
             return false;
         }
-        return new string(type.ToDisplayString().TakeWhile(c => c != '<').ToArray()).IsOneOf(ReadOnlyEnumerables);
+        return new string([.. type.ToDisplayString().TakeWhile(c => c != '<')]).IsOneOf(ReadOnlyEnumerables);
     }
 
     public static bool IsArray(this ITypeSymbol typeSymbol) => typeSymbol.TypeKind == TypeKind.Array;

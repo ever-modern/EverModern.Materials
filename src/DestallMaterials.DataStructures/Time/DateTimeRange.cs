@@ -49,7 +49,6 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     public static DateTimeRange Merge(params IEnumerable<DateTimeRange> ranges)
     {
         ranges = ranges.OrderBy(x => x.Start);
-        var any = false;
         var resultStart = DateTime.MinValue;
         var resultEnd = DateTime.MaxValue;
         int i = 0;
@@ -78,7 +77,6 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
 
     public static DateTimeRange operator +(DateTimeRange left, DateTimeRange other)
     {
-        DateTimeRange intersection;
         if (left.End >= other.Start && left.Start <= other.Start)
         {
             return new(other.Start, left.Start);

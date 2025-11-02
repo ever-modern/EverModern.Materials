@@ -1,9 +1,9 @@
 ﻿namespace DestallMaterials.Tests;
 
-using global::DestallMaterials.WheelProtection.DataStructures.Buffers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using global::DestallMaterials.WheelProtection.DataStructures.Buffers;
 using Xunit;
 
 public class BorrowedListTests : IDisposable
@@ -27,7 +27,7 @@ public class BorrowedListTests : IDisposable
         using var list = new BorrowedList<int>();
 
         // Assert
-        Assert.Equal(0, list.Count);
+        Assert.Empty(list);
         Assert.False(list.IsReadOnly);
     }
 
@@ -38,7 +38,7 @@ public class BorrowedListTests : IDisposable
         using var list = new BorrowedList<int>(10);
 
         // Assert
-        Assert.Equal(0, list.Count);
+        Assert.Empty(list);
     }
 
     [Fact]
@@ -59,14 +59,14 @@ public class BorrowedListTests : IDisposable
 
         // Assert
         Assert.Equal(5, list.Count);
-        Assert.Equal(source, list.ToArray());
+        Assert.Equal(source, list);
     }
 
     [Fact]
     public void Constructor_WithNullCollection_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new BorrowedList<int>((IEnumerable<int>)null));
+        Assert.Throws<ArgumentNullException>(() => new BorrowedList<int>((IEnumerable<int>?)null!));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class BorrowedListTests : IDisposable
         _list.Add(42);
 
         // Assert
-        Assert.Equal(1, _list.Count);
+        Assert.Single(_list);
         Assert.Equal(42, _list[0]);
     }
 
@@ -180,7 +180,7 @@ public class BorrowedListTests : IDisposable
         _list.Clear();
 
         // Assert
-        Assert.Equal(0, _list.Count);
+        Assert.Empty(_list);
     }
 
     [Fact]
@@ -191,8 +191,8 @@ public class BorrowedListTests : IDisposable
         _list.Add(99);
 
         // Act & Assert
-        Assert.True(_list.Contains(42));
-        Assert.True(_list.Contains(99));
+        Assert.Contains(42, _list);
+        Assert.Contains(99, _list);
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class BorrowedListTests : IDisposable
         _list.Add(42);
 
         // Act & Assert
-        Assert.False(_list.Contains(99));
+        Assert.DoesNotContain(99, _list);
     }
 
     [Fact]
@@ -228,7 +228,7 @@ public class BorrowedListTests : IDisposable
         _list.Add(42);
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => _list.CopyTo(null, 0));
+        Assert.Throws<ArgumentNullException>(() => _list.CopyTo(null!, 0));
     }
 
     [Fact]
@@ -292,7 +292,7 @@ public class BorrowedListTests : IDisposable
 
         // Assert
         Assert.Equal(3, _list.Count);
-        Assert.Equal(new[] { 1, 2, 3 }, _list.ToArray());
+        Assert.Equal(new[] { 1, 2, 3 }, _list);
     }
 
     [Fact]
@@ -307,7 +307,7 @@ public class BorrowedListTests : IDisposable
 
         // Assert
         Assert.Equal(3, _list.Count);
-        Assert.Equal(new[] { 1, 2, 3 }, _list.ToArray());
+        Assert.Equal(new[] { 1, 2, 3 }, _list);
     }
 
     [Fact]
@@ -322,7 +322,7 @@ public class BorrowedListTests : IDisposable
 
         // Assert
         Assert.Equal(3, _list.Count);
-        Assert.Equal(new[] { 1, 2, 3 }, _list.ToArray());
+        Assert.Equal(new[] { 1, 2, 3 }, _list);
     }
 
     [Fact]
@@ -350,7 +350,7 @@ public class BorrowedListTests : IDisposable
         // Assert
         Assert.True(result);
         Assert.Equal(2, _list.Count);
-        Assert.Equal(new[] { 1, 3 }, _list.ToArray());
+        Assert.Equal(new[] { 1, 3 }, _list);
     }
 
     [Fact]
@@ -381,7 +381,7 @@ public class BorrowedListTests : IDisposable
 
         // Assert
         Assert.Equal(2, _list.Count);
-        Assert.Equal(new[] { 1, 3 }, _list.ToArray());
+        Assert.Equal(new[] { 1, 3 }, _list);
     }
 
     [Fact]
@@ -470,7 +470,7 @@ public class BorrowedListTests : IDisposable
     [Fact]
     public void UsingStatement_AutomaticallyDisposes()
     {
-        BorrowedList<int> capturedList = null;
+        BorrowedList<int>? capturedList = null;
 
         // Act
         using (var list = new BorrowedList<int>())

@@ -11,7 +11,9 @@
        @oninput="(ev) => OnInput((string)(ev.Value ?? string.Empty))"
        @onclick="OnClick"
        @onfocus="OnClick"
-       class="masked-input"
-       value="@_displayText"
-       id="@_inputId" />
+       class="@($"masked-input {CssClass}")"
+       value="@DisplayText"
+       id="@_inputId"
+       style="@CssStyle"
+       onblur="@EnsureInputContentAsync" />
 

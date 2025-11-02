@@ -5,5 +5,5 @@ public interface IMask<TSymbol>
 {
     IReadOnlyList<TSymbol?> Slots { get; }
 
-    int AcceptChange(ContentChange<TSymbol> contentChange);
+    int AcceptChange(ContentChange<TSymbol?> contentChange);
 }

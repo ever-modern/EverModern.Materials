@@ -4,8 +4,7 @@ namespace DestallMaterials.Tests.XUnit;
 
 public class DateTimeRangeTesting
 {
-    DateTime CreateDate(int seconds)
-        => new DateTime() + TimeSpan.FromSeconds(seconds);
+    DateTime CreateDate(int seconds) => new DateTime() + TimeSpan.FromSeconds(seconds);
 
     [Fact]
     public void Split()
@@ -47,8 +46,6 @@ public class DateTimeRangeTesting
     [Fact]
     public void Intersect()
     {
-        const int n = 200;
-
         var date1 = CreateDate(0);
         var date2 = CreateDate(10);
 
@@ -58,7 +55,7 @@ public class DateTimeRangeTesting
         var range1 = new DateTimeRange(date1, date2);
         var range2 = new DateTimeRange(date3, date4);
 
-        var intersects1 = range1.Intersects(range2, out var intersection1);        
+        var intersects1 = range1.Intersects(range2, out var intersection1);
 
         Assert.True(intersects1);
 

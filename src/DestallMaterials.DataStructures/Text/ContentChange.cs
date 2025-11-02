@@ -1,14 +1,25 @@
 ﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public record struct ContentChange<T>(int At, int Removed, IReadOnlyList<T> Inserted)
+public enum RemovalDirection
 {
-    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish) =>
-        Get(start, finish, EqualityComparer<T>.Default);
+    Backward,
+    Forward,
+}
+
+public record struct ContentChange<T>(
+    int At,
+    int Removed,
+    IReadOnlyList<T> Inserted
+)
+{
+    public static ContentChange<T> Get(IReadOnlyList<T> start, IReadOnlyList<T> finish, int lastChanged = -1) =>
+        Get(start, finish, EqualityComparer<T>.Default, lastChanged);
 
     public static ContentChange<T> Get(
         IReadOnlyList<T> start,
         IReadOnlyList<T> finish,
-        IEqualityComparer<T> equalityComparer
+        IEqualityComparer<T> equalityComparer,
+        int lastChanged = -1
     )
     {
         ArgumentNullException.ThrowIfNull(start);

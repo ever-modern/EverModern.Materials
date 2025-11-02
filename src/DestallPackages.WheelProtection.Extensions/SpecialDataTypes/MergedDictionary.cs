@@ -11,12 +11,12 @@ namespace DestallMaterials.WheelProtection.Extensions.SpecialDataTypes
 
         public MergedDictionary(IEnumerable<IDictionary<TKey, TValue>> dictionaries)
         {
-            _dictionaries = dictionaries.ToList();
+            _dictionaries = [.. dictionaries];
         }
 
         public MergedDictionary(params IDictionary<TKey, TValue>[] dictionaries)
         {
-            _dictionaries = dictionaries.ToList();
+            _dictionaries = [.. dictionaries];
             if (!dictionaries.Any())
             {
                 _dictionaries.Add(new Dictionary<TKey, TValue>());
@@ -45,9 +45,9 @@ namespace DestallMaterials.WheelProtection.Extensions.SpecialDataTypes
             }
         }
 
-        public ICollection<TKey> Keys => _dictionaries.SelectMany(d => d.Keys).ToArray();
+        public ICollection<TKey> Keys => [.. _dictionaries.SelectMany(d => d.Keys)];
 
-        public ICollection<TValue> Values => _dictionaries.SelectMany(d => d.Values).ToArray();
+        public ICollection<TValue> Values => [.. _dictionaries.SelectMany(d => d.Values)];
 
         public int Count => _dictionaries.Sum(d => d.Count);
 

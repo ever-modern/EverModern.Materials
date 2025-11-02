@@ -233,7 +233,7 @@ public static class EnumerableExtensions
     ) => Task.WhenAll(source).Then(items => items.OrderByDescending(selector));
 
     public static IReadOnlyList<T> EnsureMaterialized<T>(this IEnumerable<T> source) =>
-        source as IReadOnlyList<T> ?? source.ToArray();
+        source as IReadOnlyList<T> ?? [.. source];
 
     public static int FindIndex<T>(this IEnumerable<T> items, Func<T, bool> stopWhen)
     {

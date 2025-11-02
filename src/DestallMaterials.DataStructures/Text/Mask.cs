@@ -1,659 +1,416 @@
-﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using DestallMaterials.WheelProtection.DataStructures.Time;
 
-public class Mask<TSymbol>(
-    ISlotConstraintsSource<TSymbol> constraintsSource,
-    IReadOnlyList<TSymbol?> initialSlots,
-    IEqualityComparer<TSymbol?> equalityComparer
-) : IMask<TSymbol>
+namespace DestallMaterials.WheelProtection.DataStructures.Text;
+
+public class Mask<TSymbol> : IMask<TSymbol>
     where TSymbol : struct
 {
+    readonly ISlotConstraintsSource<TSymbol> _constraintsSource;
+    readonly IEqualityComparer<TSymbol?> _equalityComparer;
+    readonly TSymbol?[] _slots;
+
+    public Mask(
+        ISlotConstraintsSource<TSymbol> constraintsSource,
+        IReadOnlyList<TSymbol?> initialSlots,
+        IEqualityComparer<TSymbol?> equalityComparer
+    )
+    {
+        _constraintsSource =
+            constraintsSource ?? throw new ArgumentNullException(nameof(constraintsSource));
+        _equalityComparer = equalityComparer ?? EqualityComparer<TSymbol?>.Default;
+        _slots = initialSlots == null ? new TSymbol?[_constraintsSource.Length] : [.. initialSlots];
+    }
+
     public IReadOnlyList<TSymbol?> Slots => _slots;
 
-    IReadOnlyList<SlotConstraint<TSymbol>> Constraints => constraintsSource.GetConstraints(_slots);
+    IReadOnlyList<SlotConstraint<TSymbol>> Constraints => _constraintsSource.GetConstraints(_slots);
 
-    readonly TSymbol?[] _slots = [.. initialSlots];
-
-    public int AcceptChange(ContentChange<TSymbol> contentChange)
+    public int AcceptChange(ContentChange<TSymbol?> contentChange)
     {
         var (at, removed, inserted) = contentChange;
 
-        if (at >= _slots.Length)
-        {
+        if (at > _slots.Length)
             throw new InvalidOperationException("Can't change beyond slots count.");
+
+        // Clamp indices
+        at = Math.Clamp(at, 0, _slots.Length);
+
+        // Process removals: clear slots that were removed (starting at 'at' and moving left)
+        for (int i = 0; i < removed; i++)
+        {
+            var idx = at - i;
+            if (idx < 0 || idx >= _slots.Length)
+                continue;
+
+            var options = Constraints[idx].Options;
+            _slots[idx] = options.Count == 1 ? options[0] : default;
         }
 
-        var options = Constraints;
-        var currentSlotIndex = at;
-        for (int i = 0; i < removed && currentSlotIndex >= 0; i++)
+        // After removals, run autoset to fill deterministic slots
+        AutosetAll();
+
+        // Determine insertion start position: if insertion at end (at == length) start at last slot
+        int insertPos = Math.Min(at, Math.Max(0, _slots.Length - 1));
+
+        // If removals removed everything up to and including the first slot, place at0
+        if (at - removed <= 0)
+            insertPos = 0;
+
+        int placedPos = insertPos;
+
+        // Process insertions sequentially
+        for (int i = 0; i < inserted.Count && placedPos < _slots.Length; )
         {
-            var slotOptions = options[i].Options;
-            currentSlotIndex = at - i;
-            _slots[currentSlotIndex] = slotOptions.Count == 1 ? slotOptions[0] : null;
-            currentSlotIndex--;
-            AutosetAll();
-        }
+            var options = Constraints[placedPos].Options;
+            var value = inserted[i];
 
-        if (currentSlotIndex < 0)
-        {
-            currentSlotIndex = 0;
-        }
-
-        options = Constraints;
-
-        for (int i = 0; i < inserted.Count || currentSlotIndex == _slots.Length; )
-        {
-            var slotOptions = options[currentSlotIndex].Options;
-            var insertedValue = inserted[i];
-
-            if (slotOptions.Count == 1)
+            if (options.Count == 0)
             {
-                _slots[currentSlotIndex] = slotOptions[0];
+                // slot can't accept anything: clear and advance
+                _slots[placedPos] = default;
+                placedPos++;
+                continue;
             }
-            else if (slotOptions.Count == 0)
+
+            if (options.Count == 1)
             {
-                _slots[currentSlotIndex] = null;
+                // deterministic slot - fill and advance, but do not consume inserted value
+                _slots[placedPos] = options[0];
+                placedPos++;
+                continue;
             }
-            else
+
+            // slot accepts multiple values
+            if (options.Contains(value))
             {
-                _slots[currentSlotIndex] = slotOptions.Contains(insertedValue)
-                    ? insertedValue
-                    : _slots[currentSlotIndex];
-
-                currentSlotIndex++;
-
+                _slots[placedPos] = value;
+                i++; // consume inserted
+                placedPos++;
                 AutosetAll();
+                continue;
             }
+
+            // value not acceptable here -> try next slot
+            placedPos++;
         }
 
-        return currentSlotIndex; // carret position is +1
+        // If there were no insertions, compute caret after deletion
+        if (inserted.Count == 0)
+        {
+            var caret = at - removed;
+            if (caret < 0)
+                caret = 0;
+            return caret;
+        }
+
+        // Caret after insertions: last placed position
+        var caretPos = Math.Clamp(placedPos - 1, 0, Math.Max(0, _slots.Length - 1));
+        return caretPos;
     }
 
     bool AutosetAll()
     {
         var changed = false;
-        var currentConstraints = Constraints;
-        for (int i = 0; i < _slots.Length; i++)
+
+        // Repeat until stable or safety limit
+        for (int iteration = 0; iteration < 32; iteration++)
         {
-            var slotValue = _slots[i];
-            var options = currentConstraints[i].Options;
-            var newSlotValue = slotValue;
-            if (options.Count == 1)
+            var currentConstraints = Constraints;
+            bool anyChange = false;
+
+            for (int i = 0; i < _slots.Length; i++)
             {
-                newSlotValue = options[0];
-            }
-            else if (options.Count == 0)
-            {
-                newSlotValue= null;
-            }
-            else if (slotValue is not null && options.Contains(slotValue) is false)
-            {
-                newSlotValue = options[^1];                
+                var slotValue = _slots[i];
+                var options = currentConstraints[i].Options;
+                TSymbol? newValue = slotValue;
+
+                if (options.Count == 1)
+                {
+                    newValue = options[0];
+                }
+                else if (options.Count == 0)
+                {
+                    newValue = default;
+                }
+                else if (slotValue is not null && !options.Contains(slotValue))
+                {
+                    // choose a deterministic fallback (last option)
+                    newValue = options[options.Count - 1];
+                }
+
+                if (!_equalityComparer.Equals(newValue, slotValue))
+                {
+                    _slots[i] = newValue;
+                    anyChange = true;
+                }
             }
 
-            _slots[i] = newSlotValue;
-
-            changed = changed || (equalityComparer.Equals(newSlotValue, slotValue) is false);
+            changed = changed || anyChange;
+            if (!anyChange)
+                break;
         }
 
-        return changed && AutosetAll();
+        return changed;
     }
 }
 
-#region Garbage
-
-[Obsolete]
-public class GarbageMask<T>(
-    IConstrainer<T> constrainer,
-    IReadOnlyList<List<T>> parts,
-    IEqualityComparer<T> equalityComparer
-)
+// DateSlotConstraintsSource computes constraints for an8-slot date layout: ddMMyyyy
+public class DateSlotConstraintsSource : ISlotConstraintsSource<char>
 {
-    public GarbageMask(IConstrainer<T> textConstrainer, IReadOnlyList<List<T>> parts)
-        : this(textConstrainer, parts, EqualityComparer<T>.Default) { }
+    readonly DateTimeRange _range;
+    readonly int _yearDigits;
+    public int Length => 4 + _yearDigits;
 
-#if DEBUG
-    public List<string> Diagnostics = [];
-#endif
-
-    void Log(string message)
+    public DateSlotConstraintsSource(DateTimeRange range, byte yearDigits = 4)
     {
-#if DEBUG
-        Diagnostics.Add(message);
-#endif
+        _range = range;
+        _yearDigits = Math.Clamp((int)yearDigits, 1, 10);
     }
 
-    /// <summary>
-    /// Makes projection of mask onto a new string value, based on the difference with the previous string value.
-    /// </summary>
-    /// <param name="partIndex">Index of the part to change</param>
-    /// <param name="newValue">New value for the part</param>
-    /// <returns>Tuple containing (PartIndex, ItemIndex) of where the change propagated to</returns>
-    public (int PartIndex, int ItemIndex) ChangePart(int partIndex, IReadOnlyList<T> newValue)
+    public (int[] Days, int[] Months, int[] Years) GetValueConstraints()
     {
-        var (at, deleted, inserted) = GetChange(parts[partIndex], newValue);
-        Log($"ChangePart: part={partIndex}, at={at}, deleted={deleted}, inserted={inserted.Count}");
+        // Compute full set of years, months and days available within the provided range
+        var years = Enumerable
+            .Range(_range.Start.Year, _range.End.Year - _range.Start.Year + 1)
+            .ToArray();
 
-        // Process removals first
-        for (int i = 0; i < deleted; i++)
-        {
-            var deleteIndex = at;
-            DeleteItem(partIndex, deleteIndex);
-
-            // After deletion, the parts array changes, so we need to get fresh constraints
-            var constraints = constrainer.GetConstraints(parts);
-            if (partIndex < constraints.Count)
-            {
-                var constraint = constraints[partIndex];
-                DecideSingleOptions(parts[partIndex], constraint);
-            }
-        }
-
-        // Process insertions
-        for (int i = 0; i < inserted.Count; i++)
-        {
-            var insertIndex = at + i;
-            var result = InsertItem(insertIndex, inserted[i]);
-            if (result == (-1, -1))
-            {
-                // Couldn't insert at this position, try next position
-                continue;
-            }
-            return result;
-        }
-
-        // Return the position where we stopped
-        return (partIndex, at);
-    }
-
-    static ContentChange<T> GetChange(IReadOnlyList<T> oldValue, IReadOnlyList<T> newValue) =>
-        ContentChange<T>.Get(oldValue, newValue);
-
-    void DeleteItem(int partIndex, int itemIndex)
-    {
-        if (partIndex < 0 || partIndex >= parts.Count)
-            return;
-
-        if (itemIndex < 0 || itemIndex >= parts[partIndex].Count)
-            return;
-
-        Log($"Deleting item at part {partIndex}, index {itemIndex}");
-        parts[partIndex].RemoveAt(itemIndex);
-    }
-
-    /// <summary>
-    /// Try to insert an item at the specified position, considering constraints
-    /// </summary>
-    /// <param name="position">Position to insert</param>
-    /// <param name="item">Item to insert</param>
-    /// <returns>Tuple (PartIndex, ItemIndex) where insertion happened, or (-1, -1) if failed</returns>
-    (int PartIndex, int ItemIndex) InsertItem(int position, T item)
-    {
-        var currentPosition = position;
-
-        while (currentPosition < parts.Count)
-        {
-            var constraints = constrainer.GetConstraints(parts);
-            if (currentPosition >= constraints.Count)
-                break;
-
-            var constraint = constraints[currentPosition];
-
-            // Check if the item is allowed
-            if (!constraint.AllowedValues.Contains(item, equalityComparer))
-            {
-                Log($"Item {item} not allowed at position {currentPosition}, trying next");
-                currentPosition++;
-                continue;
-            }
-
-            // Check if this part has reached its max length
-            if (parts[currentPosition].Count >= constraint.MaxLength)
-            {
-                Log(
-                    $"Part {currentPosition} reached max length {constraint.MaxLength}, trying next"
-                );
-                currentPosition++;
-                continue;
-            }
-
-            // Add the item to this part
-            parts[currentPosition].Add(item);
-            Log($"Added {item} to part {currentPosition}");
-
-            return (currentPosition, parts[currentPosition].Count - 1);
-        }
-
-        return (-1, -1);
-    }
-
-    /// <summary>
-    /// Update existing values when constraints change
-    /// </summary>
-    /// <param name="partIndex">Index of the part whose constraints changed</param>
-    /// <param name="newConstraints">New constraints for this part</param>
-    /// <returns>Tuple (PartIndex, ItemIndex) of where the adjustment propagated to</returns>
-    public (int PartIndex, int ItemIndex) UpdateConstraints(
-        int partIndex,
-        MaskPartConstraint<T> newConstraints
-    )
-    {
-        Log($"Updating constraints for part {partIndex}");
-
-        if (partIndex < 0 || partIndex >= parts.Count)
-            return (-1, -1);
-
-        var part = parts[partIndex];
-        var currentValues = new List<T>(part);
-
-        // Clear the part
-        part.Clear();
-
-        // Try to remap each value to the new constraints
-        foreach (var value in currentValues)
-        {
-            var valueIndexInOld = -1;
-            var constraints = constrainer.GetConstraints(parts);
-            var allowedValuesList =
-                partIndex < constraints.Count ? constraints[partIndex].AllowedValues : null;
-
-            if (allowedValuesList != null)
-            {
-                // Find index of value in old constraint's allowed values
-                for (int i = 0; i < allowedValuesList.Count; i++)
+        // Months that appear for at least one year in range
+        var months = Enumerable
+            .Range(1, 12)
+            .Where(m =>
+                years.Any(y =>
                 {
-                    if (equalityComparer.Equals(allowedValuesList[i], value))
+                    try
                     {
-                        valueIndexInOld = i;
-                        break;
+                        var start = new DateTime(y, m, 1);
+                        var end = new DateTime(y, m, DateTime.DaysInMonth(y, m));
+                        return !(end < _range.Start || start > _range.End);
                     }
-                }
-            }
+                    catch
+                    {
+                        return false;
+                    }
+                })
+            )
+            .ToArray();
 
-            // Find the closest value in the new constraints
-            var newValue = FindClosestValue(value, newConstraints.AllowedValues, valueIndexInOld);
-            if (newValue != null && newConstraints.AllowedValues.Count > 0)
+        // Days: union of possible day numbers for all month-year combos inside range
+        var daysSet = new HashSet<int>();
+        foreach (var y in years)
+        {
+            foreach (var m in months)
             {
-                part.Add(newValue);
-            }
-            else if (newConstraints.MinLength > 0 && newConstraints.AllowedValues.Count > 0)
-            {
-                // No valid value found, try to insert at next part
-                var firstAllowed = newConstraints.AllowedValues.FirstOrDefault();
-                if (firstAllowed is not null)
+                if (!MonthYearInRange(y, m))
+                    continue;
+                try
                 {
-                    var result = InsertItem(partIndex + 1, firstAllowed);
-                    if (result != (-1, -1))
-                        return result;
+                    var dmax = DateTime.DaysInMonth(y, m);
+                    for (int d = 1; d <= dmax; d++)
+                        daysSet.Add(d);
                 }
+                catch { }
             }
         }
 
-        // Ensure min length is satisfied (only if there are allowed values)
-        while (part.Count < newConstraints.MinLength && newConstraints.AllowedValues.Count > 0)
+        if (daysSet.Count == 0)
         {
-            part.Add(newConstraints.AllowedValues[0]);
+            // fallback to 1..31
+            for (int d = 1; d <= 31; d++)
+                daysSet.Add(d);
         }
 
-        return (partIndex, part.Count > 0 ? part.Count - 1 : 0);
+        var days = daysSet.OrderBy(d => d).ToArray();
+
+        return (days, months, years);
     }
 
-    T? FindClosestValue(T originalValue, IReadOnlyList<T> allowedValues, int originalIndex)
+    public IReadOnlyList<SlotConstraint<char>> GetConstraints(IReadOnlyList<char?> currentFilling)
     {
-        if (allowedValues.Count == 0)
-            return default(T);
+        // Use precomputed value constraints as a base
+        var (allDays, allMonths, allYears) = GetValueConstraints();
 
-        // Try exact match first
-        if (allowedValues.Contains(originalValue, equalityComparer))
-            return originalValue;
+        // slots: d1,d2,m1,m2, y1..yN
+        var totalSlots = 4 + _yearDigits;
 
-        // If we had an original index, try to find closest by index
-        if (originalIndex >= 0 && originalIndex < allowedValues.Count)
+        var slots = Enumerable
+            .Range(0, totalSlots)
+            .Select(i => i < currentFilling.Count ? currentFilling[i] : default(char?))
+            .ToArray();
+
+        // Extract year slot slice
+        char?[] yearSlots = new char?[_yearDigits];
+        for (int i = 0; i < _yearDigits; i++)
+            yearSlots[i] = slots[4 + i];
+
+        // Filter candidate years that match partial year slots and are within overall years
+        var candidateYears = allYears.Where(y => YearMatchesSlots(y, yearSlots)).ToArray();
+
+        // Determine candidate months matching month slots and within months available in range
+        var monthSlots = (slots[2], slots[3]);
+
+        var candidateMonths = allMonths
+            .Where(m => MonthMatchesSlots(m, monthSlots))
+            .Where(m => candidateYears.Any(y => MonthYearInRange(y, m)))
+            .ToArray();
+
+        // Compute set of possible max days for valid month-year combos within filtered candidates
+        var possibleMaxDays = new HashSet<int>();
+        foreach (var y in candidateYears)
         {
-            return allowedValues[originalIndex];
-        }
-
-        // Otherwise, return the first allowed value
-        return allowedValues[0];
-    }
-
-    /// <summary>
-    /// Process ContentChange and adjust all affected parts
-    /// </summary>
-    /// <param name="partIndex">Index of the part</param>
-    /// <param name="change">ContentChange describing what changed</param>
-    /// <returns>Tuple (PartIndex, ItemIndex) of where the change propagated to</returns>
-    public (int PartIndex, int ItemIndex) ProcessContentChange(
-        int partIndex,
-        ContentChange<T> change
-    )
-    {
-        Log(
-            $"Processing ContentChange: part={partIndex}, at={change.At}, removed={change.Removed}, inserted={change.Inserted.Count}"
-        );
-
-        // Process removals first
-        for (int i = 0; i < change.Removed; i++)
-        {
-            DeleteItem(partIndex, change.At);
-        }
-
-        // Process insertions
-        for (int i = 0; i < change.Inserted.Count; i++)
-        {
-            var item = change.Inserted[i];
-            var insertPosition = change.At + i;
-            var result = InsertItem(insertPosition, item);
-            if (result != (-1, -1))
-                return result;
-        }
-
-        return (partIndex, change.At);
-    }
-
-    /// <summary>
-    /// Paste values into spots for which there can be only one value.
-    /// </summary>
-    /// <param name="symbols"></param>
-    /// <param name="constraints"></param>
-    public static void DecideSingleOptions(List<T> symbols, MaskPartConstraint<T> constraints)
-    {
-        // If the part is empty and has min length > 0, add the first allowed value
-        if (symbols.Count < constraints.MinLength && constraints.AllowedValues.Count > 0)
-        {
-            symbols.Add(constraints.AllowedValues[0]);
-        }
-    }
-}
-
-/// <summary>
-///
-/// </summary>
-/// <param name="AllowedValues"></param>
-/// <param name="MinLength"></param>
-/// <param name="MaxLength"></param>
-public record struct MaskPartConstraint<T>(
-    IReadOnlyList<T> AllowedValues,
-    int MinLength,
-    int MaxLength
-);
-
-/// <summary>
-/// Returns constraints on text values, based on already present text content.
-/// </summary>
-public interface IConstrainer<T>
-{
-    public IReadOnlyList<MaskPartConstraint<T>> GetConstraints(
-        IReadOnlyList<IReadOnlyList<T>> currentTextParts
-    );
-}
-
-public class PhoneNumberConstrainer : IConstrainer<char>
-{
-    public IReadOnlyList<MaskPartConstraint<char>> GetConstraints(
-        IReadOnlyList<IReadOnlyList<char>> currentSymbols
-    )
-    {
-        // Phone number format: +1 (XXX) XXX-XXXX or XXX-XXX-XXXX
-        // Fixed structure with 14 parts:
-        // Part 0: Country code indicator (+ or 1 or digits)
-        // Parts 1-3: Area code (XXX)
-        // Parts 4-6: Separators '(', ')', ' '
-        // Parts 7-9: Exchange code (XXX)
-        // Part 10: '-'
-        // Parts 11-14: Line number (XXXX)
-
-        var constraints = new List<MaskPartConstraint<char>>();
-
-        // Part 0: Country code or start of area code
-        if (currentSymbols.Count > 0 && currentSymbols[0].Count > 0)
-        {
-            var firstChar = currentSymbols[0][0];
-            if (firstChar == '+')
+            foreach (var m in candidateMonths)
             {
-                constraints.Add(new MaskPartConstraint<char>("1".ToCharArray(), 1, 1));
-            }
-            else if (firstChar == '1')
-            {
-                constraints.Add(new MaskPartConstraint<char>(Array.Empty<char>(), 0, 0));
-            }
-            else
-            {
-                // Allow digits for area code start
-                constraints.Add(new MaskPartConstraint<char>("123456789".ToCharArray(), 1, 1));
-            }
-        }
-        else
-        {
-            constraints.Add(new MaskPartConstraint<char>("+123456789".ToCharArray(), 0, 1));
-        }
-
-        // Parts 1-3: Area code (XXX)
-        for (int i = 0; i < 3; i++)
-        {
-            var allowedValues = i == 0 ? "123456789" : "0123456789";
-            constraints.Add(new MaskPartConstraint<char>(allowedValues.ToCharArray(), 1, 1));
-        }
-
-        // Parts 4-6: Separators
-        constraints.Add(new MaskPartConstraint<char>("(".ToCharArray(), 0, 1));
-        constraints.Add(new MaskPartConstraint<char>(")".ToCharArray(), 0, 1));
-        constraints.Add(new MaskPartConstraint<char>(" ".ToCharArray(), 0, 1));
-
-        // Parts 7-9: Exchange code
-        for (int i = 0; i < 3; i++)
-        {
-            var allowedValues = i == 0 ? "123456789" : "0123456789";
-            constraints.Add(new MaskPartConstraint<char>(allowedValues.ToCharArray(), 1, 1));
-        }
-
-        // Part 10: Dash
-        constraints.Add(new MaskPartConstraint<char>("-".ToCharArray(), 0, 1));
-
-        // Parts 11-14: Line number
-        for (int i = 0; i < 4; i++)
-        {
-            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
-        }
-
-        return constraints;
-    }
-}
-
-/// <summary>
-/// Email input constrainer for testing Mask functionality
-/// </summary>
-public class EmailInputConstrainer : IConstrainer<char>
-{
-    public IReadOnlyList<MaskPartConstraint<char>> GetConstraints(
-        IReadOnlyList<IReadOnlyList<char>> currentTextParts
-    )
-    {
-        // Email format: local@domain.tld
-        // Progressive validation with 5 parts:
-        // Part 0: Local part (before @)
-        // Part 1: @ symbol
-        // Part 2: Domain part (before .)
-        // Part 3: Dot separator
-        // Part 4: TLD part
-
-        var constraints = new List<MaskPartConstraint<char>>();
-
-        // Analyze current state
-        int atIndex = -1;
-        for (int i = 0; i < currentTextParts.Count; i++)
-        {
-            if (currentTextParts[i].Contains('@'))
-            {
-                atIndex = i;
-                break;
-            }
-        }
-
-        if (atIndex == -1)
-        {
-            // No @ found yet, we're in the local part
-            constraints.Add(
-                new MaskPartConstraint<char>(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-@".ToCharArray(),
-                    0,
-                    64
-                )
-            );
-            constraints.Add(new MaskPartConstraint<char>("@".ToCharArray(), 0, 1));
-            constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
-            constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
-            constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
-        }
-        else
-        {
-            // @ found, determine structure
-            if (atIndex == 0)
-            {
-                // Part 0 is @, so local part should be empty
-                constraints.Add(
-                    new MaskPartConstraint<char>(
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
-                        0,
-                        64
-                    )
-                );
-            }
-            else
-            {
-                // Part 0 has local part content
-                constraints.Add(
-                    new MaskPartConstraint<char>(
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._+-".ToCharArray(),
-                        1,
-                        64
-                    )
-                );
-            }
-
-            // Part 1: @ symbol (required)
-            constraints.Add(new MaskPartConstraint<char>("@".ToCharArray(), 1, 1));
-
-            // Check for domain dot
-            int dotIndex = -1;
-            for (int i = atIndex + 1; i < currentTextParts.Count; i++)
-            {
-                if (currentTextParts[i].Contains('.'))
+                if (!MonthYearInRange(y, m))
+                    continue;
+                try
                 {
-                    dotIndex = i;
-                    break;
+                    possibleMaxDays.Add(DateTime.DaysInMonth(y, m));
                 }
-            }
-
-            if (dotIndex == -1)
-            {
-                // No dot found, domain part only
-                constraints.Add(
-                    new MaskPartConstraint<char>(
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
-                        0,
-                        255
-                    )
-                );
-                constraints.Add(new MaskPartConstraint<char>(".".ToCharArray(), 0, 1));
-                constraints.Add(new MaskPartConstraint<char>("".ToCharArray(), 0, 0));
-            }
-            else
-            {
-                // Domain and TLD parts
-                constraints.Add(
-                    new MaskPartConstraint<char>(
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-".ToCharArray(),
-                        1,
-                        255
-                    )
-                );
-                constraints.Add(new MaskPartConstraint<char>(".".ToCharArray(), 1, 1));
-                constraints.Add(
-                    new MaskPartConstraint<char>(
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray(),
-                        2,
-                        63
-                    )
-                );
+                catch { }
             }
         }
 
-        return constraints;
-    }
-}
-
-/// <summary>
-/// Date input constrainer for testing Mask functionality
-/// </summary>
-public class DateInputConstrainer : IConstrainer<char>
-{
-    public IReadOnlyList<MaskPartConstraint<char>> GetConstraints(
-        IReadOnlyList<IReadOnlyList<char>> currentTextParts
-    )
-    {
-        // Date format: dd.MM.yyyy
-        // Part 0: First digit of day (0-3)
-        // Part 1: Second digit of day (0-9, depends on first digit)
-        // Part 2: First digit of month (0-1)
-        // Part 3: Second digit of month (0-9, depends on first digit)
-        // Part 4: Year (4 digits, 0-9)
-
-        var constraints = new List<MaskPartConstraint<char>>();
-
-        // Day first digit: 0-3
-        constraints.Add(new MaskPartConstraint<char>("0123".ToCharArray(), 1, 1));
-
-        // Day second digit: 0-9 (but depends on first digit)
-        var firstDayDigit =
-            currentTextParts.Count > 0 && currentTextParts[0].Count > 0
-                ? currentTextParts[0][0]
-                : '0';
-
-        // Logic for day constraints:
-        // If first digit is 0: second digit can be 1-9 (days 01-09)
-        // If first digit is 1: second digit can be 0-9 (days 10-19)
-        // If first digit is 2: second digit can be 0-9 (days 20-29)
-        // If first digit is 3: second digit can be 0-1 (days 30-31)
-        // Any other value: allow 0-9 (fallback)
-        string daySecondDigitConstraints = firstDayDigit switch
+        if (possibleMaxDays.Count == 0)
         {
-            '0' => "123456789", // Days 01-09
-            '1' => "0123456789", // Days 10-19
-            '2' => "0123456789", // Days 20-29
-            '3' => "01", // Days 30-31
-            _ => "0123456789", // Fallback
-        };
-
-        constraints.Add(
-            new MaskPartConstraint<char>(daySecondDigitConstraints.ToCharArray(), 1, 1)
-        );
-
-        // Month first digit: 0-1
-        constraints.Add(new MaskPartConstraint<char>("01".ToCharArray(), 1, 1));
-
-        // Month second digit: depends on first digit
-        var firstMonthDigit =
-            currentTextParts.Count > 2 && currentTextParts[2].Count > 0
-                ? currentTextParts[2][0]
-                : '0';
-
-        if (firstMonthDigit == '0')
-        {
-            constraints.Add(new MaskPartConstraint<char>("123456789".ToCharArray(), 1, 1));
+            // fallback: use allDays to derive possible maximums
+            foreach (var y in allYears)
+            foreach (var m in allMonths)
+                try
+                {
+                    possibleMaxDays.Add(DateTime.DaysInMonth(y, m));
+                }
+                catch { }
         }
-        else if (firstMonthDigit == '1')
+
+        if (possibleMaxDays.Count == 0)
+            possibleMaxDays.Add(31);
+
+        // Day tens options
+        var d1Options = new List<char?>();
+        for (int d1 = 0; d1 <= 3; d1++)
         {
-            constraints.Add(new MaskPartConstraint<char>("012".ToCharArray(), 1, 1));
+            bool ok = false;
+            for (int d2 = 0; d2 <= 9 && !ok; d2++)
+            {
+                int day = d1 * 10 + d2;
+                if (day >= 1 && possibleMaxDays.Any(max => day <= max))
+                    ok = true;
+            }
+            if (ok)
+                d1Options.Add((char)('0' + d1));
+        }
+
+        // Day units
+        var d2Options = new List<char?>();
+        var firstSlot = slots[0];
+        if (firstSlot is not null)
+        {
+            int d1 = firstSlot.Value - '0';
+            for (int d2 = 0; d2 <= 9; d2++)
+            {
+                int day = d1 * 10 + d2;
+                if (day >= 1 && possibleMaxDays.Any(max => day <= max))
+                    d2Options.Add((char)('0' + d2));
+            }
         }
         else
         {
-            constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 1, 1));
+            for (int d2 = 0; d2 <= 9; d2++)
+            {
+                bool ok = false;
+                for (int d1 = 0; d1 <= 3 && !ok; d1++)
+                {
+                    int day = d1 * 10 + d2;
+                    if (day >= 1 && possibleMaxDays.Any(max => day <= max))
+                        ok = true;
+                }
+                if (ok)
+                    d2Options.Add((char)('0' + d2));
+            }
         }
 
-        // Year: 4 digits
-        constraints.Add(new MaskPartConstraint<char>("0123456789".ToCharArray(), 4, 4));
+        // Month digit options based on candidateMonths
+        var m1Options = new HashSet<char?>();
+        var m2Options = new HashSet<char?>();
+        foreach (var m in candidateMonths)
+        {
+            var s = m.ToString("D2");
+            m1Options.Add(s[0]);
+            m2Options.Add(s[1]);
+        }
+
+        // Year digits options: for each digit position, gather digits present in candidateYears last N digits
+        var yearDigitOptions = new List<char?[]>();
+        var candidateYearStrings = candidateYears
+            .Select(y => FormatYearForDigits(y, _yearDigits))
+            .ToArray();
+        for (int pos = 0; pos < _yearDigits; pos++)
+        {
+            var set = new HashSet<char?>();
+            foreach (var ys in candidateYearStrings)
+            {
+                if (ys.Length == _yearDigits)
+                    set.Add(ys[pos]);
+            }
+            // if nothing matched (e.g., candidateYears empty) allow0..9 for this digit
+            if (set.Count == 0)
+                set.UnionWith(Enumerable.Range(0, 10).Select(d => (char?)('0' + d)));
+
+            yearDigitOptions.Add(set.ToArray());
+        }
+
+        // Build final constraints list
+        List<SlotConstraint<char>> constraints =
+        [
+            new SlotConstraint<char>([.. d1Options]),
+            new SlotConstraint<char>([.. d2Options]),
+            new SlotConstraint<char>([.. m1Options]),
+            new SlotConstraint<char>([.. m2Options]),
+        ];
+
+        foreach (var arr in yearDigitOptions)
+            constraints.Add(new SlotConstraint<char>(arr));
 
         return constraints;
     }
+
+    bool MonthYearInRange(int year, int month)
+    {
+        var monthStart = new DateTime(year, month, 1);
+        var monthEnd = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+        return !(monthEnd < _range.Start || monthStart > _range.End);
+    }
+
+    static bool MonthMatchesSlots(int month, (char? m1, char? m2) monthSlots)
+    {
+        var s = month.ToString("D2");
+        if (monthSlots.m1 is not null && monthSlots.m1 != s[0])
+            return false;
+        if (monthSlots.m2 is not null && monthSlots.m2 != s[1])
+            return false;
+        return true;
+    }
+
+    static bool YearMatchesSlots(int year, char?[] yearSlots)
+    {
+        var s = FormatYearForDigits(year, yearSlots.Length);
+        if (s.Length != yearSlots.Length)
+            return false;
+        for (int i = 0; i < yearSlots.Length; i++)
+        {
+            if (yearSlots[i] is not null && yearSlots[i]!.Value != s[i])
+                return false;
+        }
+        return true;
+    }
+
+    static string FormatYearForDigits(int year, int digits)
+    {
+        var str = year.ToString();
+        if (str.Length >= digits)
+            return str.Substring(str.Length - digits);
+        return str.PadLeft(digits, '0');
+    }
 }
-#endregion

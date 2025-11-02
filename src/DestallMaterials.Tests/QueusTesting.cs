@@ -14,12 +14,12 @@ public class QueusTesting
     {
         var rand = new Random(10);
 
-        await Task.WhenAll(Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
+        await Task.WhenAll([.. Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
         {
             var payload = TimeSpan.FromMilliseconds(rand.Next(100) * 10);
             var response = await _serverEmulator.ProcessRequestAsync(payload);
             Console.WriteLine($"{DateTime.Now} ===> Request processed with response {response}.");
-        })).ToArray());
+        }))]);
     }
 
     class TestedRecycler : Recycler<object>
@@ -50,12 +50,12 @@ public class QueusTesting
 
         var rand = new Random(10);
 
-        await Task.WhenAll(Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
+        await Task.WhenAll([.. Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
         {
             var payload = TimeSpan.FromMilliseconds(rand.Next(100) * 10);
             var response = await _serverEmulator.ProcessRequestAsync(payload);
             Console.WriteLine($"{DateTime.Now} ===> Request processed with response {response}.");
-        })).ToArray());
+        }))]);
     }
 
     [Test]
