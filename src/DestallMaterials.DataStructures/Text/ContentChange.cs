@@ -58,12 +58,33 @@ public record struct ContentChange<T>(
             {
                 // Both lists are identical, but we might have a caret position change
                 // Use carretAt to determine if there was actually a change at a specific position
-                if (carretAt >= 0 && carretAt < startLength)
+                if (carretAt >= 0)
                 {
                     // There's a specific position where something happened
                     // This could be a deletion and reinsertion of the same character(s)
-                    // We'll report that position with an empty change
-                    return new ContentChange<T>(carretAt, 0, []);
+                    
+                    // Use carretAt to distinguish between different scenarios:
+                    // - If carretAt is at the end, it suggests removing the last character
+                    // - If carretAt is at end-1, it suggests removing the pre-last character
+                    // - For other positions, report the general position of change
+                    
+                    if (carretAt == startLength)
+                    {
+                        // Carat is at the end - this suggests removing the last character
+                        // Return the position where the last character was
+                        return new ContentChange<T>(startLength - 1, 1, []);
+                    }
+                    else if (carretAt == startLength - 1)
+                    {
+                        // Carat is at position before end - this suggests removing the pre-last character
+                        // The pre-last character's position
+                        return new ContentChange<T>(startLength - 2, 1, []);
+                    }
+                    else if (carretAt < startLength)
+                    {
+                        // For other positions within bounds, report the specific position
+                        return new ContentChange<T>(carretAt, 0, []);
+                    }
                 }
                 return new ContentChange<T>(0, 0, []);
             }
@@ -115,15 +136,23 @@ public record struct ContentChange<T>(
         // Use carretAt to refine the result when appropriate
         // This helps distinguish cases where the content appears the same
         // but the change happened at different positions
-        if (carretAt >= 0 && insertedCount > 0)
+        if (carretAt >= 0)
         {
-            // If there's an insertion and carretAt is valid,
+            // When there's an insertion and carretAt is valid,
             // we can use it to potentially adjust where we report the change
-            // This is especially useful for cases with repeated characters
-            if (carretAt >= at && carretAt < at + insertedCount + 1)
+            if (insertedCount > 0 && carretAt >= at && carretAt < at + insertedCount + 1)
             {
                 // The change is reported at or near where carretAt occurred
                 // Keep the current 'at' position as it's calculated correctly
+            }
+            
+            // When there's no actual change in content (removed == 0 && insertedCount == 0)
+            // but carretAt is provided, use carretAt to determine the change position
+            if (removed == 0 && insertedCount == 0 && carretAt >= 0 && carretAt < startLength)
+            {
+                // This handles cases where content appears unchanged but carretAt indicates
+                // a specific position where something should have happened
+                return new ContentChange<T>(carretAt, 0, []);
             }
         }
 
