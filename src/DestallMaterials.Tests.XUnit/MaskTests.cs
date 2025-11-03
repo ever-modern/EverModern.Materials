@@ -13,7 +13,7 @@ class SimpleTextConstraintsSpurce : ISlotConstraintsSource<Digit>
         .. Enumerable
             .Range(1, 4)
             .Select(i => new SlotConstraint<Digit>(
-                Options: [.. Enumerable.Range(0, 10).Select(i => (Digit?)i)]
+                [.. Enumerable.Range(0, 10).Select(i => (Digit?)i)]
             )),
     ];
 
