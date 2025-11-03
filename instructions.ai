@@ -962,13 +962,13 @@ Both operations resulted in the same final text "***/***", making them indisting
 // carretAt parameter was ignored
 public static ContentChange<T> Get(..., int carretAt = -1)
 {
-    // ... implementation that never used lastChanged
+    // ... implementation that never used carretAt
 }
 ```
 
 **After:**
 ```csharp
-public static ContentChange<T> Get(..., int lastChanged = -1)
+public static ContentChange<T> Get(..., int carretAt = -1)
 {
     // ... existing logic ...
     
