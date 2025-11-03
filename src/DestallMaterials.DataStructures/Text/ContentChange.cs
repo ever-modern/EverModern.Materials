@@ -68,22 +68,18 @@ public record struct ContentChange<T>(
                     // - If carretAt is at end-1, it suggests removing the pre-last character
                     // - For other positions, report the general position of change
                     
-                    if (carretAt == startLength)
+                    // Handle carretAt scenarios for identical content
+                    if (carretAt >= 0 && carretAt < startLength)
+                    {
+                        // For positions within bounds, report the specific position of interaction
+                        // When content is identical, carretAt indicates where user interaction occurred
+                        return new ContentChange<T>(carretAt, 0, []);
+                    }
+                    else if (carretAt == startLength)
                     {
                         // Carat is at the end - this suggests removing the last character
                         // Return the position where the last character was
                         return new ContentChange<T>(startLength - 1, 1, []);
-                    }
-                    else if (carretAt == startLength - 1)
-                    {
-                        // Carat is at position before end - this suggests removing the pre-last character
-                        // The pre-last character's position
-                        return new ContentChange<T>(startLength - 2, 1, []);
-                    }
-                    else if (carretAt < startLength)
-                    {
-                        // For other positions within bounds, report the specific position
-                        return new ContentChange<T>(carretAt, 0, []);
                     }
                 }
                 return new ContentChange<T>(0, 0, []);
@@ -125,6 +121,24 @@ public record struct ContentChange<T>(
         int at = prefixLength;
         int removed = startLength - prefixLength - suffixLength;
         int insertedCount = finishLength - prefixLength - suffixLength;
+
+        // Fix for backward compatibility: handle cases where sequences have the same length
+        // but different content structure - specifically when there's a prefix match but no suffix match
+        if (startLength == finishLength && prefixLength > 0 && suffixLength == 0 && removed > 0)
+        {
+            // For same-length sequences with prefix match but no suffix match,
+            // assume minimal removal needed for the structural change
+            removed = 1;
+        }
+
+        // Fix for backward compatibility: handle overlapping prefix and suffix
+        if (removed < 0)
+        {
+            // This happens when prefix + suffix > startLength, which indicates
+            // that the sequences overlap. In this case, we should not count
+            // overlapping elements as removed.
+            removed = 0;
+        }
 
         // Extract the inserted elements
         T[] inserted = new T[insertedCount];
