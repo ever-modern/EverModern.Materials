@@ -33,20 +33,15 @@ public partial class MaskedInput
         EqualityComparer<char?>.Default;
 
     [Parameter]
-    public string CssStyle { get; set; }
+    public string CssStyle { get; set; } = "";
 
     [Parameter]
-    public string CssClass { get; set; }
+    public string CssClass { get; set; } = "";
+
+    [Parameter]
+    public string? Placeholder { get; set; }
 
     public int CarretPosition => _lastPosition;
-
-    Mask<char> _mask;
-
-    protected override async Task OnParametersSetAsync()
-    {
-        base.OnParametersSet();
-        _mask = new(ConstraintsSource, Value, EqualityComparer);        
-    }
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -71,29 +66,41 @@ public partial class MaskedInput
         }
     }
 
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        _mask = new(ConstraintsSource, Value, EqualityComparer);
+    }
+
     readonly string _inputId;
-
-    string DisplayText => FormatMask(_mask.Slots);
-
+    Mask<char> _mask;
     int _lastPosition;
 
     async Task OnInput(string newValue)
     {
+        Mask<char> mask = _mask;
+
         var carretPosition = await GetCarretPositionAsync();
 
-        var contentChange = ContentChange<char?>.Get(Value, [.. newValue.OfType<char?>()]);
+        var contentChange = ContentChange<char?>.Get(
+            [.. FormatMask(Value).OfType<char?>()],
+            [.. newValue.OfType<char?>()],
+            carretPosition
+        );
 
-        var selectedSlot = _mask.AcceptChange(contentChange);
+        carretPosition = mask.AcceptChange(contentChange);
 
-        GlobalLogger.Debug($"Selected slot = {selectedSlot}");
+        GlobalLogger.Debug($"Carret position = {carretPosition}");
 
         //StateHasChanged();
 
-        OnValueChanged(_mask.Slots);
+        OnValueChanged(mask.Slots);
 
-        await EnsureInputContentAsync();
+        var displayText = FormatMask(mask.Slots);
 
-        await MoveCarretAsync(selectedSlot - 1);
+        await EnsureInputContentAsync(displayText);
+
+        await MoveCarretAsync(carretPosition);
     }
 
     async Task OnClick()
@@ -121,5 +128,30 @@ public partial class MaskedInput
     async Task SelectCharsAsync(int start, int end) =>
         await Js.SetSelectionRangeAsync(_inputId, (uint)start, (uint)end);
 
-    async Task EnsureInputContentAsync() => await Js.SetInputValueAsync(_inputId, DisplayText);
+    async Task EnsureInputContentAsync(string displayText)
+    {
+        await Js.SetInputValueAsync(_inputId, displayText);
+        return;
+
+        if (Placeholder is null)
+        {
+            return;
+        }
+
+        var result = Value
+            .Select(
+                (c, i) =>
+                {
+                    if (c.HasValue || i >= Placeholder.Length)
+                    {
+                        return c ?? '*';
+                    }
+
+                    return Placeholder[i];
+                }
+            )
+            .ToArray();
+
+        await Js.SetInputValueAsync(_inputId, new(result));
+    }
 }
