@@ -198,7 +198,20 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
             .ToArray()
             .CopyTo(constraints, dayRange.Start.Value);
 
-        return [.. constraints.Select(c => c.Options is not null ? c : new([delimiter]))];
+        IReadOnlyList<SlotConstraint<char>> result =
+        [
+            .. constraints.Select(c => c.Options is not null ? c : new([delimiter])),
+        ];
+        return result;
+    }
+
+    enum PreviousFillingSituation
+    {
+        AtBottom = 1,
+        NarrowOptions = 2,
+        TopAndBottomAreSame = 3,
+        AtTop = 4,
+        Middle = 5,
     }
 
     static char[][] ToCharOptions(
@@ -210,19 +223,23 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
     {
         char[][] result = new char[length][];
 
-        var prevDiff = 0;
-        bool atTop = true;
+        var prevDiff = PreviousFillingSituation.TopAndBottomAreSame;
+
         for (int i = length - 1; i >= 0; i--)
         {
             var divider = (int)Math.Pow(10, i);
-            var from = (minValue / divider) % 10;
-            var to = (maxValue / divider) % 10;
+            var minDigit = (minValue / divider) % 10;
+            var maxDigit = (maxValue / divider) % 10;
 
-            if (prevDiff > 1 || prevDiff == 1 && from < to)
+            var (from, to) = prevDiff switch
             {
-                from = 0;
-                to = 9;
-            }
+                PreviousFillingSituation.AtTop => (0, maxDigit),
+                PreviousFillingSituation.AtBottom => (minDigit, 9),
+                PreviousFillingSituation.NarrowOptions => (maxDigit, minDigit),
+                PreviousFillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
+                PreviousFillingSituation.Middle => (0, 9),
+                _ => (0, 9),
+            };
 
             var at = length - 1 - i;
 
@@ -240,14 +257,30 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
             }
 
             var currentChar = currentFilling[at];
-            if (char.IsDigit(currentChar))
+
+            if (from == to)
+            {
+                prevDiff = PreviousFillingSituation.TopAndBottomAreSame;
+            }
+            else if (char.IsDigit(currentChar))
             {
                 var current = ToNumber(currentChar);
-                prevDiff = current == to ? 0 : 2;
+
+                prevDiff =
+                    current == from ? PreviousFillingSituation.AtBottom
+                    : current == to ? PreviousFillingSituation.AtTop
+                    : PreviousFillingSituation.Middle;
             }
             else
             {
-                prevDiff = to - from >= 0 ? to - from : 2;
+                prevDiff =
+                    to
+                    - from switch
+                    {
+                        0 => PreviousFillingSituation.TopAndBottomAreSame,
+                        1 => PreviousFillingSituation.NarrowOptions,
+                        _ => PreviousFillingSituation.Middle,
+                    };
             }
         }
 

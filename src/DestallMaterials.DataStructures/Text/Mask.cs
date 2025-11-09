@@ -139,6 +139,10 @@ public class Mask<TSymbol> : IMask<TSymbol>
                     // choose a deterministic fallback (last option)
                     newValue = options[options.Count - 1];
                 }
+                else if (!options.Contains(slotValue))
+                {
+                    newValue = options[0];
+                }
 
                 if (!_equalityComparer.Equals(newValue, slotValue))
                 {
