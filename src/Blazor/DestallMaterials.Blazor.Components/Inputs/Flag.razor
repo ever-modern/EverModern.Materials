@@ -1,7 +1,7 @@
 ﻿@inherits BaseInput<bool>
 
 @{
-    string cssClass = $"flag base-input {(Disabled ? "disabled" : "")} {(Error is not null ? "errored" : "")} {Class}";
+    string cssClass = $"flag base-input {(Disabled ? "disabled" : "")} {(Error is not null ? "errored" : "")} {CssClass}";
 }
 <label class="@cssClass">
     <input type="checkbox"

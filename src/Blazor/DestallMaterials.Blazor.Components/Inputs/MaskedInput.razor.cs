@@ -4,17 +4,13 @@ using Microsoft.AspNetCore.Components;
 
 namespace DestallMaterials.Blazor.Components.Inputs;
 
-public partial class MaskedInput
+public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
 {
     public MaskedInput()
     {
         _inputId = $"masked-input-{this.GetHashCode()}";
-        OnValueChanged = _ => { };
+        base.OnValueChanged = _ => { };
     }
-
-    [Parameter]
-    [EditorRequired]
-    public Action<IReadOnlyList<char?>> OnValueChanged { get; set; }
 
     [Parameter]
     [EditorRequired]
@@ -22,21 +18,11 @@ public partial class MaskedInput
 
     [Parameter]
     [EditorRequired]
-    public Func<IReadOnlyList<char?>, string> FormatMask { get; set; }
+    public Func<IReadOnlyList<char>, string> FormatMask { get; set; }
 
     [Parameter]
-    [EditorRequired]
-    public char?[] Value { get; set; }
-
-    [Parameter]
-    public IEqualityComparer<char?> EqualityComparer { get; set; } =
-        EqualityComparer<char?>.Default;
-
-    [Parameter]
-    public string CssStyle { get; set; } = "";
-
-    [Parameter]
-    public string CssClass { get; set; } = "";
+    public IEqualityComparer<char> EqualityComparer { get; set; } =
+        EqualityComparer<char>.Default;
 
     [Parameter]
     public string? Placeholder { get; set; }
@@ -49,7 +35,7 @@ public partial class MaskedInput
 
         if (firstRender)
         {
-            BindToLifetime(
+            base.BindToLifetime(
                 globalClickCatcher.OnKeyPressed(
                     async (_, _) =>
                     {
@@ -61,7 +47,37 @@ public partial class MaskedInput
                     {
                         _lastPosition = await GetCarretPositionAsync();
                     }
-                )
+                ),
+                Js.OnChange(_inputId, (currentState) => 
+                {
+                  var (newValue, carretPosition) = currentState;
+
+                    Mask<char> mask = _mask;
+
+                    var oldValue = FormatMask(base.Value ?? []);
+
+                    var contentChange = ContentChange<char>.Get(
+                        oldValue,
+                        newValue,
+                        carretPosition
+                    );
+
+                    GlobalLogger.Debug(
+                        $"Inferred change from {oldValue} -> {newValue} with finishing carret position {carretPosition}: {contentChange}"
+                    );
+
+                    carretPosition = mask.AcceptChange(contentChange);
+
+                    GlobalLogger.Debug($"Carret position = {carretPosition}");
+
+                    //StateHasChanged();
+
+                    base.OnValueChanged(mask.Slots);
+
+                    var displayText = FormatMask(mask.Slots);
+
+                    return new(displayText, carretPosition);
+                })
             );
         }
     }
@@ -69,49 +85,12 @@ public partial class MaskedInput
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        _mask = new(ConstraintsSource, Value, EqualityComparer);
+        _mask = new(ConstraintsSource, base.Value ?? [], EqualityComparer);
     }
 
     readonly string _inputId;
     Mask<char> _mask;
     int _lastPosition;
-
-    async Task OnInput(string newValue)
-    {
-        Mask<char> mask = _mask;
-
-        var carretPosition = await GetCarretPositionAsync();
-
-        var contentChange = ContentChange<char?>.Get(
-            [.. FormatMask(Value).OfType<char?>()],
-            [.. newValue.OfType<char?>()],
-            carretPosition
-        );
-
-        carretPosition = mask.AcceptChange(contentChange);
-
-        GlobalLogger.Debug($"Carret position = {carretPosition}");
-
-        //StateHasChanged();
-
-        OnValueChanged(mask.Slots);
-
-        var displayText = FormatMask(mask.Slots);
-
-        await EnsureInputContentAsync(displayText);
-
-        await MoveCarretAsync(carretPosition);
-    }
-
-    async Task OnClick()
-    {
-        var carretPosition = await GetCarretPositionAsync();
-        _lastPosition = carretPosition;
-        //if (carretPosition < Constraints.Length)
-        //{
-        //    await SelectCharsAsync(carretPosition, carretPosition + 1);
-        //}
-    }
 
     IInputManipulator Js => ui.Inputs;
 
@@ -120,38 +99,5 @@ public partial class MaskedInput
         var result = (int)await Js.GetCarretPositionAsync(_inputId);
         GlobalLogger.Debug($"Carret position is {result}");
         return result;
-    }
-
-    async Task MoveCarretAsync(int newPosition) =>
-        await Js.SetCaretPositionAsync(_inputId, (uint)newPosition);
-
-    async Task SelectCharsAsync(int start, int end) =>
-        await Js.SetSelectionRangeAsync(_inputId, (uint)start, (uint)end);
-
-    async Task EnsureInputContentAsync(string displayText)
-    {
-        await Js.SetInputValueAsync(_inputId, displayText);
-        return;
-
-        if (Placeholder is null)
-        {
-            return;
-        }
-
-        var result = Value
-            .Select(
-                (c, i) =>
-                {
-                    if (c.HasValue || i >= Placeholder.Length)
-                    {
-                        return c ?? '*';
-                    }
-
-                    return Placeholder[i];
-                }
-            )
-            .ToArray();
-
-        await Js.SetInputValueAsync(_inputId, new(result));
     }
 }

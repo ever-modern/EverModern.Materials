@@ -1,19 +1,19 @@
 ﻿@using DestallMaterials.Blazor.Components.Common
 @using DestallMaterials.Blazor.Components.Services.UI
 
-@inherits DisposableComponent
+@namespace DestallMaterials.Blazor.Components.Inputs
+
+@inherits BaseInput<IReadOnlyList<char>>
 
 @inject IUiManipulator ui
 @inject IGlobalClickCatcher globalClickCatcher
 
-
 <input type="text"
-       @oninput="(ev) => OnInput((string)(ev.Value ?? string.Empty))"
-       @onclick="OnClick"
-       @onfocus="OnClick"
+       disabled="@(Disabled)"
        value="@FormatMask(Value)"
        class="@($"masked-input {CssClass}")"
        id="@_inputId"
        style="@CssStyle"
-       @onblur="(_) => EnsureInputContentAsync(FormatMask(Value))" />
+       @onfocus="OnFocus"
+       @onclick="OnClick" />
 

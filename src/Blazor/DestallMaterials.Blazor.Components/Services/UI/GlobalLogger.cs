@@ -12,7 +12,9 @@ static class GlobalLogger
 
     public static string Debug(string message)
     {
+#if DEBUG
         Log($"DEBUG: {message}");
+#endif
         return message;
     }
 

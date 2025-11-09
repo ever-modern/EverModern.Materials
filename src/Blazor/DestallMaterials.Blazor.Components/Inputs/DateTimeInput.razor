@@ -2,7 +2,7 @@
 
 @inherits BaseInput<DateTime>
 
-<div class="datetime-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+<div class="datetime-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @CssClass">
     @if (PickDate && PickTime)
     {
         <!-- Show label only once when both are displayed -->
@@ -16,10 +16,10 @@
                        Value=Date
                        ValueNotSetText="Date"
                        Culture=Culture
-                       Class="datetime-input-date"
+                       CssClass="datetime-input-date"
                        Error="@Error" />
             <TimeInput Culture=Culture
-                       Class="datetime-input-time"
+                       CssClass="datetime-input-time"
                        OnValueChanged="t => _ = OnTimeChanged(t)"
                        Time="Time"
                        Error=@(Error) />

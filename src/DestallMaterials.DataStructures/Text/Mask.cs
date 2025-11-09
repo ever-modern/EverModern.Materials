@@ -4,26 +4,26 @@ public class Mask<TSymbol> : IMask<TSymbol>
     where TSymbol : struct
 {
     readonly ISlotConstraintsSource<TSymbol> _constraintsSource;
-    readonly IEqualityComparer<TSymbol?> _equalityComparer;
-    readonly TSymbol?[] _slots;
+    readonly IEqualityComparer<TSymbol> _equalityComparer;
+    readonly TSymbol[] _slots;
 
     public Mask(
         ISlotConstraintsSource<TSymbol> constraintsSource,
-        IReadOnlyList<TSymbol?> initialSlots,
-        IEqualityComparer<TSymbol?> equalityComparer
+        IReadOnlyList<TSymbol> initialSlots,
+        IEqualityComparer<TSymbol> equalityComparer
     )
     {
         _constraintsSource =
             constraintsSource ?? throw new ArgumentNullException(nameof(constraintsSource));
-        _equalityComparer = equalityComparer ?? EqualityComparer<TSymbol?>.Default;
-        _slots = initialSlots == null ? new TSymbol?[_constraintsSource.Length] : [.. initialSlots];
+        _equalityComparer = equalityComparer ?? EqualityComparer<TSymbol>.Default;
+        _slots = initialSlots == null ? new TSymbol[_constraintsSource.Length] : [.. initialSlots];
     }
 
-    public IReadOnlyList<TSymbol?> Slots => _slots;
+    public IReadOnlyList<TSymbol> Slots => _slots;
 
     IReadOnlyList<SlotConstraint<TSymbol>> Constraints => _constraintsSource.GetConstraints(_slots);
 
-    public int AcceptChange(ContentChange<TSymbol?> contentChange)
+    public int AcceptChange(ContentChange<TSymbol> contentChange)
     {
         var (at, removed, inserted) = contentChange;
 
@@ -33,34 +33,29 @@ public class Mask<TSymbol> : IMask<TSymbol>
         // Clamp indices
         at = Math.Clamp(at, 0, _slots.Length);
 
-        // Process removals: clear slots that were removed (starting at 'at' and moving left)
+        // Process removals: clear slots that were removed (starting at 'at' and moving right)
         for (int i = 0; i < removed; i++)
         {
-            var idx = at - i;
+            var idx = at + i;
             if (idx < 0 || idx >= _slots.Length)
                 continue;
 
             var options = Constraints[idx].Options;
-            _slots[idx] = options.Count == 1 ? options[0] : default;
+            _slots[idx] = options.Count >= 1 ? options[0] : default;
         }
 
         // After removals, run autoset to fill deterministic slots
         AutosetAll();
 
-        // Determine insertion start position: if insertion at end (at == length) start at last slot
-        int insertPos = Math.Min(at, Math.Max(0, _slots.Length - 1));
+        // Determine insertion start position: start at 'at'. At may equal _slots.Length (append position)
+        int placedPos = Math.Clamp(at, 0, _slots.Length);
 
-        // If removals removed everything up to and including the first slot, place at0
-        if (at - removed <= 0)
-            insertPos = 0;
-
-        int placedPos = insertPos;
-
-        // Process insertions sequentially
-        for (int i = 0; i < inserted.Length && placedPos < _slots.Length; )
+        // Process insertions sequentially with a source index so we can handle paste intelligently
+        int srcIndex = 0;
+        while (srcIndex < inserted.Length && placedPos < _slots.Length)
         {
             var options = Constraints[placedPos].Options;
-            var value = inserted[i];
+            var value = inserted[srcIndex];
 
             if (options.Count == 0)
             {
@@ -72,8 +67,16 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
             if (options.Count == 1)
             {
-                // deterministic slot - fill and advance, but do not consume inserted value
-                _slots[placedPos] = options[0];
+                // deterministic slot - fill and advance
+                var deterministic = options[0];
+                _slots[placedPos] = deterministic;
+
+                // If the next inserted value equals the deterministic option, consume it as well
+                if (srcIndex < inserted.Length && _equalityComparer.Equals(deterministic, value))
+                {
+                    srcIndex++;
+                }
+
                 placedPos++;
                 continue;
             }
@@ -82,8 +85,10 @@ public class Mask<TSymbol> : IMask<TSymbol>
             if (options.Contains(value))
             {
                 _slots[placedPos] = value;
-                i++; // consume inserted
+                srcIndex++; // consume inserted
                 placedPos++;
+
+                // Allow autoset to propagate deterministic fills between insertions
                 AutosetAll();
                 continue;
             }
@@ -92,18 +97,16 @@ public class Mask<TSymbol> : IMask<TSymbol>
             placedPos++;
         }
 
-        // If there were no insertions, compute caret after deletion
-        if (inserted.Length == 0)
+        // If there were no insertions consumed, treat as deletion/no-op and return caret at 'at'
+        if (srcIndex == 0)
         {
-            var caret = at - removed;
-            if (caret < 0)
-                caret = 0;
+            var caret = Math.Clamp(at, 0, _slots.Length);
             return caret;
         }
 
-        // Caret after insertions: last placed position
-        var caretPos = Math.Clamp(placedPos - 1, 0, Math.Max(0, _slots.Length - 1));
-        return caretPos;
+        // Caret after insertions: placedPos is the index after last placed slot and may equal _slots.Length
+        var caretAfterInsert = Math.Clamp(placedPos, 0, _slots.Length);
+        return caretAfterInsert;
     }
 
     bool AutosetAll()
@@ -120,17 +123,18 @@ public class Mask<TSymbol> : IMask<TSymbol>
             {
                 var slotValue = _slots[i];
                 var options = currentConstraints[i].Options;
-                TSymbol? newValue = slotValue;
+                TSymbol newValue = slotValue;
+
+                if (options.Count == 0)
+                {
+                    throw new InvalidOperationException($"Options for slot {i} are empty.");
+                }
 
                 if (options.Count == 1)
                 {
                     newValue = options[0];
                 }
-                else if (options.Count == 0)
-                {
-                    newValue = default;
-                }
-                else if (slotValue is not null && !options.Contains(slotValue))
+                else if (slotValue.Equals(options[0]) && !options.Contains(slotValue))
                 {
                     // choose a deterministic fallback (last option)
                     newValue = options[options.Count - 1];

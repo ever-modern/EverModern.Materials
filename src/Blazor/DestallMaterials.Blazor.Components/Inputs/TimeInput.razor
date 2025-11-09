@@ -2,7 +2,7 @@
 
 @inherits BaseInput<TimeOnly>
 
-<div class="time-picker @(HasError ? "errored" : "") @Class" style="@Style">
+<div class="time-picker @(HasError ? "errored" : "") @CssClass" style="@Style">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="time-picker-label">@Label</label>

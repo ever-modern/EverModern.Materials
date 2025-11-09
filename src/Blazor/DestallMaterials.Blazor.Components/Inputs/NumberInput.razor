@@ -4,7 +4,7 @@
 @typeparam T where T : INumber<T>
 @inherits BaseInput<T>
 
-<div class="number-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+<div class="number-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @CssClass">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="number-input-label">@Label</label>

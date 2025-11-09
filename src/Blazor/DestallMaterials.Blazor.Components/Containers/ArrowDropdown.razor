@@ -11,7 +11,7 @@
      @onmouseover="_onMouseIn"
      @onmouseout="_onMouseOut">
 
-    <MudBlazor.MudButton @onclick="async () => Toggle()">
+    <MudBlazor.MudButton @onclick="() => Toggle()">
         @Text<i class="material-icons">@Icon</i>
     </MudBlazor.MudButton>
     @if (Open)

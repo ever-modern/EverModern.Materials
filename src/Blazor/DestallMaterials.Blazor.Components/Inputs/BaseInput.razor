@@ -1,5 +1,6 @@
 ﻿@using DestallMaterials.Blazor.Components.Common
 @using Microsoft.AspNetCore.Components.Web
+@using System.Globalization
 
 @typeparam TValue
 
@@ -35,16 +36,24 @@
     public bool Disabled { get; set; }
 
     [Parameter]
-    public string Class { get; set; } = "";
+    public string CssClass { get; set; } = "";
+
+    [Parameter]
+    public string CssStyle { get; set; } = "";
 
     [Parameter]
     public string? Error { get; set; }
 
-    public bool HasError => string.IsNullOrWhiteSpace(Error) == false;
+    [Parameter]
+    public Action OnFocus { get; set; } = () => { };
 
-    protected virtual void OnValueSet(TValue newValue)
-    {
-    }
+    [Parameter]
+    public Action OnClick { get; set; } = () => { };
+
+    [Parameter]
+    public CultureInfo Culture { get; set; } = CultureInfo.CurrentUICulture;
+
+    public bool HasError => string.IsNullOrWhiteSpace(Error) == false;
 
     protected void OnOuterClick(MouseEventArgs mouseEventArgs)
     {

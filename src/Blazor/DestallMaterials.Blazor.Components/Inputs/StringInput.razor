@@ -1,6 +1,6 @@
 ﻿@inherits BaseInput<string>
 
-<div class="string-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @Class">
+<div class="string-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @CssClass">
     @if (!string.IsNullOrEmpty(Label))
     {
         <label class="string-input-label">@Label</label>

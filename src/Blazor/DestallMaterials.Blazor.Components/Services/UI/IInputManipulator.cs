@@ -1,4 +1,5 @@
-﻿namespace DestallMaterials.Blazor.Components.Services.UI;
+﻿
+namespace DestallMaterials.Blazor.Components.Services.UI;
 
 public interface IInputManipulator
 {
@@ -24,4 +25,5 @@ public interface IInputManipulator
         string value,
         CancellationToken cancellationToken = default
     );
+    Task<Subscription> OnChange(string inputId, Func<JsInputManipulator.TextInputState, JsInputManipulator.TextInputState> processState);
 }

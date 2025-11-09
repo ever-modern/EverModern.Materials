@@ -41,28 +41,18 @@
 
     </section> *@
 
-    @{
-        var cSource = new StaticConstraintsSource();
-    }
-    <MaskedInput OnValueChanged="@(v => {  _maskResult = v.ToArray(); })"
-                 ConstraintsSource="cSource"
-                 FormatMask="vs => new string(vs.Select(c => c ?? '*').ToArray())"
+    <MaskedInput OnValueChanged="@(v => { _maskResult = v.ToArray(); })"
+                 ConstraintsSource="DateTimeConstraintsSource"
+                 FormatMask="vs => new string([..vs])"
                  Value="_maskResult" />
 
 </div>
 
 @code {
 
-    char?[] _maskResult = new char?[7];
+    char[] _maskResult = new char[_dateFormatting.Length];
 
-    class StaticConstraintsSource : ISlotConstraintsSource<char>
-    {
-        public int Length => 7;
-        static char?[] _numbers = ['0', '1', '2', '3', '4'];
-
-        public IReadOnlyList<SlotConstraint<char>> GetConstraints(IReadOnlyList<char?> currentFilling)
-            => [
-                _numbers, _numbers, _numbers, '/', _numbers, _numbers, _numbers
-            ];
-    }
+    static readonly DateFormatting _dateFormatting = new();
+    ISlotConstraintsSource<char> DateTimeConstraintsSource { get; } = new DateSlotConstraintsSource(
+        new(new(2000, 1, 1), DateTime.Today), _dateFormatting);
 }
