@@ -10,10 +10,10 @@
 
 @{
     var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has-clear-button" : "")} {CssClass}";
-    var constraintsSource = new DateSlotConstraintsSource(new(MinValue.ToDateTime(default), MaxValue.ToDateTime(default)), default);
+    var constraintsSource = new DateSlotConstraintsSource(new(MinValue.ToDateTime(default), MaxValue.ToDateTime(default)), DateFormatting);
 }
 
-<div class="@cssClass"
+<div class="@cssClass" id="@Id"
      @onblur="OnInputBlur"
      @onmouseout="() => _mouseOnInput = false"
      @onmouseover="() => _mouseOnInput = true">
@@ -23,8 +23,8 @@
         <label class="flexible-date-picker-label">@Label</label>
     }
     <div class="flexible-date-picker-input-wrapper">
-        
-        <MaskedInput ConstraintsSource="constraintsSource" OnValueChanged="chars => {}" />
+
+        <MaskedInput ConstraintsSource="constraintsSource" OnValueChanged="OnCharInputChanged" Value="@_valueChars" />
 
         @if (Clearable && Value != default)
         {
@@ -40,7 +40,7 @@
 
                 <span class="date-picker-scroll-column">
                     <div class="date-picker-scroll-label">Day</div>
-                    <div class="date-picker-scroll-items" @ref="_dayScrollRef" id="day-scroll-container">
+                    <div class="date-picker-scroll-items" @ref="_dayScrollRef" id="@DayScrollId">
                         @{
                             var maxDay = Value.Year == MaxValue.Year && MaxValue.Month == Value.Month ?
                             MaxValue.Day :
@@ -54,8 +54,8 @@
                         {
                             var currentDay = day;
                             var disabled = day > maxDay || day < minDay;
-                            <div class="date-picker-item @(currentDay == _selectedDay ? "selected" : "") @(disabled ? "disabled" : "")"
-                                 id="@($"day-item-{currentDay}")"
+                            var id = ScrollDayId(day);
+                            <div id="@id" class="date-picker-item @(currentDay == _selectedDay ? "selected" : "") @(disabled ? "disabled" : "")"
                                  @onclick="() => SelectDay(currentDay)">
                                 @day.ToString("D2")
                             </div>
@@ -65,7 +65,7 @@
 
                 <div class="date-picker-scroll-column">
                     <span class="date-picker-scroll-label">Month</span>
-                    <div class="date-picker-scroll-items" @ref="_monthScrollRef" id="month-scroll-container">
+                    <div class="date-picker-scroll-items" @ref="_monthScrollRef" id="@MonthScrollId">
                         @{
                             var maxMonth = Value.Year == MaxValue.Year ?
                             MaxValue.Month :
@@ -77,10 +77,11 @@
                         }
                         @for (int month = 1; month <= 12; month++)
                         {
+                            var id = ScrollMonthId(month);
                             var currentMonth = month;
                             var disabled = month < minMonth || month > maxMonth;
                             <div class="date-picker-item @(currentMonth == _selectedMonth ? "selected" : "") @(disabled ? "disabled" : "")"
-                                 id="@($"month-item-{currentMonth}")"
+                                 id="@id"
                                  @onclick="() => SelectMonth(currentMonth)">
                                 @month.ToString("D2")
                             </div>
@@ -90,12 +91,13 @@
 
                 <div class="date-picker-scroll-column">
                     <span class="date-picker-scroll-label">Year</span>
-                    <div class="date-picker-scroll-items" @ref="_yearScrollRef" id="year-scroll-container">
+                    <div class="date-picker-scroll-items" @ref="_yearScrollRef" id="@YearScrollId">
                         @for (int year = MinValue.Year; year <= MaxValue.Year; year++)
                         {
+                            var id = ScrollYearId(year);
                             var currentYear = year;
                             <div class="date-picker-item @(currentYear == _selectedYear ? "selected" : "")"
-                                 id="@($"year-item-{currentYear}")"
+                                 id="@id"
                                  @onclick="() => SelectYear(currentYear)">
                                 @year
                             </div>
@@ -141,33 +143,67 @@
     [Parameter]
     public string Format { get; set; } = "dd.MM.yyyy";
 
+    void OnCharInputChanged(IReadOnlyList<char> chars)
+    {
+        var charsArray = chars.ToArray();
+        _valueChars = charsArray;
+
+        var (day, month, year) = DateFormatting.BreakIntoComponents(charsArray);
+
+        var newValue = Value;
+
+        if (int.TryParse(year, out var yearNumber) && yearNumber != Value.Year)
+        {
+            _selectedYear = yearNumber;
+            try
+            {
+                newValue = new DateOnly(yearNumber, newValue.Month, newValue.Day);
+            }
+            catch
+            { }
+        }
+
+        if (int.TryParse(month, out var monthNumber) && monthNumber != Value.Month)
+        {
+            _selectedMonth = monthNumber;
+            try
+            {
+                newValue = new DateOnly(newValue.Year, monthNumber, newValue.Day);
+            }
+            catch { }
+        }
+
+        if (int.TryParse(day, out var dayNumber) && dayNumber != Value.Day)
+        {
+            _selectedDay = dayNumber;
+            try
+            {
+                newValue = new DateOnly(newValue.Year, newValue.Month, dayNumber);
+            }
+            catch { }
+        }
+
+        if (newValue != Value)
+        {
+            OnValueChanged(newValue);
+            StateHasChanged();
+            CenterScrollToSelectedItems();
+        }
+    }
+
+    DateFormatting DateFormatting => DateFormatting.Parse(Format);
     char[] _valueChars = [];
 
-
+    DateOnly _initValue;
 
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
 
-        
-
-        // Sync picker state with Value when Value changes externally
-        if (Value != default)
+        if (Value != _initValue)
         {
-            _selectedDay = Value.Day;
-            _selectedMonth = Value.Month;
-            _selectedYear = Value.Year;
-            _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
-            _textInput = Value.ToString("dd.MM.yyyy", Culture);
-            _previousTextInput = _textInput;
-        }
-        else
-        {
-            var now = DateTime.Now;
-            _selectedDay = now.Day;
-            _selectedMonth = now.Month;
-            _selectedYear = now.Year;
-            _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
+            _initValue = Value;
+            _valueChars = [.. _initValue.ToString(Format)];
         }
     }
 
@@ -209,6 +245,7 @@
         _selectedDay = day;
         UpdateInputValueFromComponents(day, _selectedMonth, _selectedYear);
         UpdateValueFromPicker();
+        CenterScrollToSelectedItems();
     }
 
     private void SelectMonth(int month)
@@ -224,6 +261,7 @@
 
         UpdateInputValueFromComponents(_selectedDay, month, _selectedYear);
         UpdateValueFromPicker();
+        CenterScrollToSelectedItems();
     }
 
     private void SelectYear(int year)
@@ -239,6 +277,7 @@
 
         UpdateInputValueFromComponents(_selectedDay, _selectedMonth, year);
         UpdateValueFromPicker();
+        CenterScrollToSelectedItems();
     }
 
     private void UpdateValueFromPicker()
@@ -267,39 +306,6 @@
         StateHasChanged();
     }
 
-    private void OnTextInput(ChangeEventArgs e)
-    {
-        if (_isPickerUpdatingInput)
-        {
-            return;
-        }
-
-        string input = e.Value?.ToString() ?? "";
-        _textInput = input;
-
-        // Try to parse the input if it contains enough digits
-        string digitsOnly = new string(input.Where(char.IsDigit).ToArray());
-
-        if (digitsOnly.Length >= 8) // At least ddmmyyyy
-        {
-            if (DateTime.TryParseExact(digitsOnly, "ddMMyyyy", Culture, DateTimeStyles.None, out DateTime parsedDate))
-            {
-                var newDate = DateOnly.FromDateTime(parsedDate);
-                if (newDate >= MinValue && newDate <= MaxValue)
-                {
-                    _selectedDay = newDate.Day;
-                    _selectedMonth = newDate.Month;
-                    _selectedYear = newDate.Year;
-                    _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
-                    Value = newDate;
-                    _ = OnValueChangedAsync(newDate);
-                }
-            }
-        }
-
-        StateHasChanged();
-    }
-
     private void UpdateInputValueFromComponents(int day, int month, int year)
     {
         _isPickerUpdatingInput = true;
@@ -316,37 +322,37 @@
         try
         {
             // Get bounding rectangles to determine scroll positions
-            var dayRect = await uiManipulator.GetElementBoungingRectangle($"day-item-{_selectedDay}");
-            var monthRect = await uiManipulator.GetElementBoungingRectangle($"month-item-{_selectedMonth}");
-            var yearRect = await uiManipulator.GetElementBoungingRectangle($"year-item-{_selectedYear}");
+            var dayRect = await uiManipulator.GetElementBoungingRectangle(ScrollDayId(_selectedDay));
+            var monthRect = await uiManipulator.GetElementBoungingRectangle(ScrollMonthId(_selectedMonth));
+            var yearRect = await uiManipulator.GetElementBoungingRectangle(ScrollYearId(_selectedYear));
 
             if (dayRect.HasValue)
             {
-                var containerDayRect = await uiManipulator.GetElementBoungingRectangle("day-scroll-container");
+                var containerDayRect = await uiManipulator.GetElementBoungingRectangle(DayScrollId);
                 if (containerDayRect.HasValue)
                 {
                     var centerY = containerDayRect.Value.Height / 2 - dayRect.Value.Height / 2;
-                    await uiManipulator.ScrollItem_Y("day-scroll-container", centerY);
+                    await uiManipulator.ScrollItem_Y(DayScrollId, centerY);
                 }
             }
 
             if (monthRect.HasValue)
             {
-                var containerMonthRect = await uiManipulator.GetElementBoungingRectangle("month-scroll-container");
+                var containerMonthRect = await uiManipulator.GetElementBoungingRectangle(MonthScrollId);
                 if (containerMonthRect.HasValue)
                 {
                     var centerY = containerMonthRect.Value.Height / 2 - monthRect.Value.Height / 2;
-                    await uiManipulator.ScrollItem_Y("month-scroll-container", centerY);
+                    await uiManipulator.ScrollItem_Y(MonthScrollId, centerY);
                 }
             }
 
             if (yearRect.HasValue)
             {
-                var containerYearRect = await uiManipulator.GetElementBoungingRectangle("year-scroll-container");
+                var containerYearRect = await uiManipulator.GetElementBoungingRectangle(YearScrollId);
                 if (containerYearRect.HasValue)
                 {
                     var centerY = containerYearRect.Value.Height / 2 - yearRect.Value.Height / 2;
-                    await uiManipulator.ScrollItem_Y("year-scroll-container", centerY);
+                    await uiManipulator.ScrollItem_Y(YearScrollId, centerY);
                 }
             }
         }
@@ -382,4 +388,12 @@
 
     bool _mouseOnInput = false;
     bool _mouseOnPicker = false;
+
+    string ScrollDayId(int number) => $"{Id}-day-{number}";
+    string ScrollMonthId(int number) => $"{Id}-month-{number}";
+    string ScrollYearId(int number) => $"{Id}-year-{number}";
+
+    string DayScrollId => $"{Id}-scroll-day";
+    string MonthScrollId => $"{Id}-scroll-month";
+    string YearScrollId => $"{Id}-scroll-year";
 }

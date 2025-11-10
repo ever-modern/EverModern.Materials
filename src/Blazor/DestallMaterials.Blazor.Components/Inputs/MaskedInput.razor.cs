@@ -17,12 +17,10 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
     public ISlotConstraintsSource<char> ConstraintsSource { get; set; }
 
     [Parameter]
-    [EditorRequired]
-    public Func<IReadOnlyList<char>, string> FormatMask { get; set; }
+    public Func<IReadOnlyList<char>, string> FormatMask { get; set; } = (x) => new string([.. x]);
 
     [Parameter]
-    public IEqualityComparer<char> EqualityComparer { get; set; } =
-        EqualityComparer<char>.Default;
+    public IEqualityComparer<char> EqualityComparer { get; set; } = EqualityComparer<char>.Default;
 
     [Parameter]
     public string? Placeholder { get; set; }
@@ -48,36 +46,39 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
                         _lastPosition = await GetCarretPositionAsync();
                     }
                 ),
-                Js.OnChange(_inputId, (currentState) => 
-                {
-                  var (newValue, carretPosition) = currentState;
+                Js.OnChange(
+                    _inputId,
+                    (currentState) =>
+                    {
+                        var (newValue, carretPosition) = currentState;
 
-                    Mask<char> mask = _mask;
+                        Mask<char> mask = _mask;
 
-                    var oldValue = FormatMask(base.Value ?? []);
+                        var oldValue = FormatMask(base.Value ?? []);
 
-                    var contentChange = ContentChange<char>.Get(
-                        oldValue,
-                        newValue,
-                        carretPosition
-                    );
+                        var contentChange = ContentChange<char>.Get(
+                            oldValue,
+                            newValue,
+                            carretPosition
+                        );
 
-                    GlobalLogger.Debug(
-                        $"Inferred change from {oldValue} -> {newValue} with finishing carret position {carretPosition}: {contentChange}"
-                    );
+                        GlobalLogger.Debug(
+                            $"Inferred change from {oldValue} -> {newValue} with finishing carret position {carretPosition}: {contentChange}"
+                        );
 
-                    carretPosition = mask.AcceptChange(contentChange);
+                        carretPosition = mask.AcceptChange(contentChange);
 
-                    GlobalLogger.Debug($"Carret position = {carretPosition}");
+                        GlobalLogger.Debug($"Carret position = {carretPosition}");
 
-                    //StateHasChanged();
+                        //StateHasChanged();
 
-                    base.OnValueChanged(mask.Slots);
+                        base.OnValueChanged(mask.Slots);
 
-                    var displayText = FormatMask(mask.Slots);
+                        var displayText = FormatMask(mask.Slots);
 
-                    return new(displayText, carretPosition);
-                })
+                        return new(displayText, carretPosition);
+                    }
+                )
             );
         }
     }

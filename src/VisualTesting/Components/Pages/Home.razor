@@ -41,16 +41,14 @@
 
     </section> *@
 
-    <MaskedInput OnValueChanged="@(v => { _maskResult = v.ToArray(); })"
-                 ConstraintsSource="DateTimeConstraintsSource"
-                 FormatMask="vs => new string([..vs])"
-                 Value="_maskResult" />
+    <DateInput OnValueChanged="@(v => { _maskResult = v; })"
+               Value="_maskResult" />
 
 </div>
 
 @code {
 
-    char[] _maskResult = new char[_dateFormatting.Length];
+    DateOnly _maskResult = DateOnly.FromDateTime(DateTime.Today);
 
     static readonly DateFormatting _dateFormatting = new();
     ISlotConstraintsSource<char> DateTimeConstraintsSource { get; } = new DateSlotConstraintsSource(

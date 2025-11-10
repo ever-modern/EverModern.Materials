@@ -128,19 +128,7 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
 
         var (minDate, maxDate) = range;
 
-        var (dayRange, monthRange, yearRange) = dateFormat switch
-        {
-            DateFormat.DayMonthYear => (0..2, 3..5, 6..(6 + yearLength)),
-            DateFormat.MonthDayYear => (3..5, 0..2, 6..(6 + yearLength)),
-            DateFormat.YearMonthDay => (
-                (1 + yearLength)..(3 + yearLength),
-                (3 + yearLength + 1)..(5 + yearLength),
-                0..yearLength
-            ),
-            DateFormat.MonthDay => (3..5, 0..2, 0..0),
-            DateFormat.DayMonth => (0..2, 3..5, 0..0),
-            _ => throw new InvalidOperationException("Unknown date format."),
-        };
+        var (dayRange, monthRange, yearRange) = formatting.GetComponentRanges();
 
         int.TryParse(new string(slots[yearRange]), out var year);
         int.TryParse(new string(slots[monthRange]), out var month);
@@ -455,5 +443,31 @@ public record DateFormatting(
         };
 
         return result!;
+    }
+
+    public (char[] Year, char[] Month, char[] Day) BreakIntoComponents(char[] symbols)
+    {
+        var yearLength = YearLength;
+        var (year, month, day) = GetComponentRanges();
+        return (symbols[year].ToArray(), symbols[month].ToArray(), symbols[day].ToArray());
+    }
+
+    public (Range Year, Range Month, Range Day) GetComponentRanges()
+    {
+        var yearLength = YearLength;
+        var ranges = DateFormat switch
+        {
+            DateFormat.DayMonthYear => (0..2, 3..5, 6..(6 + yearLength)),
+            DateFormat.MonthDayYear => (3..5, 0..2, 6..(6 + yearLength)),
+            DateFormat.YearMonthDay => (
+                (1 + yearLength)..(3 + yearLength),
+                (3 + yearLength + 1)..(5 + yearLength),
+                0..yearLength
+            ),
+            DateFormat.MonthDay => (3..5, 0..2, 0..0),
+            DateFormat.DayMonth => (0..2, 3..5, 0..0),
+            _ => throw new InvalidOperationException("Unknown date format."),
+        };
+        return ranges;
     }
 }

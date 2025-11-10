@@ -7,6 +7,8 @@ public class JsUiManipulator : IUiManipulator
 {
     private readonly IJSRuntime _runtime;
 
+    const string _scrollsModule = "destallMaterials.uiManipulation.scrolls";
+    
     public JsUiManipulator(IJSRuntime runtime)
     {
         this._runtime = runtime;
@@ -17,33 +19,33 @@ public class JsUiManipulator : IUiManipulator
 
     public async Task ScrollItem_X(string id, double deltaX)
     {
-        const string command = "scrollElement_X";
+        const string command = $"{_scrollsModule}.scrollElement_X";
         await _runtime.InvokeVoidAsync(command, id, deltaX);
     }
 
     public async Task ScrollItem_Y(string id, double deltaY)
     {
-        const string command = "scrollElement_Y";
+        const string command = $"{_scrollsModule}.scrollElement_Y";
         await _runtime.InvokeVoidAsync(command, id, deltaY);
     }
 
     public async Task<uint> Y_Deviation(string itemId, string containerId)
     {
-        const string deviation = "Y_elementDeviation";
+        const string deviation = $"{_scrollsModule}.Y_elementDeviation";
         var result = await _runtime.InvokeAsync<uint>(deviation, itemId, containerId);
         return result;
     }
 
     public async Task<uint> X_Deviation(string itemId, string containerId)
     {
-        const string deviation = "X_elementDeviation";
+        const string deviation = $"{_scrollsModule}.X_elementDeviation";
         var result = await _runtime.InvokeAsync<uint>(deviation, itemId, containerId);
         return result;
     }
 
     public async Task ScrollToFit_Y(string itemId, string containerId)
     {
-        const string command = "Y_scrollToFit";
+        const string command = $"{_scrollsModule}.Y_scrollToFit";
         await _runtime.InvokeVoidAsync(command, itemId, containerId);
     }
 
@@ -55,7 +57,7 @@ public class JsUiManipulator : IUiManipulator
 
     public async Task<double> GetItemScroll_Y(string elementId)
     {
-        const string command = "getItemScroll_Y";
+        const string command = $"{_scrollsModule}.getItemScroll_Y";
         var result = await _runtime.InvokeAsync<double>(command, elementId);
         return result;
     }
