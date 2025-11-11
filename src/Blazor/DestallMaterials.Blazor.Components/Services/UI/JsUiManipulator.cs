@@ -90,4 +90,10 @@ public class JsUiManipulator : IUiManipulator
 
         return result;
     }
+
+    public async Task CenterInContainerAsync(string itemId, string containterId)
+    {
+        const string command = "destallMaterials.uiManipulation.scrolls.y_centerInContainer";
+        await _runtime.InvokeVoidAsync(command, itemId);
+    }
 }

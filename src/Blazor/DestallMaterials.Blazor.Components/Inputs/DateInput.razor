@@ -204,6 +204,10 @@
         {
             _initValue = Value;
             _valueChars = [.. _initValue.ToString(Format)];
+
+            _selectedDay = Value.Day;
+            _selectedMonth = Value.Month;
+            _selectedYear = Value.Year;
         }
     }
 
@@ -237,15 +241,20 @@
         _daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
         _textInput = "";
         _previousTextInput = "";
-        _ = OnValueChangedAsync(default);
+        OnValueChanged(default);
     }
 
     private void SelectDay(int day)
     {
         _selectedDay = day;
+
+        var (dayDigits, monthDigits, yearDigits) = DateFormatting.BreakIntoComponents(_valueChars);
+        dayDigits = day.ToString().PadLeft(2, '0').ToCharArray();
+        _valueChars = DateFormatting.Concat(dayDigits, monthDigits, yearDigits).ToCharArray();
+
         UpdateInputValueFromComponents(day, _selectedMonth, _selectedYear);
         UpdateValueFromPicker();
-        CenterScrollToSelectedItems();
+        CenterScrollToSelectedItems();        
     }
 
     private void SelectMonth(int month)
@@ -258,6 +267,11 @@
         {
             _selectedDay = _daysInMonth;
         }
+
+        var (dayDigits, monthDigits, yearDigits) = DateFormatting.BreakIntoComponents(_valueChars);
+        dayDigits = _selectedDay.ToString().PadLeft(2, '0').ToCharArray();
+        monthDigits = month.ToString().PadLeft(2, '0').ToCharArray();
+        _valueChars = DateFormatting.Concat(dayDigits, monthDigits, yearDigits).ToCharArray();
 
         UpdateInputValueFromComponents(_selectedDay, month, _selectedYear);
         UpdateValueFromPicker();
@@ -275,6 +289,12 @@
             _selectedDay = _daysInMonth;
         }
 
+        var (dayDigits, monthDigits, yearDigits) = DateFormatting.BreakIntoComponents(_valueChars);
+        dayDigits = _selectedDay.ToString().PadLeft(2, '0').ToCharArray();
+        monthDigits = _selectedMonth.ToString().PadLeft(2, '0').ToCharArray();
+        yearDigits = _selectedYear.ToString().PadLeft(DateFormatting.YearLength, '0').TakeLast(DateFormatting.YearLength).ToArray();
+        _valueChars = DateFormatting.Concat(dayDigits, monthDigits, yearDigits).ToCharArray();
+
         UpdateInputValueFromComponents(_selectedDay, _selectedMonth, year);
         UpdateValueFromPicker();
         CenterScrollToSelectedItems();
@@ -288,7 +308,7 @@
             if (newDate != Value)
             {
                 Value = newDate;
-                _ = OnValueChangedAsync(newDate);
+                OnValueChanged(newDate);
             }
         }
         catch
@@ -299,15 +319,10 @@
         StateHasChanged();
     }
 
-    private async Task OnValueChangedAsync(DateOnly newValue)
-    {
-        OnValueChanged?.Invoke(newValue);
-        await Task.CompletedTask;
-        StateHasChanged();
-    }
-
     private void UpdateInputValueFromComponents(int day, int month, int year)
     {
+        var (dayPart, monthPart, yearPart) = this.DateFormatting.BreakIntoComponents(_valueChars);
+
         _isPickerUpdatingInput = true;
         _textInput = $"{day:D2}.{month:D2}.{year}";
         _previousTextInput = _textInput;
@@ -319,47 +334,15 @@
     {
         await Task.Delay(100); // Longer delay to ensure elements are fully rendered
 
-        try
-        {
-            // Get bounding rectangles to determine scroll positions
-            var dayRect = await uiManipulator.GetElementBoungingRectangle(ScrollDayId(_selectedDay));
-            var monthRect = await uiManipulator.GetElementBoungingRectangle(ScrollMonthId(_selectedMonth));
-            var yearRect = await uiManipulator.GetElementBoungingRectangle(ScrollYearId(_selectedYear));
+        var toCenter = (string elemtId) => uiManipulator.CenterInContainerAsync(elemtId, "");
+        // Get bounding rectangles to determine scroll positions
+        await Task
+            .WhenAll([
+                toCenter(ScrollDayId(_selectedDay)),
+                toCenter(ScrollMonthId(_selectedMonth)),
+                toCenter(ScrollYearId(_selectedYear))
+            ]);
 
-            if (dayRect.HasValue)
-            {
-                var containerDayRect = await uiManipulator.GetElementBoungingRectangle(DayScrollId);
-                if (containerDayRect.HasValue)
-                {
-                    var centerY = containerDayRect.Value.Height / 2 - dayRect.Value.Height / 2;
-                    await uiManipulator.ScrollItem_Y(DayScrollId, centerY);
-                }
-            }
-
-            if (monthRect.HasValue)
-            {
-                var containerMonthRect = await uiManipulator.GetElementBoungingRectangle(MonthScrollId);
-                if (containerMonthRect.HasValue)
-                {
-                    var centerY = containerMonthRect.Value.Height / 2 - monthRect.Value.Height / 2;
-                    await uiManipulator.ScrollItem_Y(MonthScrollId, centerY);
-                }
-            }
-
-            if (yearRect.HasValue)
-            {
-                var containerYearRect = await uiManipulator.GetElementBoungingRectangle(YearScrollId);
-                if (containerYearRect.HasValue)
-                {
-                    var centerY = containerYearRect.Value.Height / 2 - yearRect.Value.Height / 2;
-                    await uiManipulator.ScrollItem_Y(YearScrollId, centerY);
-                }
-            }
-        }
-        catch
-        {
-            // Ignore any errors with scroll positioning
-        }
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -368,7 +351,7 @@
 
         BindToLifetime(clickCatcher.OnMouseClicked((_, _) =>
         {
-            _showCustomPicker = MouseIn;
+            TogglePicker(MouseIn);
             StateHasChanged();
         }));
     }
@@ -381,6 +364,12 @@
         }
 
         _showCustomPicker = !_showCustomPicker;
+        
+        if (show == true)
+        {
+            CenterScrollToSelectedItems();
+        }
+
         StateHasChanged();
     }
 

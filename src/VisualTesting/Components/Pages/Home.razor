@@ -10,7 +10,8 @@
 
 <h1>DestallMaterials.Blazor.Components - Visual Testing</h1>
 
-<div @onclick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
+<div style="padding:100px"
+     @onclick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
      @onmousedown="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
      @onkeydown="e => clickInvoker.FireKeyClickEvent(e)">
 
@@ -41,14 +42,16 @@
 
     </section> *@
 
-    <DateInput OnValueChanged="@(v => { _maskResult = v; })"
-               Value="_maskResult" />
+    <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
+               Value="_date" />
+
+    <p>@_date</p>
 
 </div>
 
 @code {
 
-    DateOnly _maskResult = DateOnly.FromDateTime(DateTime.Today);
+    DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
 
     static readonly DateFormatting _dateFormatting = new();
     ISlotConstraintsSource<char> DateTimeConstraintsSource { get; } = new DateSlotConstraintsSource(

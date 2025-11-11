@@ -470,4 +470,16 @@ public record DateFormatting(
         };
         return ranges;
     }
+
+    public string Stringify(DateOnly dateOnly) => dateOnly.ToString(ToString());
+
+    public string Concat(IEnumerable<char> day, IEnumerable<char> month, IEnumerable<char> year) => DateFormat switch
+    {
+        DateFormat.DayMonthYear => string.Concat(day) + Delimiter + string.Concat(month) + Delimiter + string.Concat(year),
+        DateFormat.MonthDayYear => string.Concat(month) + Delimiter + string.Concat(day) + Delimiter + string.Concat(year),
+        DateFormat.YearMonthDay => string.Concat(year) + Delimiter + string.Concat(month) + Delimiter + string.Concat(day),
+        DateFormat.MonthDay => string.Concat(month) + Delimiter + string.Concat(day),
+        DateFormat.DayMonth => string.Concat(day) + Delimiter + string.Concat(month),
+        _ => throw new InvalidOperationException("Unknown date format."),
+    };
 }
