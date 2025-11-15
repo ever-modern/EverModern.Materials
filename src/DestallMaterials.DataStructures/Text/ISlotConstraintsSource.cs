@@ -1,8 +1,11 @@
 ﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public interface ISlotConstraintsSource<TSymbol>
+public interface ISlotConstraintsSource<TSymbol, TConstraint>
 {
-    IReadOnlyList<SlotConstraint<TSymbol>> GetConstraints(IReadOnlyList<TSymbol> currentFilling);
-
     int Length { get; }
+
+    TConstraint GetSlotConstraints(int slotIndex, IReadOnlyList<TSymbol> currentFilling);
 }
+
+public interface ISlotConstraintsSource<TSymbol>
+    : ISlotConstraintsSource<TSymbol, SlotConstraint<TSymbol>> { }

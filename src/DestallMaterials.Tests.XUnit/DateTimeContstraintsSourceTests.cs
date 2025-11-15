@@ -7,7 +7,7 @@ namespace DestallMaterials.Tests.XUnit;
 public class DateTimeContstraintsSourceTests
 {
     static readonly DateFormatting _dateFormatting = new DateFormatting();
-    static readonly DateSlotConstraintsSource _source = new DateSlotConstraintsSource(
+    static readonly DateSlotConstraintsSourceOld _source = new DateSlotConstraintsSourceOld(
         new WheelProtection.DataStructures.Time.DateTimeRange(new(2000, 1, 1), new(2020, 12, 31)),
         _dateFormatting
     );

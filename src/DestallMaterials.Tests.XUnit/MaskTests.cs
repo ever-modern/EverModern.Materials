@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using DestallMaterials.WheelProtection.DataStructures.Text;
+using DestallMaterials.WheelProtection.DataStructures.Time;
 
 namespace DestallMaterials.Tests.XUnit;
 
@@ -8,18 +9,14 @@ using Digit = byte;
 
 class SimpleTextConstraintsSpurce : ISlotConstraintsSource<Digit>
 {
-    static readonly SlotConstraint<Digit>[] _result =
-    [
-        .. Enumerable
-            .Range(1, 4)
-            .Select(i => new SlotConstraint<Digit>(
-                [.. Enumerable.Range(0, 10).Select(i => (Digit)i)]
-            )),
-    ];
+    static readonly SlotConstraint<Digit> _result = new(
+        [.. Enumerable.Range(0, 10).Select(i => (Digit)i)]
+    );
 
     public int Length => 4;
 
-    public IReadOnlyList<SlotConstraint<Digit>> GetConstraints(
+    public SlotConstraint<Digit> GetSlotConstraints(
+        int index,
         IReadOnlyList<Digit> currentFilling
     ) => _result;
 }
@@ -39,7 +36,8 @@ public class MaskTests
 
         char[] numbers = ['*', '0', '1', '2', '3', '4'];
         var cSource = SlotConstraintsSource.Create<char>(
-            _ => [numbers, numbers, numbers, '/', numbers, numbers, numbers],
+            (index, _) =>
+                index == 3 ? new SlotConstraint<char>(['/']) : new SlotConstraint<char>(numbers),
             7
         );
 
@@ -170,14 +168,37 @@ public class MaskTests
 
 public class DateMaskTests
 {
+    // Adapter to bridge new DateSlotConstraintsSource (returns char[] per slot)
+    // to ISlotConstraintsSource<char> (returns SlotConstraint<char> per slot) used by Mask
+    class DateSlotConstraintsAdapter : ISlotConstraintsSource<char>
+    {
+        readonly DateSlotConstraintsSource _inner;
+
+        public DateSlotConstraintsAdapter(DateTimeRange range, DateFormatting formatting)
+        {
+            _inner = new DateSlotConstraintsSource(range, formatting);
+        }
+
+        public int Length => _inner.Length;
+
+        public SlotConstraint<char> GetSlotConstraints(
+            int slotIndex,
+            IReadOnlyList<char> currentFilling
+        )
+        {
+            var opts = _inner.GetSlotConstraints(slotIndex, currentFilling);
+            return opts;
+        }
+    }
+
     // Helper to create a fresh date mask with8 slots (ddMMyyyy)
     Mask<char> CreateDateMask()
     {
         // dd.MM.yyyy -> 10 slots
         var initial = Enumerable.Repeat(default(char), 10).ToArray();
         return new Mask<char>(
-            new DateSlotConstraintsSource(
-                new WheelProtection.DataStructures.Time.DateTimeRange(default, DateTime.Now),
+            new DateSlotConstraintsAdapter(
+                new DateTimeRange(default, DateTime.Now),
                 DateFormatting.Parse("dd.MM.yyyy")
             ),
             initial,
@@ -188,8 +209,8 @@ public class DateMaskTests
     [Fact]
     public void DateConstraints_February_LeapYear_RestrictsDayTens()
     {
-        var source = new DateSlotConstraintsSource(
-            new WheelProtection.DataStructures.Time.DateTimeRange(default, DateTime.Now),
+        var adapter = new DateSlotConstraintsAdapter(
+            new DateTimeRange(default, DateTime.Now),
             DateFormatting.Parse("dd.MM.yyyy")
         );
 
@@ -207,7 +228,11 @@ public class DateMaskTests
             '0',
             '0',
         };
-        var constraints = source.GetConstraints(filling);
+
+        var constraints = Enumerable
+            .Range(0, adapter.Length)
+            .Select(i => adapter.GetSlotConstraints(i, filling))
+            .ToArray();
 
         var dayTens = constraints[0].Options.ToArray();
 
@@ -272,7 +297,10 @@ public class DateMaskTests
     {
         // Deterministic constraints: slot1 and slot2 have single allowed option
         var source = new DeterministicConstraintsSource();
-        var options = source.GetConstraints([]);
+        var options = Enumerable
+            .Range(0, source.Length)
+            .Select(i => source.GetSlotConstraints(i, []))
+            .ToArray();
         var initial = Enumerable.Repeat(options[0].Options[0], 4).ToArray();
         var mask = new Mask<char>(source, initial, EqualityComparer<char>.Default);
 
@@ -288,12 +316,14 @@ public class DateMaskTests
     {
         public int Length => 4;
 
-        public IReadOnlyList<SlotConstraint<char>> GetConstraints(IReadOnlyList<char> _) =>
-            [
-                new SlotConstraint<char>(['0', '1', '2']),
-                new SlotConstraint<char>(['X']),
-                new SlotConstraint<char>(['Y']),
-                new SlotConstraint<char>(['A', 'B', 'C']),
-            ];
+        public SlotConstraint<char> GetSlotConstraints(int index, IReadOnlyList<char> _) =>
+            index switch
+            {
+                0 => new SlotConstraint<char>(['0', '1', '2']),
+                1 => new SlotConstraint<char>(['X']),
+                2 => new SlotConstraint<char>(['Y']),
+                3 => new SlotConstraint<char>(['A', 'B', 'C']),
+                _ => new SlotConstraint<char>(['0']),
+            };
     }
 }

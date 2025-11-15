@@ -43,7 +43,9 @@
     </section> *@
 
     <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
-               Value="_date" />
+               Value="_date"
+               MaxValue="DateOnly.FromDateTime(DateTime.Today)"
+               MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" />
 
     <p>@_date</p>
 
@@ -54,6 +56,6 @@
     DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
 
     static readonly DateFormatting _dateFormatting = new();
-    ISlotConstraintsSource<char> DateTimeConstraintsSource { get; } = new DateSlotConstraintsSource(
+    ISlotConstraintsSourceOld<char> DateTimeConstraintsSource { get; } = new DateSlotConstraintsSourceOld(
         new(new(2000, 1, 1), DateTime.Today), _dateFormatting);
 }

@@ -1,13 +1,148 @@
 ﻿using DestallMaterials.WheelProtection.DataStructures.Time;
-using Microsoft.VisualBasic;
+using static DestallMaterials.WheelProtection.DataStructures.Text.SlotOptionFunctions;
 
 namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
 public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting formatting)
     : ISlotConstraintsSource<char>
 {
-    static readonly char[] _numberChars = [.. Enumerable.Range((int)'0', 10).Select(i => (char)i)];
+    public int Length => formatting.Length;
 
+    public SlotConstraint<char> GetSlotConstraints(
+        int slotIndex,
+        IReadOnlyList<char> currentFilling
+    )
+    {
+        if (currentFilling.Count != formatting.Length)
+        {
+            throw new InvalidOperationException(
+                "Current filling doesn't match the date format length."
+            );
+        }
+
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(slotIndex, Length, nameof(slotIndex));
+        ArgumentOutOfRangeException.ThrowIfNegative(slotIndex, nameof(slotIndex));
+
+        Span<char> slots = [.. currentFilling];
+        var (dateFormat, delimiter, yearLength, dayChar, monthChar, yearChar) = formatting;
+
+        var (minDate, maxDate) = range;
+
+        var (dayRange, monthRange, yearRange) = formatting.GetComponentRanges();
+
+        int.TryParse(new string(slots[yearRange]), out var year);
+        int.TryParse(new string(slots[monthRange]), out var month);
+
+        if (Contains(dayRange, slotIndex))
+        {
+            var (min, max) = (1, MaxDay(slots[monthRange], slots[yearRange]));
+
+            if (year == minDate.Year && month == minDate.Month)
+            {
+                min = minDate.Day;
+            }
+            if (year == maxDate.Year && month == maxDate.Month)
+            {
+                max = maxDate.Day;
+            }
+
+            var result = GetOptionsForSlot(
+                slotIndex: slotIndex - dayRange.Start.Value,
+                min: min,
+                max: max,
+                length: 2,
+                currentFilling: slots[dayRange]
+            );
+
+            return result;
+        }
+        else if (Contains(monthRange, slotIndex))
+        {
+            var (min, max) = (1, 12);
+            if (year == minDate.Year)
+            {
+                min = minDate.Month;
+            }
+            if (year == maxDate.Year)
+            {
+                max = maxDate.Month;
+            }
+
+            var result = GetOptionsForSlot(
+                slotIndex: slotIndex - monthRange.Start.Value,
+                min: min,
+                max: max,
+                length: 2,
+                currentFilling: slots[monthRange]
+            );
+
+            return result;
+        }
+        else if (Contains(yearRange, slotIndex))
+        {
+            var minDateYear = minDate.Year;
+            var maxDateYear = maxDate.Year;
+            var result = GetOptionsForSlot(
+                slotIndex: slotIndex - yearRange.Start.Value,
+                min: minDateYear,
+                max: maxDateYear,
+                length: yearLength,
+                currentFilling: slots[yearRange]
+            );
+
+            return result;
+        }
+
+        return new([formatting.Delimiter]);
+    }
+
+    int MaxDay(Span<char> monthDigits, Span<char> yearDigits)
+    {
+        var (mFirst, mSecond) = (monthDigits[0], monthDigits[1]);
+
+        if (char.IsDigit(mSecond) == false)
+        {
+            return 31;
+        }
+
+        var result = mSecond switch
+        {
+            '3' or '5' or '7' or '8' or '0' => 31,
+            '4' or '6' or '9' => 30,
+            '1' => mFirst switch
+            {
+                '0' => 31,
+                '1' => 30,
+                _ => 31,
+            },
+            '2' => char.IsDigit(yearDigits[^1]) == false
+                ? 31
+                : mFirst switch
+                {
+                    '0' => yearDigits.Length > 1
+                    && char.IsDigit(yearDigits[^2])
+                    && (
+                        SlotOptionFunctions.ToNumber(yearDigits[^2]) * 10
+                        + SlotOptionFunctions.ToNumber(yearDigits[^1])
+                    ) % 4
+                        == 0
+                        ? 29
+                        : 28,
+                    _ => 31,
+                },
+            _ => 31,
+        };
+
+        return result;
+    }
+
+    static bool Contains(Range range, int number) =>
+        number >= range.Start.Value && number < range.End.Value;
+}
+
+public class DateSlotConstraintsSourceOld(DateTimeRange range, DateFormatting formatting)
+    : ISlotConstraintsSourceOld<char>
+{
     public int Length => formatting.Length;
 
     public (int[] Days, int[] Months, int[] Years) GetValueConstraints()
@@ -134,7 +269,7 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
         int.TryParse(new string(slots[monthRange]), out var month);
 
         var monthOptions = 1..12;
-        var dayOptions = 1..MaxDay(slots[monthRange], slots[yearRange]);
+        var dayOptions = 1..9; // MaxDay(slots[monthRange], slots[yearRange]);
         if (year == minDate.Year)
         {
             monthOptions = (minDate.Month..12);
@@ -156,17 +291,22 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
 
         var minDateYear = minDate.Year;
         var maxDateYear = maxDate.Year;
-        var yearOptions = ToCharOptions(minDateYear, maxDateYear, yearLength, slots[yearRange]);
+        var yearOptions = ToCharOptionsOld(
+            minValue: minDateYear,
+            maxValue: maxDateYear,
+            length: yearLength,
+            currentFilling: slots[yearRange]
+        );
 
         SlotConstraint<char>[] constraints = new SlotConstraint<char>[formatting.Length];
 
-        var monthOptionsResult = ToCharOptions(
+        var monthOptionsResult = ToCharOptionsOld(
             monthOptions.Start.Value,
             monthOptions.End.Value,
             2,
             slots[monthRange]
         );
-        var dayOptionsResult = ToCharOptions(
+        var dayOptionsResult = ToCharOptionsOld(
             dayOptions.Start.Value,
             dayOptions.End.Value,
             2,
@@ -193,88 +333,6 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
         return result;
     }
 
-    enum PreviousFillingSituation
-    {
-        AtBottom = 1,
-        NarrowOptions = 2,
-        TopAndBottomAreSame = 3,
-        AtTop = 4,
-        Middle = 5,
-    }
-
-    static char[][] ToCharOptions(
-        int minValue,
-        int maxValue,
-        byte length,
-        Span<char> currentFilling
-    )
-    {
-        char[][] result = new char[length][];
-
-        var prevDiff = PreviousFillingSituation.TopAndBottomAreSame;
-
-        for (int i = length - 1; i >= 0; i--)
-        {
-            var divider = (int)Math.Pow(10, i);
-            var minDigit = (minValue / divider) % 10;
-            var maxDigit = (maxValue / divider) % 10;
-
-            var (from, to) = prevDiff switch
-            {
-                PreviousFillingSituation.AtTop => (0, maxDigit),
-                PreviousFillingSituation.AtBottom => (minDigit, 9),
-                PreviousFillingSituation.NarrowOptions => (maxDigit, minDigit),
-                PreviousFillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
-                PreviousFillingSituation.Middle => (0, 9),
-                _ => (0, 9),
-            };
-
-            var at = length - 1 - i;
-
-            if (from <= to)
-            {
-                result[at] = [.. Enumerable.Range(from, (to - from + 1)).Select(ToChar)];
-            }
-            else
-            {
-                result[at] =
-                [
-                    .. Enumerable.Range(to, 10 - to).Select(ToChar),
-                    .. Enumerable.Range(0, from).Select(ToChar),
-                ];
-            }
-
-            var currentChar = currentFilling[at];
-
-            if (from == to)
-            {
-                prevDiff = PreviousFillingSituation.TopAndBottomAreSame;
-            }
-            else if (char.IsDigit(currentChar))
-            {
-                var current = ToNumber(currentChar);
-
-                prevDiff =
-                    current == from ? PreviousFillingSituation.AtBottom
-                    : current == to ? PreviousFillingSituation.AtTop
-                    : PreviousFillingSituation.Middle;
-            }
-            else
-            {
-                prevDiff =
-                    to
-                    - from switch
-                    {
-                        0 => PreviousFillingSituation.TopAndBottomAreSame,
-                        1 => PreviousFillingSituation.NarrowOptions,
-                        _ => PreviousFillingSituation.Middle,
-                    };
-            }
-        }
-
-        return result;
-    }
-
     static readonly Dictionary<
         (DateTimeRange, DateFormatting),
         Func<IReadOnlyList<char>, char, int, bool>
@@ -286,46 +344,6 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
         result[position] = item;
         return result;
     }
-
-    int MaxDay(Span<char> monthDigits, Span<char> yearDigits)
-    {
-        var (mFirst, mSecond) = (monthDigits[0], monthDigits[1]);
-
-        if (char.IsDigit(mSecond) == false)
-        {
-            return 31;
-        }
-
-        var result = mSecond switch
-        {
-            '3' or '5' or '7' or '8' or '0' => 31,
-            '4' or '6' or '9' => 30,
-            '1' => mFirst switch
-            {
-                '0' => 31,
-                '1' => 30,
-                _ => 31,
-            },
-            '2' => char.IsDigit(yearDigits[^1]) == false
-                ? 31
-                : mFirst switch
-                {
-                    '0' => yearDigits.Length > 1
-                    && char.IsDigit(yearDigits[^2])
-                    && (ToNumber(yearDigits[^2]) * 10 + ToNumber(yearDigits[^1])) % 4 == 0
-                        ? 29
-                        : 28,
-                    _ => 31,
-                },
-            _ => 31,
-        };
-
-        return result;
-    }
-
-    static byte ToNumber(char digit) => (byte)(digit - '0');
-
-    static char ToChar(int digit) => (char)((digit % 10) + '0');
 }
 
 public enum DateFormat
@@ -473,13 +491,26 @@ public record DateFormatting(
 
     public string Stringify(DateOnly dateOnly) => dateOnly.ToString(ToString());
 
-    public string Concat(IEnumerable<char> day, IEnumerable<char> month, IEnumerable<char> year) => DateFormat switch
-    {
-        DateFormat.DayMonthYear => string.Concat(day) + Delimiter + string.Concat(month) + Delimiter + string.Concat(year),
-        DateFormat.MonthDayYear => string.Concat(month) + Delimiter + string.Concat(day) + Delimiter + string.Concat(year),
-        DateFormat.YearMonthDay => string.Concat(year) + Delimiter + string.Concat(month) + Delimiter + string.Concat(day),
-        DateFormat.MonthDay => string.Concat(month) + Delimiter + string.Concat(day),
-        DateFormat.DayMonth => string.Concat(day) + Delimiter + string.Concat(month),
-        _ => throw new InvalidOperationException("Unknown date format."),
-    };
+    public string Concat(IEnumerable<char> day, IEnumerable<char> month, IEnumerable<char> year) =>
+        DateFormat switch
+        {
+            DateFormat.DayMonthYear => string.Concat(day)
+                + Delimiter
+                + string.Concat(month)
+                + Delimiter
+                + string.Concat(year),
+            DateFormat.MonthDayYear => string.Concat(month)
+                + Delimiter
+                + string.Concat(day)
+                + Delimiter
+                + string.Concat(year),
+            DateFormat.YearMonthDay => string.Concat(year)
+                + Delimiter
+                + string.Concat(month)
+                + Delimiter
+                + string.Concat(day),
+            DateFormat.MonthDay => string.Concat(month) + Delimiter + string.Concat(day),
+            DateFormat.DayMonth => string.Concat(day) + Delimiter + string.Concat(month),
+            _ => throw new InvalidOperationException("Unknown date format."),
+        };
 }

@@ -21,7 +21,8 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
     public IReadOnlyList<TSymbol> Slots => _slots;
 
-    IReadOnlyList<SlotConstraint<TSymbol>> Constraints => _constraintsSource.GetConstraints(_slots);
+    SlotConstraint<TSymbol> GetConstraints(int slotIndex) =>
+        _constraintsSource.GetSlotConstraints(slotIndex, _slots);
 
     public int AcceptChange(ContentChange<TSymbol> contentChange)
     {
@@ -40,7 +41,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
             if (idx < 0 || idx >= _slots.Length)
                 continue;
 
-            var options = Constraints[idx].Options;
+            var options = GetConstraints(idx).Options;
             _slots[idx] = options.Count >= 1 ? options[0] : default;
         }
 
@@ -54,7 +55,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
         int srcIndex = 0;
         while (srcIndex < inserted.Length && placedPos < _slots.Length)
         {
-            var options = Constraints[placedPos].Options;
+            var options = GetConstraints(placedPos).Options;
             var value = inserted[srcIndex];
 
             if (options.Count == 0)
@@ -116,13 +117,12 @@ public class Mask<TSymbol> : IMask<TSymbol>
         // Repeat until stable or safety limit
         for (int iteration = 0; iteration < 32; iteration++)
         {
-            var currentConstraints = Constraints;
             bool anyChange = false;
 
             for (int i = 0; i < _slots.Length; i++)
             {
                 var slotValue = _slots[i];
-                var options = currentConstraints[i].Options;
+                var options = GetConstraints(i).Options;
                 TSymbol newValue = slotValue;
 
                 if (options.Count == 0)

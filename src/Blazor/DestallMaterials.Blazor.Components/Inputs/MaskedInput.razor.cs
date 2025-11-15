@@ -33,7 +33,7 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
 
         if (firstRender)
         {
-            base.BindToLifetime(
+            BindToLifetime(
                 globalClickCatcher.OnKeyPressed(
                     async (_, _) =>
                     {
