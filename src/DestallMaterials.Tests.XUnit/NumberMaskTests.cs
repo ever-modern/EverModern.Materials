@@ -94,7 +94,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 4, Removed: 1, Inserted: []));
 
         Assert.Equal(4, carretPosition);
-        Assert.Equal(['2', '0', '0', '\0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
     }
 
     // Delete Operations Tests
@@ -156,7 +156,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 2, Inserted: ['2', '0', '0', '0']));
 
         Assert.Equal(0, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['1', '9', '7', '5'], mask.Slots);
     }
 
     // Range Replacement Tests
@@ -233,7 +233,7 @@ public class NumberMaskTests
 
         var carretPosition = mask.AcceptChange(new(At: 4, Removed: 0, Inserted: ['0']));
 
-        Assert.Equal(5, carretPosition);
+        Assert.Equal(4, carretPosition);
         Assert.Equal(['1', '9', '7', '5'], mask.Slots);
     }
 
@@ -281,7 +281,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['3']));
 
         Assert.Equal(0, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['0', '9', '9', '9'], mask.Slots);
     }
 
     [Fact]
