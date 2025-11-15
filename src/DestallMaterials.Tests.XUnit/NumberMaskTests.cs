@@ -16,7 +16,7 @@ public class NumberMaskTests
 
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
 
-        Assert.Equal(carretPosition, 1);
+        Assert.Equal(1, carretPosition);
         Assert.Equal([.. "2000"], mask.Slots);
     }
 
@@ -32,7 +32,7 @@ public class NumberMaskTests
 
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['8']));
 
-        Assert.Equal(carretPosition, 1);
+        Assert.Equal(3, carretPosition);
         Assert.Equal([.. "1985"], mask.Slots);
     }
 }

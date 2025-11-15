@@ -28,20 +28,65 @@ public static class SlotOptionFunctions
         }
 
         var posDiv = (long)Math.Pow(10, length - slotIndex - 1);
-
         posDiv = posDiv < 1 ? 1 : posDiv;
 
+        // For the current slot, we need to consider what digit we're trying to place
+        // Calculate the range of valid digits for this position
         var (from, to) = ((min - already) / posDiv, (max - already) / posDiv);
 
-        from =
-            from < 0 ? 0
-            : from > 9 ? 9
-            : from;
+        // Clamp to valid digit range
+        from = from < 0 ? 0 : from > 9 ? 9 : from;
+        to = to < 0 ? 0 : to > 9 ? 9 : to;
 
-        to =
-            to < 0 ? 0
-            : to > 9 ? 9
-            : to;
+        // If no valid options in range, we need to handle this specially
+        // This might mean we're dealing with an overflow situation
+        if (from > to)
+        {
+            // When no valid digits exist for this position in isolation,
+            // we need to find the most appropriate digit that could work
+            // with adjustments to remaining positions
+            
+            // Try to find a digit that could work with minimal remaining adjustments
+            var bestOptions = new List<char>();
+            
+            // Try each digit from 0-9 and see if we can make it work
+            for (int digit = 0; digit <= 9; digit++)
+            {
+                // Temporarily place this digit and see if we can adjust remaining positions
+                long tempValue = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    long digitValue;
+                    if (i == slotIndex)
+                    {
+                        digitValue = digit * (long)Math.Pow(10, length - i - 1);
+                    }
+                    else if (char.IsDigit(currentFilling[i]))
+                    {
+                        digitValue = ToNumber(currentFilling[i]) * (long)Math.Pow(10, length - i - 1);
+                    }
+                    else
+                    {
+                        digitValue = 0; // assume we can fill with 0s
+                    }
+                    tempValue += digitValue;
+                }
+                
+                // Check if this digit could work (even with optimal remaining digits)
+                if (tempValue >= min && tempValue <= max)
+                {
+                    bestOptions.Add(ToChar(digit));
+                }
+            }
+            
+            if (bestOptions.Count > 0)
+            {
+                return [.. bestOptions];
+            }
+            
+            // If still no options, fall back to 0-9 for the mask to handle
+            return [.. "0123456789"];
+        }
 
         char[] result = [.. Enumerable.Range((int)from, (int)(to - from + 1)).Select(ToChar)];
 
