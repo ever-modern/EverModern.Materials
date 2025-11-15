@@ -47,12 +47,9 @@ public class Mask<TSymbol> : IMask<TSymbol>
             if (idx < 0 || idx >= _slots.Length)
                 continue;
 
-            var options = GetConstraints(idx).Options;
-            _slots[idx] = options.Count >= 1 ? options[0] : default;
+            // Clear the slot completely when removing
+            _slots[idx] = default;
         }
-
-        // After removals, run autoset to fill deterministic slots
-        AutosetAll();
 
         // Determine insertion start position: start at 'at'. At may equal _slots.Length (append position)
         int placedPos = Math.Clamp(at, 0, _slots.Length);
@@ -102,6 +99,12 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
             // value not acceptable here -> try next slot
             placedPos++;
+        }
+
+        // If there were insertions attempted, run autoset to fill deterministic slots that might have been affected
+        if (inserted.Length > 0)
+        {
+            AutosetAll();
         }
 
         // If there were no insertions consumed, treat as deletion/no-op and return caret at 'at'

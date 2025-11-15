@@ -55,7 +55,9 @@ public class IntegerConstraintsSource(int Min, int Max) : ISlotConstraintsSource
 
     static char[] OptimizeForRange(char[] filling, int min, int max, int changedIndex)
     {
-        var testValue = int.Parse(string.Concat(filling));
+        // Filter out null characters before parsing to avoid FormatException
+        var validChars = filling.Where(c => c != '\0').ToArray();
+        var testValue = int.Parse(string.Concat(validChars));
         
         if (testValue > max)
         {
