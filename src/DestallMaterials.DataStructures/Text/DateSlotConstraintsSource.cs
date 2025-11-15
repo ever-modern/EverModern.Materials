@@ -3,6 +3,23 @@ using static DestallMaterials.WheelProtection.DataStructures.Text.SlotOptionFunc
 
 namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
+public class IntegerConstraintsSource(int Min, int Max) : ISlotConstraintsSource<char>
+{
+    public int Length { get; } = Max.ToString().Length;
+
+    public SlotConstraint<char> GetSlotConstraints(
+        int slotIndex,
+        IReadOnlyList<char> currentFilling
+    ) =>
+        GetOptionsForSlot(
+            slotIndex: slotIndex,
+            min: Min,
+            max: Max,
+            length: (byte)Length,
+            currentFilling: [.. currentFilling]
+        );
+}
+
 public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting formatting)
     : ISlotConstraintsSource<char>
 {
