@@ -36,6 +36,21 @@ public class NumberMaskTests
         Assert.Equal([.. "1985"], mask.Slots);
     }
 
+    [Fact]
+    public void WriteTopEdgeNumber()
+    {
+        const int from = 1975;
+        const int to = 2025;
+
+        var numberConstraints = new IntegerConstraintsSource(from, to);
+        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2025"]);
+
+        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
+
+        Assert.Equal(0, carretPosition);
+        Assert.Equal([.. "2025"], mask.Slots);
+    }
+
     // Backspace Operations Tests
     [Fact]
     public void BackspaceFromBeginning()
@@ -288,4 +303,14 @@ public class NumberMaskTests
         // Expected: all slots should be '\0'
         Assert.All(mask.Slots, slot => Assert.Equal('\0', slot));
     }
+=======
+
+        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2020"]);
+
+        var carretPosition = mask.AcceptChange(new(At: 3, Removed: 1, Inserted: ['5']));
+
+        Assert.Equal(4, carretPosition);
+        Assert.Equal([.. "2025"], mask.Slots);
+    }
+>>>>>>> 1c3494a20f6eb54c1e0845f86793d0ab065a395e
 }
