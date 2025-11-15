@@ -15,9 +15,15 @@ public class Mask<TSymbol> : IMask<TSymbol>
     {
         _constraintsSource =
             constraintsSource ?? throw new ArgumentNullException(nameof(constraintsSource));
-        _equalityComparer = equalityComparer ?? EqualityComparer<TSymbol>.Default;
+        _equalityComparer = equalityComparer;
         _slots = initialSlots == null ? new TSymbol[_constraintsSource.Length] : [.. initialSlots];
     }
+
+    public Mask(
+        ISlotConstraintsSource<TSymbol> constraintsSource,
+        IReadOnlyList<TSymbol> initialSlots
+    )
+        : this(constraintsSource, initialSlots, EqualityComparer<TSymbol>.Default) { }
 
     public IReadOnlyList<TSymbol> Slots => _slots;
 

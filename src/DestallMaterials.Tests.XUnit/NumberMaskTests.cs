@@ -1,0 +1,38 @@
+﻿using DestallMaterials.WheelProtection.DataStructures.Text;
+
+namespace DestallMaterials.Tests.XUnit;
+
+public class NumberMaskTests
+{
+    [Fact]
+    public void WriteOverflowingValue()
+    {
+        const int from = 1975;
+        const int to = 2025;
+
+        var numberConstraints = new IntegerConstraintsSource(from, to);
+
+        var mask = new Mask<char>(numberConstraints, initialSlots: [.. from.ToString()]);
+
+        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
+
+        Assert.Equal(carretPosition, 1);
+        Assert.Equal([.. "2000"], mask.Slots);
+    }
+
+    [Fact]
+    public void WriteOverflowingValue_MustWriteToEnd()
+    {
+        const int from = 1975;
+        const int to = 2025;
+
+        var numberConstraints = new IntegerConstraintsSource(from, to);
+
+        var mask = new Mask<char>(numberConstraints, initialSlots: [.. from.ToString()]);
+
+        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['8']));
+
+        Assert.Equal(carretPosition, 1);
+        Assert.Equal([.. "1985"], mask.Slots);
+    }
+}
