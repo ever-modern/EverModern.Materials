@@ -56,6 +56,4 @@
     DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
 
     static readonly DateFormatting _dateFormatting = new();
-    ISlotConstraintsSourceOld<char> DateTimeConstraintsSource { get; } = new DateSlotConstraintsSourceOld(
-        new(new(2000, 1, 1), DateTime.Today), _dateFormatting);
 }
