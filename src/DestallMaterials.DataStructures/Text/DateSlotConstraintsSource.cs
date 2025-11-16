@@ -10,120 +10,14 @@ public class IntegerConstraintsSource(int Min, int Max) : ISlotConstraintsSource
     public SlotConstraint<char> GetSlotConstraints(
         int slotIndex,
         IReadOnlyList<char> currentFilling
-    )
-    {
-        // Check if we're in an overflow scenario where the current digit doesn't fit constraints
-        var normalConstraint = GetOptionsForSlot(
+    ) =>
+        GetOptionsForSlot(
             slotIndex: slotIndex,
             min: Min,
             max: Max,
             length: (byte)Length,
             currentFilling: [.. currentFilling]
         );
-
-        // For the first position, be more permissive to allow overflow adjustments
-        if (slotIndex == 0 && normalConstraint.Options.Count <= 2)
-        {
-            // When only 1-2 options are available, add common overflow digits
-            var extendedOptions = new List<char>(normalConstraint.Options);
-            
-            // Check what digits could potentially work with optimal filling
-            for (int digit = 0; digit <= 9; digit++)
-            {
-                var testFilling = currentFilling.ToArray();
-                testFilling[slotIndex] = (char)('0' + digit);
-                
-                // Try to optimize remaining positions
-                var optimizedFilling = OptimizeForRange(testFilling, Min, Max, slotIndex);
-                var testValue = int.Parse(string.Concat(optimizedFilling));
-                
-                if (testValue >= Min && testValue <= Max)
-                {
-                    var digitChar = (char)('0' + digit);
-                    if (!extendedOptions.Contains(digitChar))
-                    {
-                        extendedOptions.Add(digitChar);
-                    }
-                }
-            }
-            
-            return new SlotConstraint<char>(extendedOptions);
-        }
-
-        return normalConstraint;
-    }
-
-    static char[] OptimizeForRange(char[] filling, int min, int max, int changedIndex)
-    {
-        // Filter out null characters before parsing to avoid FormatException
-        var validChars = filling.Where(c => c != '\0').ToArray();
-        var testValue = int.Parse(string.Concat(validChars));
-        
-        if (testValue > max)
-        {
-            // Fill remaining positions with minimum values
-            for (int i = changedIndex + 1; i < filling.Length; i++)
-            {
-                filling[i] = '0';
-            }
-        }
-        else if (testValue < min)
-        {
-            // Fill remaining positions with maximum values  
-            for (int i = changedIndex + 1; i < filling.Length; i++)
-            {
-                filling[i] = '9';
-            }
-        }
-
-        return filling;
-    }
-
-    SlotConstraint<char> GetOptionsForSlot(
-        int slotIndex,
-        int min,
-        int max,
-        byte length,
-        ReadOnlySpan<char> currentFilling
-    )
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(slotIndex);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(slotIndex, length - 1);
-
-        long already = 0;
-        for (int i = 0; i < length; i++)
-        {
-            var c = currentFilling[i];
-            if (i == slotIndex || char.IsDigit(c) == false)
-            {
-                continue;
-            }
-
-            already += (long)Math.Pow(10, length - i - 1) * ToNumber(c);
-        }
-
-        var posDiv = (long)Math.Pow(10, length - slotIndex - 1);
-        posDiv = posDiv < 1 ? 1 : posDiv;
-
-        // Calculate the range of valid digits for this position
-        var (from, to) = ((min - already) / posDiv, (max - already) / posDiv);
-
-        // Clamp to valid digit range
-        from = from < 0 ? 0 : from > 9 ? 9 : from;
-        to = to < 0 ? 0 : to > 9 ? 9 : to;
-
-        // If no valid options in range, return empty
-        if (from > to)
-        {
-            return new SlotConstraint<char>([]);
-        }
-
-        char[] result = [.. Enumerable.Range((int)from, (int)(to - from + 1)).Select(ToChar)];
-        return new SlotConstraint<char>(result);
-    }
-
-    public static byte ToNumber(char digit) => (byte)(digit - '0');
-    public static char ToChar(int digit) => (char)((digit % 10) + '0');
 }
 
 public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting formatting)

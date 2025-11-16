@@ -27,8 +27,8 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
     public IReadOnlyList<TSymbol> Slots => _slots;
 
-    SlotConstraint<TSymbol> GetConstraints(int slotIndex) =>
-        _constraintsSource.GetSlotConstraints(slotIndex, _slots);
+    SlotConstraint<TSymbol> GetConstraints(TSymbol[] slots, int slotIndex) =>
+        _constraintsSource.GetSlotConstraints(slotIndex, slots);
 
     public int AcceptChange(ContentChange<TSymbol> contentChange)
     {
@@ -51,7 +51,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
             if (idx < 0 || idx >= slots.Length)
                 continue;
 
-            var options = GetConstraints(idx).Options;
+            var options = GetConstraints(slots, idx).Options;
             slots[idx] = options.Count >= 1 ? options[0] : default;
         }
 
@@ -63,7 +63,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
         while (srcIndex < inserted.Length && placedAt < slots.Length)
         {
-            var options = GetConstraints(placedAt).Options;
+            var options = GetConstraints(slots, placedAt).Options;
             var value = inserted[srcIndex];
 
             if (options.Count == 0)
@@ -88,15 +88,12 @@ public class Mask<TSymbol> : IMask<TSymbol>
                         ? Autoset(slots, placedAt - 1, 0, allowOriginalValues: true)
                         : true;
 
-                if (autosetLeft is null)
-                {
-                    return at;
-                }
-
-                var autosetRight =
-                    placedAt < slots.Length - 1
+                var autosetRight = autosetLeft is not null
+                    ? placedAt < slots.Length - 1
                         ? Autoset(slots, placedAt + 1, slots.Length - 1, autosetLeft.Value)
-                        : true;
+                        : true
+                    : null;
+
                 if (autosetRight is null)
                 {
                     return at;
@@ -126,14 +123,23 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
     bool? Autoset(TSymbol[] slots, int from, int to, bool allowOriginalValues = true)
     {
-        for (int i = from; i != to; i = from > to ? i - 1 : i + 1)
+        bool directionRight = to > from;
+        for (
+            int i = from;
+            (directionRight ? to - i : i - from) >= 0;
+            i = directionRight ? i + 1 : i - 1
+        )
         {
-            var options = GetConstraints(i).Options;
+            var varL = Math.Abs(i - to);
+            TSymbol[] variableSlots = Replaced(slots, i, to, default);
+
+            var options = GetConstraints(variableSlots, i).Options;
             if (options.Count == 0)
             {
                 return null;
             }
-            allowOriginalValues = options.Contains(slots[i], _equalityComparer);
+            allowOriginalValues =
+                allowOriginalValues && options.Contains(slots[i], _equalityComparer);
             if (allowOriginalValues is false)
             {
                 slots[i] = options[0];
@@ -141,6 +147,23 @@ public class Mask<TSymbol> : IMask<TSymbol>
         }
 
         return true;
+    }
+
+    TSymbol[] Replaced(TSymbol[] source, int from, int to, TSymbol with)
+    {
+        TSymbol[] result = [.. source];
+
+        if (to < from)
+        {
+            (to, from) = (from, to);
+        }
+
+        for (int i = from; i <= to && i < source.Length; i++)
+        {
+            result[i] = with;
+        }
+
+        return result;
     }
 
     void DefaultRight() { }

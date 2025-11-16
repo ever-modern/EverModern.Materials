@@ -85,7 +85,7 @@ public static class SlotOptionFunctions
             }
             
             // If still no options, fall back to 0-9 for the mask to handle
-            return [.. "0123456789"];
+            return [];
         }
 
         char[] result = [.. Enumerable.Range((int)from, (int)(to - from + 1)).Select(ToChar)];
