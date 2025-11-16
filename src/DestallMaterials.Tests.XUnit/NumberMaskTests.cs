@@ -32,8 +32,8 @@ public class NumberMaskTests
 
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['8']));
 
-        Assert.Equal(0, carretPosition);
-        Assert.Equal(['0', '9', '9', '9'], mask.Slots);
+        Assert.Equal(3, carretPosition);
+        Assert.Equal([.."1985"], mask.Slots);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '0', '2', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '2', '5'], mask.Slots);
     }
 
     // Backspace Operations Tests
@@ -64,7 +64,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 1, Removed: 1, Inserted: []));
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '\0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 2, Removed: 1, Inserted: []));
 
         Assert.Equal(2, carretPosition);
-        Assert.Equal(['2', '0', '\0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 1, Removed: 1, Inserted: []));
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '\0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 3, Removed: 1, Inserted: []));
 
         Assert.Equal(3, carretPosition);
-        Assert.Equal(['2', '0', '0', '\0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
     }
 
     // Multi-character Insertion Tests
@@ -138,7 +138,9 @@ public class NumberMaskTests
         var numberConstraints = new IntegerConstraintsSource(from, to);
         var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 4, Inserted: ['1', '9', '8', '5']));
+        var carretPosition = mask.AcceptChange(
+            new(At: 0, Removed: 4, Inserted: ['1', '9', '8', '5'])
+        );
 
         Assert.Equal(4, carretPosition);
         Assert.Equal([.. "1985"], mask.Slots);
@@ -153,10 +155,12 @@ public class NumberMaskTests
         var numberConstraints = new IntegerConstraintsSource(from, to);
         var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 2, Inserted: ['2', '0', '0', '0']));
+        var carretPosition = mask.AcceptChange(
+            new(At: 0, Removed: 2, Inserted: ['2', '0', '0', '0'])
+        );
 
-        Assert.Equal(0, carretPosition);
-        Assert.Equal(['1', '9', '7', '5'], mask.Slots);
+        Assert.Equal(4, carretPosition);
+        Assert.Equal([.. "2000"], mask.Slots);
     }
 
     // Range Replacement Tests
@@ -218,7 +222,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '0', '2', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '2', '5'], mask.Slots);
     }
 
     // Number Extension/Truncation Tests
@@ -244,12 +248,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1981"]);
 
         var carretPosition = mask.AcceptChange(new(At: 2, Removed: 2, Inserted: []));
 
         Assert.Equal(2, carretPosition);
-        Assert.Equal("19", string.Concat(mask.Slots.TakeWhile(c => c != default)));
+        Assert.Equal([.."1975"], mask.Slots);
     }
 
     // Edge Case Tests
@@ -265,7 +269,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 4, Inserted: []));
 
         Assert.Equal(0, carretPosition);
-        Assert.All(mask.Slots, slot => Assert.Equal(default(char), slot));
+        Assert.Equal([.."1975"], mask.Slots);
     }
 
     [Fact]
@@ -281,26 +285,6 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['3']));
 
         Assert.Equal(0, carretPosition);
-        Assert.Equal(['0', '9', '9', '9'], mask.Slots);
-    }
-
-    [Fact]
-    public void DebugDeletionBehavior()
-    {
-        var numberConstraints = new IntegerConstraintsSource(1975, 2025);
-        var mask = new Mask<char>(numberConstraints, initialSlots: "1975".ToCharArray());
-
-        System.Console.WriteLine("Initial state:");
-        System.Console.WriteLine($"Slots: [{string.Join(", ", mask.Slots.Select(c => $"'{c}'"))}]");
-
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 4, Inserted: System.Array.Empty<char>()));
-
-        System.Console.WriteLine("\nAfter deleting all 4 characters:");
-        System.Console.WriteLine($"Cursor: {carretPosition}");
-        System.Console.WriteLine($"Slots: [{string.Join(", ", mask.Slots.Select(c => $"'{c}'"))}]");
-        System.Console.WriteLine($"Slots as string: '{new string(mask.Slots.Select(c => c == '\0' ? '·' : c).ToArray())}'");
-        
-        // Expected: all slots should be '\0'
-        Assert.All(mask.Slots, slot => Assert.Equal('\0', slot));
+        Assert.Equal([.."1975"], mask.Slots);
     }
 }

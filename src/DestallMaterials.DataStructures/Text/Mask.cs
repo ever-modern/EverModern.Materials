@@ -47,9 +47,12 @@ public class Mask<TSymbol> : IMask<TSymbol>
             if (idx < 0 || idx >= _slots.Length)
                 continue;
 
-            // Clear the slot completely when removing
-            _slots[idx] = default;
+            var options = GetConstraints(idx).Options;
+            _slots[idx] = options.Count >= 1 ? options[0] : default;
         }
+
+        // After removals, run autoset to fill deterministic slots
+        AutosetAll();
 
         // Determine insertion start position: start at 'at'. At may equal _slots.Length (append position)
         int placedPos = Math.Clamp(at, 0, _slots.Length);
@@ -101,12 +104,6 @@ public class Mask<TSymbol> : IMask<TSymbol>
             placedPos++;
         }
 
-        // If there were insertions attempted, run autoset to fill deterministic slots that might have been affected
-        if (inserted.Length > 0)
-        {
-            AutosetAll();
-        }
-
         // If there were no insertions consumed, treat as deletion/no-op and return caret at 'at'
         if (srcIndex == 0)
         {
@@ -153,25 +150,6 @@ public class Mask<TSymbol> : IMask<TSymbol>
                     newValue = options[0];
                 }
 
-                // Special handling for overflow scenarios in numeric masks
-                if (typeof(TSymbol) == typeof(char) && !slotValue.Equals(default(TSymbol)))
-                {
-                    var currentNumber = ParseAsNumber();
-                    if (currentNumber.HasValue)
-                    {
-                        var targetNumber = OptimizeNumberForRange(currentNumber.Value, i);
-                        if (targetNumber != currentNumber)
-                        {
-                            // Update this position based on the optimized number
-                            var optimizedSlots = NumberToSlots(targetNumber);
-                            if (i < optimizedSlots.Length)
-                            {
-                                newValue = (TSymbol)(object)optimizedSlots[i];
-                            }
-                        }
-                    }
-                }
-
                 if (!_equalityComparer.Equals(newValue, slotValue))
                 {
                     _slots[i] = newValue;
@@ -185,61 +163,5 @@ public class Mask<TSymbol> : IMask<TSymbol>
         }
 
         return changed;
-    }
-
-    int? ParseAsNumber()
-    {
-        try
-        {
-            var str = string.Concat(_slots.Cast<char>());
-            return int.Parse(str);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    char[] NumberToSlots(int number)
-    {
-        var str = number.ToString();
-        var result = new char[_slots.Length];
-        var startIndex = _slots.Length - str.Length;
-        
-        // Fill with default char first
-        for (int i = 0; i < _slots.Length; i++)
-        {
-            result[i] = default(char);
-        }
-        
-        // Copy the number string
-        for (int i = 0; i < str.Length; i++)
-        {
-            result[startIndex + i] = str[i];
-        }
-        
-        return result;
-    }
-
-    int OptimizeNumberForRange(int currentNumber, int changedPosition)
-    {
-        // Get the constraints to understand the range
-        var firstSlotConstraints = GetConstraints(0).Options;
-        var lastSlotConstraints = GetConstraints(_slots.Length - 1).Options;
-        
-        // Try to determine if this is a numeric constraint with a known range
-        // For now, use a simple heuristic: if changing a digit makes the number exceed reasonable bounds,
-        // adjust to the nearest valid number
-        
-        // This is a simplified version - in practice, we'd need access to the actual Min/Max values
-        // For the specific test case (1975-2025), when we get 2005, we want to change it to 2000
-        
-        if (currentNumber > 2000 && currentNumber <= 2025)
-        {
-            // If we're in the upper range and not at the maximum, prefer lower values when adjusting
-            return currentNumber - (currentNumber % 10 == 5 ? 5 : 0);
-        }
-        
-        return currentNumber;
     }
 }
