@@ -5,7 +5,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
 {
     readonly ISlotConstraintsSource<TSymbol> _constraintsSource;
     readonly IEqualityComparer<TSymbol> _equalityComparer;
-    readonly TSymbol[] _slots;
+    volatile TSymbol[] _slots;
 
     public Mask(
         ISlotConstraintsSource<TSymbol> constraintsSource,
@@ -37,131 +37,111 @@ public class Mask<TSymbol> : IMask<TSymbol>
         if (at > _slots.Length)
             throw new InvalidOperationException("Can't change beyond slots count.");
 
+        var oldSlots = _slots;
+
+        TSymbol[] slots = [.. oldSlots];
+
         // Clamp indices
-        at = Math.Clamp(at, 0, _slots.Length);
+        at = Math.Clamp(at, 0, slots.Length);
 
         // Process removals: clear slots that were removed (starting at 'at' and moving right)
         for (int i = 0; i < removed; i++)
         {
             var idx = at + i;
-            if (idx < 0 || idx >= _slots.Length)
+            if (idx < 0 || idx >= slots.Length)
                 continue;
 
             var options = GetConstraints(idx).Options;
-            _slots[idx] = options.Count >= 1 ? options[0] : default;
+            slots[idx] = options.Count >= 1 ? options[0] : default;
         }
 
-        // After removals, run autoset to fill deterministic slots
-        AutosetAll();
-
-        // Determine insertion start position: start at 'at'. At may equal _slots.Length (append position)
-        int placedPos = Math.Clamp(at, 0, _slots.Length);
+        // Determine insertion start position: start at 'at'. At may equal slots.Length (append position)
+        int placedAt = Math.Clamp(at, 0, slots.Length);
 
         // Process insertions sequentially with a source index so we can handle paste intelligently
         int srcIndex = 0;
-        while (srcIndex < inserted.Length && placedPos < _slots.Length)
+
+        while (srcIndex < inserted.Length && placedAt < slots.Length)
         {
-            var options = GetConstraints(placedPos).Options;
+            var options = GetConstraints(placedAt).Options;
             var value = inserted[srcIndex];
 
             if (options.Count == 0)
             {
-                // slot can't accept anything: clear and advance
-                _slots[placedPos] = default;
-                placedPos++;
-                continue;
-            }
-
-            if (options.Count == 1)
-            {
-                // deterministic slot - fill and advance
-                var deterministic = options[0];
-                _slots[placedPos] = deterministic;
-
-                // If the next inserted value equals the deterministic option, consume it as well
-                if (srcIndex < inserted.Length && _equalityComparer.Equals(deterministic, value))
-                {
-                    srcIndex++;
-                }
-
-                placedPos++;
-                continue;
+                return at; // slot cannot accept any value, treat as no-op
             }
 
             // slot accepts multiple values
-            if (options.Contains(value))
+            if (options.Contains(value, _equalityComparer))
             {
-                _slots[placedPos] = value;
-                srcIndex++; // consume inserted
-                placedPos++;
+                slots[placedAt] = value;
 
                 // Allow autoset to propagate deterministic fills between insertions
-                AutosetAll();
-                continue;
+                Autoset(slots, 0, slots.Length - 1);
+            }
+            else
+            {
+                slots[placedAt] = value;
+
+                var autosetLeft =
+                    placedAt > 0
+                        ? Autoset(slots, placedAt - 1, 0, allowOriginalValues: true)
+                        : true;
+
+                if (autosetLeft is null)
+                {
+                    return at;
+                }
+
+                var autosetRight =
+                    placedAt < slots.Length - 1
+                        ? Autoset(slots, placedAt + 1, slots.Length - 1, autosetLeft.Value)
+                        : true;
+                if (autosetRight is null)
+                {
+                    return at;
+                }
             }
 
             // value not acceptable here -> try next slot
-            placedPos++;
+            srcIndex++; // consume inserted
+            placedAt++;
         }
+
+        Autoset(slots, 0, slots.Length - 1);
+
+        _slots = slots;
 
         // If there were no insertions consumed, treat as deletion/no-op and return caret at 'at'
         if (srcIndex == 0)
         {
-            var caret = Math.Clamp(at, 0, _slots.Length);
+            var caret = Math.Clamp(at, 0, slots.Length);
             return caret;
         }
 
-        // Caret after insertions: placedPos is the index after last placed slot and may equal _slots.Length
-        var caretAfterInsert = Math.Clamp(placedPos, 0, _slots.Length);
+        // Caret after insertions: placedPos is the index after last placed slot and may equal slots.Length
+        var caretAfterInsert = Math.Clamp(placedAt, 0, slots.Length);
         return caretAfterInsert;
     }
 
-    bool AutosetAll()
+    bool? Autoset(TSymbol[] slots, int from, int to, bool allowOriginalValues = true)
     {
-        var changed = false;
-
-        // Repeat until stable or safety limit
-        for (int iteration = 0; iteration < 32; iteration++)
+        for (int i = from; i != to; i = from > to ? i - 1 : i + 1)
         {
-            bool anyChange = false;
-
-            for (int i = 0; i < _slots.Length; i++)
+            var options = GetConstraints(i).Options;
+            if (options.Count == 0)
             {
-                var slotValue = _slots[i];
-                var options = GetConstraints(i).Options;
-                TSymbol newValue = slotValue;
-
-                if (options.Count == 0)
-                {
-                    throw new InvalidOperationException($"Options for slot {i} are empty.");
-                }
-
-                if (options.Count == 1)
-                {
-                    newValue = options[0];
-                }
-                else if (slotValue.Equals(options[0]) && !options.Contains(slotValue))
-                {
-                    // choose a deterministic fallback (last option)
-                    newValue = options[options.Count - 1];
-                }
-                else if (!options.Contains(slotValue))
-                {
-                    newValue = options[0];
-                }
-
-                if (!_equalityComparer.Equals(newValue, slotValue))
-                {
-                    _slots[i] = newValue;
-                    anyChange = true;
-                }
+                return null;
             }
-
-            changed = changed || anyChange;
-            if (!anyChange)
-                break;
+            allowOriginalValues = options.Contains(slots[i], _equalityComparer);
+            if (allowOriginalValues is false)
+            {
+                slots[i] = options[0];
+            }
         }
 
-        return changed;
+        return true;
     }
+
+    void DefaultRight() { }
 }
