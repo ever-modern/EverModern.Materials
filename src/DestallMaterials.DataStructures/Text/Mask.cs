@@ -78,31 +78,44 @@ public class Mask<TSymbol> : IMask<TSymbol>
 
                 // Allow autoset to propagate deterministic fills between insertions
                 Autoset(slots, 0, slots.Length - 1);
+
+                // value not acceptable here -> try next slot
+                srcIndex++;
+                placedAt++;
             }
             else
             {
-                slots[placedAt] = value;
-
-                var autosetLeft =
-                    placedAt > 0
-                        ? Autoset(slots, placedAt - 1, 0, allowOriginalValues: true)
-                        : true;
-
-                var autosetRight = autosetLeft is not null
-                    ? placedAt < slots.Length - 1
-                        ? Autoset(slots, placedAt + 1, slots.Length - 1, autosetLeft.Value)
-                        : true
-                    : null;
-
-                if (autosetRight is null)
+                for (int j = placedAt; j < slots.Length; j++)
                 {
-                    return at;
+                    slots[j] = value;
+
+                    var autosetRight =
+                        j > 0 ? Autoset(slots, j - 1, 0, allowOriginalValues: true) : true;
+
+                    var autosetLeft = autosetRight is not null
+                        ? j < slots.Length - 1
+                            ? Autoset(slots, j + 1, slots.Length - 1, autosetRight.Value)
+                            : true
+                        : null;
+
+                    if (autosetLeft is null or false)
+                    {
+                        if (j == slots.Length - 1)
+                        {
+                            return at;
+                        }
+                        else
+                        {
+                            slots[j] = _slots[j];
+                        }
+                    }
+                    else
+                    {
+                        placedAt = j + 1;
+                        return at + srcIndex;
+                    }
                 }
             }
-
-            // value not acceptable here -> try next slot
-            srcIndex++; // consume inserted
-            placedAt++;
         }
 
         Autoset(slots, 0, slots.Length - 1);

@@ -4,7 +4,219 @@ namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
 public static class SlotOptionFunctions
 {
+    static IEnumerable<long> LongSeq(long min, long max, long pace)
+    {
+        for (long option = min; option <= max; option += pace)
+        {
+            yield return option;
+        }
+    }
+
+    static char[] 
+
+    static char[] GetOptionsForSlotReliable(
+        byte slotIndex,
+        ReadOnlySpan<char> currentFilling,
+        byte length,
+        long min,
+        long max
+    )
+    {
+        char[] filling = [.. currentFilling];
+
+        var divider = (int)Math.Pow(10, length - 1 - slotIndex);
+
+        var pace = 
+
+        var result = LongSeq(min, max)
+            .Where(option => IsGoodOption(option, slotIndex, filling, length))
+            .Select(option => ToChar(option / divider % 10))
+            .Distinct()
+            .ToArray();
+
+        return result;
+    }
+
+    static bool IsGoodOption(
+        long option,
+        byte slotIndex,
+        ReadOnlySpan<char> currentFilling,
+        byte length
+    )
+    {
+        for (int i = 0; i < length; i++)
+        {
+            if (i == slotIndex)
+            {
+                continue;
+            }
+            char c = currentFilling[i];
+            if (char.IsDigit(c))
+            {
+                int digit = ToNumber(c);
+                var divider = (long)Math.Pow(10, length - 1 - i);
+                long optionDigit = (option / divider) % 10;
+                if (digit != optionDigit)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public static char[] GetOptionsForSlot(
+        byte slotIndex,
+        ReadOnlySpan<char> currentFilling,
+        byte length,
+        long min,
+        long max
+    )
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(slotIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(slotIndex, length - 1);
+        if (currentFilling.Length != length)
+        {
+            throw new ArgumentException(
+                $"Length is different from {nameof(length)}",
+                nameof(currentFilling)
+            );
+        }
+        if (min > max)
+        {
+            throw new ArgumentException($"{nameof(min)} greater than {nameof(max)}");
+        }
+
+        return GetOptionsForSlotReliable((byte)slotIndex, currentFilling, length, min, max);
+
+        char[]? result = null;
+
+        var prevDiff = FillingSituation.TopAndBottomAreSame;
+
+        for (int i = length - 1; i >= 0; i--)
+        {
+            var divider = (int)Math.Pow(10, i);
+            var minDigit = (int)(min / divider) % 10;
+            var maxDigit = (int)(max / divider) % 10;
+
+            var (from, to) = prevDiff switch
+            {
+                FillingSituation.AtTop => (0, maxDigit),
+                FillingSituation.AtBottom => (minDigit, 9),
+                FillingSituation.NarrowOptions => (maxDigit, minDigit),
+                FillingSituation.NarrowOptionsOverflowing => (minDigit, maxDigit),
+                FillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
+                FillingSituation.Middle => (0, 9),
+                _ => (0, 9),
+            };
+
+            var at = length - 1 - i;
+
+            bool isFinish = at == slotIndex;
+
+            if (isFinish)
+            {
+                if (from <= to)
+                {
+                    result = [.. Enumerable.Range(from, (to - from + 1)).Select(ToChar)];
+                }
+                else
+                {
+                    result =
+                    [
+                        .. Enumerable.Range(from, 10 - from).Select(ToChar),
+                        .. Enumerable.Range(0, to + 1).Select(ToChar),
+                    ];
+                }
+
+                if (at == length - 1 || prevDiff == FillingSituation.Middle)
+                {
+                    return result;
+                }
+
+                var nextChar = currentFilling[at + 1];
+
+                if (char.IsDigit(nextChar) == false)
+                {
+                    return result;
+                }
+
+                var nextNumber = ToNumber(nextChar);
+
+                var nextDivider = (int)Math.Pow(10, i - 1);
+                var nextMinDigit = (min / nextDivider) % 10;
+                var nextMaxDigit = (max / nextDivider) % 10;
+
+                var breaksTop = nextNumber > nextMaxDigit;
+                var breaksBottom = nextNumber < nextMinDigit;
+
+                result = prevDiff switch
+                {
+                    FillingSituation.AtTop => breaksTop ? result[0..^1] : result,
+                    FillingSituation.AtBottom => breaksBottom ? result[1..] : result,
+                    FillingSituation.NarrowOptions
+                    or FillingSituation.NarrowOptionsOverflowing
+                    or FillingSituation.TopAndBottomAreSame => breaksTop && breaksBottom
+                        ? result[1..^1]
+                    : breaksBottom ? result[1..]
+                    : breaksTop ? result[..^1]
+                    : result,
+                    _ => result,
+                };
+
+                return result;
+            }
+
+            var currentChar = currentFilling[at];
+
+            if (from == to)
+            {
+                if (minDigit == maxDigit)
+                {
+                    prevDiff = FillingSituation.TopAndBottomAreSame;
+                }
+                else if (minDigit == from)
+                {
+                    prevDiff = FillingSituation.AtBottom;
+                }
+                else if (maxDigit == from)
+                {
+                    prevDiff = FillingSituation.AtTop;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Unexpected turn");
+                }
+            }
+            else if (char.IsDigit(currentChar))
+            {
+                var current = ToNumber(currentChar);
+
+                prevDiff =
+                    current == from ? FillingSituation.AtBottom
+                    : current == to ? FillingSituation.AtTop
+                    : FillingSituation.Middle;
+            }
+            else
+            {
+                var diff = (
+                    prevDiff == FillingSituation.NarrowOptions ? (from - to + 10) : (to - from)
+                );
+                prevDiff = diff switch
+                {
+                    0 => FillingSituation.TopAndBottomAreSame,
+                    1 => minDigit > maxDigit
+                        ? FillingSituation.NarrowOptionsOverflowing
+                        : FillingSituation.NarrowOptions,
+                    _ => FillingSituation.Middle,
+                };
+            }
+        }
+
+        return result ?? throw new InvalidOperationException();
+    }
+
+    static char[] GetOptionsForSlotFromLeft(
         int slotIndex,
         ReadOnlySpan<char> currentFilling,
         byte length,
@@ -12,85 +224,79 @@ public static class SlotOptionFunctions
         int max
     )
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(slotIndex);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(slotIndex, length - 1);
+        char[]? result = null;
 
-        long already = 0;
-        for (int i = 0; i < length; i++)
+        var prevDiff = FillingSituation.TopAndBottomAreSame;
+
+        for (int i = length - 1; i >= 0; i--)
         {
-            var c = currentFilling[i];
-            if (i == slotIndex || char.IsDigit(c) == false)
+            var divider = (int)Math.Pow(10, i);
+            var minDigit = (min / divider) % 10;
+            var maxDigit = (max / divider) % 10;
+
+            var (from, to) = prevDiff switch
             {
-                continue;
-            }
+                FillingSituation.AtTop => (0, maxDigit),
+                FillingSituation.AtBottom => (minDigit, 9),
+                FillingSituation.NarrowOptions => (maxDigit, minDigit),
+                FillingSituation.NarrowOptionsOverflowing => (minDigit, maxDigit),
+                FillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
+                FillingSituation.Middle => (0, 9),
+                _ => (0, 9),
+            };
 
-            already += (long)Math.Pow(10, length - i - 1) * ToNumber(c);
-        }
+            var at = length - 1 - i;
 
-        var posDiv = (long)Math.Pow(10, length - slotIndex - 1);
-        posDiv = posDiv < 1 ? 1 : posDiv;
+            bool isFinish = at == slotIndex;
 
-        // For the current slot, we need to consider what digit we're trying to place
-        // Calculate the range of valid digits for this position
-        var (from, to) = ((min - already) / posDiv, (max - already) / posDiv);
-
-        // Clamp to valid digit range
-        from = from < 0 ? 0 : from > 9 ? 9 : from;
-        to = to < 0 ? 0 : to > 9 ? 9 : to;
-
-        // If no valid options in range, we need to handle this specially
-        // This might mean we're dealing with an overflow situation
-        if (from > to)
-        {
-            // When no valid digits exist for this position in isolation,
-            // we need to find the most appropriate digit that could work
-            // with adjustments to remaining positions
-            
-            // Try to find a digit that could work with minimal remaining adjustments
-            var bestOptions = new List<char>();
-            
-            // Try each digit from 0-9 and see if we can make it work
-            for (int digit = 0; digit <= 9; digit++)
+            if (isFinish)
             {
-                // Temporarily place this digit and see if we can adjust remaining positions
-                long tempValue = 0;
-                for (int i = 0; i < length; i++)
+                if (from <= to)
                 {
-                    long digitValue;
-                    if (i == slotIndex)
-                    {
-                        digitValue = digit * (long)Math.Pow(10, length - i - 1);
-                    }
-                    else if (char.IsDigit(currentFilling[i]))
-                    {
-                        digitValue = ToNumber(currentFilling[i]) * (long)Math.Pow(10, length - i - 1);
-                    }
-                    else
-                    {
-                        digitValue = 0; // assume we can fill with 0s
-                    }
-                    tempValue += digitValue;
+                    result = [.. Enumerable.Range(from, (to - from + 1)).Select(ToChar)];
                 }
-                
-                // Check if this digit could work (even with optimal remaining digits)
-                if (tempValue >= min && tempValue <= max)
+                else
                 {
-                    bestOptions.Add(ToChar(digit));
+                    result =
+                    [
+                        .. Enumerable.Range(from, 10 - from).Select(ToChar),
+                        .. Enumerable.Range(0, to + 1).Select(ToChar),
+                    ];
                 }
             }
-            
-            if (bestOptions.Count > 0)
+
+            var currentChar = currentFilling[at];
+
+            if (from == to)
             {
-                return [.. bestOptions];
+                prevDiff = FillingSituation.TopAndBottomAreSame;
             }
-            
-            // If still no options, fall back to 0-9 for the mask to handle
-            return [];
+            else if (char.IsDigit(currentChar))
+            {
+                var current = ToNumber(currentChar);
+
+                prevDiff =
+                    current == from ? FillingSituation.AtBottom
+                    : current == to ? FillingSituation.AtTop
+                    : FillingSituation.Middle;
+            }
+            else
+            {
+                var diff = (
+                    prevDiff == FillingSituation.NarrowOptions ? (from - to + 10) : (to - from)
+                );
+                prevDiff = diff switch
+                {
+                    0 => FillingSituation.TopAndBottomAreSame,
+                    1 => minDigit > maxDigit
+                        ? FillingSituation.NarrowOptionsOverflowing
+                        : FillingSituation.NarrowOptions,
+                    _ => FillingSituation.Middle,
+                };
+            }
         }
 
-        char[] result = [.. Enumerable.Range((int)from, (int)(to - from + 1)).Select(ToChar)];
-
-        return result;
+        return result ?? throw new InvalidOperationException();
     }
 
     public static char[][] ToCharOptionsOld(
@@ -102,7 +308,7 @@ public static class SlotOptionFunctions
     {
         char[][] result = new char[length][];
 
-        var prevDiff = PreviousFillingSituation.TopAndBottomAreSame;
+        var prevDiff = FillingSituation.TopAndBottomAreSame;
 
         for (int i = length - 1; i >= 0; i--)
         {
@@ -112,11 +318,11 @@ public static class SlotOptionFunctions
 
             var (from, to) = prevDiff switch
             {
-                PreviousFillingSituation.AtTop => (0, maxDigit),
-                PreviousFillingSituation.AtBottom => (minDigit, 9),
-                PreviousFillingSituation.NarrowOptions => (maxDigit, minDigit),
-                PreviousFillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
-                PreviousFillingSituation.Middle => (0, 9),
+                FillingSituation.AtTop => (0, maxDigit),
+                FillingSituation.AtBottom => (minDigit, 9),
+                FillingSituation.NarrowOptions => (maxDigit, minDigit),
+                FillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
+                FillingSituation.Middle => (0, 9),
                 _ => (0, 9),
             };
 
@@ -139,16 +345,16 @@ public static class SlotOptionFunctions
 
             if (from == to)
             {
-                prevDiff = PreviousFillingSituation.TopAndBottomAreSame;
+                prevDiff = FillingSituation.TopAndBottomAreSame;
             }
             else if (char.IsDigit(currentChar))
             {
                 var current = ToNumber(currentChar);
 
                 prevDiff =
-                    current == from ? PreviousFillingSituation.AtBottom
-                    : current == to ? PreviousFillingSituation.AtTop
-                    : PreviousFillingSituation.Middle;
+                    current == from ? FillingSituation.AtBottom
+                    : current == to ? FillingSituation.AtTop
+                    : FillingSituation.Middle;
             }
             else
             {
@@ -156,53 +362,12 @@ public static class SlotOptionFunctions
                     to
                     - from switch
                     {
-                        0 => PreviousFillingSituation.TopAndBottomAreSame,
-                        1 => PreviousFillingSituation.NarrowOptions,
-                        _ => PreviousFillingSituation.Middle,
+                        0 => FillingSituation.TopAndBottomAreSame,
+                        1 => FillingSituation.NarrowOptions,
+                        _ => FillingSituation.Middle,
                     };
             }
         }
-
-        if (int.TryParse(currentFilling, out var currentValue))
-        {
-            if (currentValue > maxValue)
-            {
-                var difference = currentValue - maxValue;
-
-                var differenceLength = difference.ToString().Length;
-
-                var adaptFrom = length - differenceLength;
-
-                char[] values = [.. currentFilling];
-
-                for (int i = adaptFrom - 1; i >= 0; i--)
-                {
-                    var options = result[i];
-
-                    var overflowSolvingOptions = options
-                        .Where(char.IsDigit)
-                        .SkipWhile(c =>
-                        {
-                            char[] withOption = [.. values[..i], c, .. values[(i + 1)..]];
-                            var valueWithOption = int.Parse(withOption);
-                            return valueWithOption > maxValue;
-                        })
-                        .ToArray();
-
-                    if (overflowSolvingOptions.Length == 0)
-                    {
-                        result[i] = [options[0]];
-                    }
-                    else
-                    {
-                        result[i] = overflowSolvingOptions;
-                        break;
-                    }
-                }
-            }
-            else if (currentValue < minValue) { }
-        }
-
         return result;
     }
 
@@ -210,12 +375,15 @@ public static class SlotOptionFunctions
 
     public static char ToChar(this int digit) => (char)((digit % 10) + '0');
 
-    enum PreviousFillingSituation
+    public static char ToChar(this long digit) => (char)((digit % 10) + '0');
+
+    enum FillingSituation
     {
         AtBottom = 1,
         NarrowOptions = 2,
         TopAndBottomAreSame = 3,
         AtTop = 4,
         Middle = 5,
+        NarrowOptionsOverflowing = 6,
     }
 }

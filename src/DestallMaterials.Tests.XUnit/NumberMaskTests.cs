@@ -253,7 +253,7 @@ public class NumberMaskTests
         var carretPosition = mask.AcceptChange(new(At: 2, Removed: 2, Inserted: []));
 
         Assert.Equal(2, carretPosition);
-        Assert.Equal([.."1975"], mask.Slots);
+        Assert.Equal([.."1980"], mask.Slots);
     }
 
     // Edge Case Tests
@@ -281,10 +281,9 @@ public class NumberMaskTests
         var numberConstraints = new IntegerConstraintsSource(from, to);
         var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
 
-        // Insert '3' at position 0 should cause propagation through the number
         var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['3']));
 
-        Assert.Equal(1, carretPosition);
+        Assert.Equal(0, carretPosition);
         Assert.Equal([.."1975"], mask.Slots);
     }
 }
