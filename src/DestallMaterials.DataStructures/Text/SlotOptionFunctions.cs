@@ -1,9 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
 public static class SlotOptionFunctions
 {
+    static IEnumerable<byte> NoConstraint = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
     static IEnumerable<long> LongSeq(long min, long max, long pace)
     {
         for (long option = min; option <= max; option += pace)
@@ -12,7 +15,36 @@ public static class SlotOptionFunctions
         }
     }
 
-    static char[] 
+    static char[] GetOptionsForDefiniteNumber(
+        byte slotIndex,
+        long currentFilling,
+        byte length,
+        long min,
+        long max
+    )
+    {
+        long already = currentFilling;
+
+        var posDiv = (long)Math.Pow(10, length - slotIndex - 1);
+
+        posDiv = posDiv < 1 ? 1 : posDiv;
+
+        var (from, to) = ((decimal)(min - already) / posDiv, (decimal)(max - already) / posDiv);
+
+        from =
+            from < 0 ? 0
+            : from > 9 ? 9
+            : from;
+
+        to =
+            to < 0 ? 0
+            : to > 9 ? 9
+            : to;
+
+        var result = DigitSpan((byte)Math.Ceiling(from), (byte)Math.Floor(to));
+
+        return result;
+    }
 
     static char[] GetOptionsForSlotReliable(
         byte slotIndex,
@@ -23,18 +55,106 @@ public static class SlotOptionFunctions
     )
     {
         char[] filling = [.. currentFilling];
+        filling[slotIndex] = '0';
+
+        if (long.TryParse(filling, out var definiteNumber))
+        {
+            return GetOptionsForDefiniteNumber(slotIndex, definiteNumber, length, min, max);
+        }
 
         var divider = (int)Math.Pow(10, length - 1 - slotIndex);
 
-        var pace = 
+        char[][] constraints = new char[length][];
 
-        var result = LongSeq(min, max)
-            .Where(option => IsGoodOption(option, slotIndex, filling, length))
-            .Select(option => ToChar(option / divider % 10))
-            .Distinct()
-            .ToArray();
+        foreach (var (digit, index) in ToDigits(filling).Select((d, i) => (d, i)))
+        {
+            var thisDivider = (long)Math.Pow(10, length - index - 1);
 
-        return result;
+            var isTargetSlot = index == slotIndex;
+
+            var minDigit = (byte)((min / thisDivider) % 10);
+            var maxDigit = (byte)((max / thisDivider) % 10);
+
+            if (index == 0)
+            {
+                if (digit is null || isTargetSlot)
+                {
+                    constraints[index] = DigitSpan(minDigit, maxDigit);
+                }
+                else
+                {
+                    if (digit > maxDigit || digit < minDigit)
+                    {
+                        return [];
+                    }
+                    constraints[index] = DigitSpan(digit.Value, digit.Value);
+                }
+
+                continue;
+            }
+
+            var prevOptions = constraints[index - 1];
+
+            char[] thisConstraint = prevOptions.Length switch
+            {
+                0 => [],
+                1 => DigitSpan(minDigit, maxDigit),
+                2 => maxDigit > minDigit ? DigitSpan(0, 9) : DigitSpan(minDigit, maxDigit),
+                _ => DigitSpan(0, 9),
+            };
+
+            if (digit is not null && isTargetSlot == false)
+            {
+                var digitChar = ToChar(digit.Value);
+                if (thisConstraint.Contains(digitChar) is false)
+                {
+                    return [];
+                }
+                else
+                {
+                    thisConstraint = [digitChar];
+                }
+            }
+
+            constraints[index] = thisConstraint;
+        }
+
+        for (var i = length - 1; i >= 2; i--)
+        {
+            var constraint = constraints[i];
+            if (constraint.Length == 0)
+            {
+                return [];
+            }
+
+            var prePrevConstraint = constraints[i - 2];
+
+            if (constraint.Length > 1 || prePrevConstraint.Length > 2)
+            {
+                continue;
+            }
+
+            var digit = ToNumber(constraint[0]);
+
+            var thisDivider = (long)Math.Pow(10, length - i - 1);
+
+            var minDigit = (byte)((min / thisDivider) % 10);
+            var maxDigit = (byte)((max / thisDivider) % 10);
+
+            var prevConstraint = constraints[i - 1];
+
+            prevConstraint =
+                (digit > maxDigit && digit < minDigit) ? prevConstraint[1..^1]
+                : digit < minDigit ? prevConstraint[1..]
+                : digit > maxDigit ? prevConstraint[..^1]
+                : prevConstraint;
+
+            constraints[i - 1] = prevConstraint;
+        }
+
+        var result = constraints[slotIndex];
+
+        return [.. result.Distinct()];
     }
 
     static bool IsGoodOption(
@@ -376,6 +496,20 @@ public static class SlotOptionFunctions
     public static char ToChar(this int digit) => (char)((digit % 10) + '0');
 
     public static char ToChar(this long digit) => (char)((digit % 10) + '0');
+
+    public static IEnumerable<byte?> ToDigits(IEnumerable<char> chars) =>
+        chars.Select(c => char.IsDigit(c) ? (byte?)ToNumber(c) : null);
+
+    static char[] DigitSpan(char from, char to) => DigitSpan(ToNumber(from), ToNumber(to));
+
+    static char[] DigitSpan(byte from, byte to) =>
+        (from <= to)
+            ? [.. Enumerable.Range(from, to - from + 1).Select(ToChar)]
+            :
+            [
+                .. Enumerable.Range(from, 10 - (from - to)).Select(ToChar),
+                .. Enumerable.Range(0, to + 1).Select(ToChar),
+            ];
 
     enum FillingSituation
     {

@@ -12,7 +12,7 @@ public class IntegerConstraintsSource(int Min, int Max) : ISlotConstraintsSource
         IReadOnlyList<char> currentFilling
     ) =>
         GetOptionsForSlot(
-            slotIndex: slotIndex,
+            slotIndex: (byte)slotIndex,
             min: Min,
             max: Max,
             length: (byte)Length,
@@ -64,7 +64,7 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
             }
 
             var result = GetOptionsForSlot(
-                slotIndex: slotIndex - dayRange.Start.Value,
+                slotIndex: (byte)(slotIndex - dayRange.Start.Value),
                 min: min,
                 max: max,
                 length: 2,
@@ -86,7 +86,7 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
             }
 
             var result = GetOptionsForSlot(
-                slotIndex: slotIndex - monthRange.Start.Value,
+                slotIndex: (byte)(slotIndex - monthRange.Start.Value),
                 min: min,
                 max: max,
                 length: 2,
@@ -100,7 +100,7 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
             var minDateYear = minDate.Year;
             var maxDateYear = maxDate.Year;
             var result = GetOptionsForSlot(
-                slotIndex: slotIndex - yearRange.Start.Value,
+                slotIndex: (byte)(slotIndex - yearRange.Start.Value),
                 min: minDateYear,
                 max: maxDateYear,
                 length: yearLength,
