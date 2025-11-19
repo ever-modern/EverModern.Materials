@@ -258,7 +258,7 @@ public class NumberMaskTests
 
     // Edge Case Tests
     [Fact]
-    public void EmptyInputScenario()
+    public void EraseAllScenario()
     {
         const int from = 1975;
         const int to = 2025;

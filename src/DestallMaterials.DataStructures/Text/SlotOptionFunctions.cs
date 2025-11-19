@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
@@ -29,19 +30,27 @@ public static class SlotOptionFunctions
 
         posDiv = posDiv < 1 ? 1 : posDiv;
 
-        var (from, to) = ((decimal)(min - already) / posDiv, (decimal)(max - already) / posDiv);
+        // compute raw fractional bounds for the digit value
+        var rawFrom = (decimal)(min - already) / posDiv;
+        var rawTo = (decimal)(max - already) / posDiv;
 
-        from =
-            from < 0 ? 0
-            : from > 9 ? 9
-            : from;
+        // compute integer bounds (inclusive) for the digit (may be outside 0..9)
+        var fromInt = (int)Math.Ceiling(rawFrom);
+        var toInt = (int)Math.Floor(rawTo);
 
-        to =
-            to < 0 ? 0
-            : to > 9 ? 9
-            : to;
+        // if the allowed integer span covers at least 10 consecutive integers,
+        // then every digit 0..9 is allowed
+        if (toInt - fromInt + 1 >= 10)
+        {
+            return DigitSpan(0, 9);
+        }
 
-        var result = DigitSpan((byte)Math.Ceiling(from), (byte)Math.Floor(to));
+        // Map the integer range to digits modulo 10 and return distinct values in order
+        var result = Enumerable.Range(fromInt, toInt - fromInt + 1)
+            .Select(k => (byte)((k % 10 + 10) % 10))
+            .Distinct()
+            .Select(b => ToChar(b))
+            .ToArray();
 
         return result;
     }
