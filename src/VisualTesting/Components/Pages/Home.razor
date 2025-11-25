@@ -43,7 +43,7 @@
     </section> *@
 
     <MaskedInput ConstraintsSource="new IntegerConstraintsSource(1975, 2025)"
-                 OnValueChanged="cs => _number = int.Parse([.. cs])"
+                 OnValueChanged="cs => int.TryParse([.. cs], out _number)"
                  Value="[.._number.ToString()]" />
 
     @* <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"

@@ -286,4 +286,19 @@ public class NumberMaskTests
         Assert.Equal(0, carretPosition);
         Assert.Equal([.."1975"], mask.Slots);
     }
+
+    [Fact]
+    public void Insert_PushOneSlotForth()
+    {
+        const int from = 1975;
+        const int to = 2025;
+
+        var numberConstraints = new IntegerConstraintsSource(from, to);
+        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2005"]);
+
+        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 0, Inserted: ['2']));
+
+        Assert.Equal(3, carretPosition);
+        Assert.Equal([.. "2025"], mask.Slots);
+    }
 }

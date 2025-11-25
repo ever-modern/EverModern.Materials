@@ -30,7 +30,9 @@ public class Mask<TSymbol> : IMask<TSymbol>
     SlotConstraint<TSymbol> GetConstraints(TSymbol[] slots, int slotIndex) =>
         _constraintsSource.GetSlotConstraints(slotIndex, slots);
 
-    public int AcceptChange(ContentChange<TSymbol> contentChange)
+    public int AcceptChange(ContentChange<TSymbol> contentChange) => AcceptChange(contentChange, allowForce: true);
+
+    int AcceptChange(ContentChange<TSymbol> contentChange, bool allowForce)
     {
         var (at, removed, inserted) = contentChange;
 
@@ -77,7 +79,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
                 slots[placedAt] = value;
 
                 // Allow autoset to propagate deterministic fills between insertions
-                Autoset(slots, 0, slots.Length - 1);
+                Autoset(slots, placedAt + 1, slots.Length - 2);
 
                 // value not acceptable here -> try next slot
                 srcIndex++;
@@ -89,14 +91,18 @@ public class Mask<TSymbol> : IMask<TSymbol>
                 {
                     slots[j] = value;
 
+                    var autosetSlots = slots.ToArray();
+
                     var autosetRight =
-                        j > 0 ? Autoset(slots, j - 1, 0, allowOriginalValues: true) : true;
+                        j > 0 ? Autoset(autosetSlots, j - 1, 0, allowOriginalValues: true) : true;
 
                     var autosetLeft = autosetRight is not null
                         ? j < slots.Length - 1
                             ? Autoset(slots, j + 1, slots.Length - 1, autosetRight.Value)
                             : true
                         : null;
+
+                    slots = autosetLeft is not null ? autosetSlots : slots;
 
                     if (autosetLeft is null or false)
                     {
@@ -112,6 +118,22 @@ public class Mask<TSymbol> : IMask<TSymbol>
                     else
                     {
                         placedAt = j + 1;
+                        
+                        if (srcIndex == 0 && allowForce)
+                        {
+                            var theseSlots = _slots;
+                            _slots = new TSymbol[_slots.Length];
+                            var recResult = AcceptChange(contentChange, false);
+                            bool managedToChange = recResult > at;
+                            if (managedToChange is false)
+                            {
+                                _slots = theseSlots;
+                                return at;
+                            }
+
+                            return recResult;
+                        }
+
                         return at + srcIndex;
                     }
                 }
@@ -139,7 +161,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
         bool directionRight = to > from;
         for (
             int i = from;
-            (directionRight ? to - i : i - from) >= 0;
+            (directionRight ? to - i : i - from) >= 0 && i < slots.Length && i >= 0;
             i = directionRight ? i + 1 : i - 1
         )
         {
@@ -180,4 +202,6 @@ public class Mask<TSymbol> : IMask<TSymbol>
     }
 
     void DefaultRight() { }
+
+    record struct AutosetResult(TSymbol[] Slots, bool AllCharsAllowed, int LastIndex);
 }

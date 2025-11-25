@@ -5,6 +5,15 @@ namespace DestallMaterials.Tests.XUnit;
 public class ConstraintUtilitiesTests
 {
     [Fact]
+    public void SpecificExample_ToPush2InFront()
+    {
+        const int from = 1975;
+        const int to = 2025;
+        var result = SlotOptionFunctions.GetOptionsForSlot(1, "2\0\0\0", 4, from, to);
+        Assert.Equal([.. "0"], result);
+    }
+
+    [Fact]
     public void SomeUndefinedCharacters()
     {
         const int from = 1975;
@@ -19,7 +28,7 @@ public class ConstraintUtilitiesTests
         const int from = 1975;
         const int to = 2025;
 
-        var result = SlotOptionFunctions.GetOptionsForSlot(2, "2075", 4, from, to);
+        var result = SlotOptionFunctions.GetOptionsForSlot(2, "20?5", 4, from, to);
 
         Assert.Equal([.. "012"], result);
     }
