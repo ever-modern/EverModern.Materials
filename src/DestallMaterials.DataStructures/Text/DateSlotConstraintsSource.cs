@@ -3,7 +3,7 @@ using static DestallMaterials.WheelProtection.DataStructures.Text.SlotOptionFunc
 
 namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public class IntegerConstraintsSource(int Min, int Max) : ISlotConstraintsSource<char>
+public class IntegerConstraintsSource(long Min, long Max) : ISlotConstraintsSource<char>
 {
     public int Length { get; } = Max.ToString().Length;
 

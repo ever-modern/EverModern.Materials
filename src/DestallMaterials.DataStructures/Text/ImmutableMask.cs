@@ -39,21 +39,38 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
     )
     {
         var (at, removed, inserted) = contentChange;
+        var length = _slots.Count;
 
         if (at > _slots.Count)
             throw new InvalidOperationException("Can't change beyond slots count.");
 
         TSymbol[] slots = [.. _slots];
 
+        var tryingSlots = slots.ToArray();
+
         for (int i = 0; i < removed; i++)
         {
             var idx = at + i;
-            if (idx < 0 || idx >= slots.Length)
+            if (idx < 0 || idx >= length)
                 continue;
 
             var options = GetConstraints(slots, idx).Options;
-            slots[idx] = options.Count >= 1 ? options[0] : default!;
+            tryingSlots[idx] = options.Count >= 1 ? options[0] : default!;
         }
+
+        void AutosetOther(int nowAt)
+        {
+            if (at > 0)
+            {
+                Autoset(tryingSlots, 0, at - 1, true);
+            }
+            if (nowAt < length)
+            {
+                Autoset(tryingSlots, nowAt, length - 1, true);
+            }
+        }
+
+        AutosetOther(Math.Min(length - 1, at + removed));
 
         if (inserted.Length == 0)
         {
@@ -64,7 +81,6 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
         var optionsToCheck = GetConstraints(slots, at).Options;
         var fillsExisting = optionsToCheck.Contains(inserted[0], _equalityComparer);
 
-        var tryingSlots = slots.ToArray();
         caretPosition = at;
 
         var fill = ForceInsert;
@@ -76,11 +92,12 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
 
         foreach (var insertedSymbol in inserted)
         {
-            var oneSuccess = fill(tryingSlots, insertedSymbol, at, out caretPosition);
+            var oneSuccess = fill(tryingSlots, insertedSymbol, caretPosition, out caretPosition);
             if (oneSuccess is false)
             {
                 return new(slots, _constraintsSource, _equalityComparer);
             }
+            AutosetOther(caretPosition);
         }
 
         return new(tryingSlots, _constraintsSource, _equalityComparer);

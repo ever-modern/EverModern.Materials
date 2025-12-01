@@ -31,7 +31,7 @@ public class NumberMaskTests
 
         var mask = new ImmutableMask<char>([.. from.ToString()], numberConstraints);
 
-        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['8']), out var carretPosition);
+        var newMask = mask.Change(new(At: 2, Removed: 1, Inserted: ['8']), out var carretPosition);
 
         Assert.Equal(3, carretPosition);
         Assert.Equal([.. "1985"], newMask.ToArray());
