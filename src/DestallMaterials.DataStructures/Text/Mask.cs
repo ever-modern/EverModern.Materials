@@ -30,7 +30,8 @@ public class Mask<TSymbol> : IMask<TSymbol>
     SlotConstraint<TSymbol> GetConstraints(TSymbol[] slots, int slotIndex) =>
         _constraintsSource.GetSlotConstraints(slotIndex, slots);
 
-    public int AcceptChange(ContentChange<TSymbol> contentChange) => AcceptChange(contentChange, allowForce: true);
+    public int AcceptChange(ContentChange<TSymbol> contentChange) =>
+        AcceptChange(contentChange, allowForce: true);
 
     int AcceptChange(ContentChange<TSymbol> contentChange, bool allowForce)
     {
@@ -68,14 +69,63 @@ public class Mask<TSymbol> : IMask<TSymbol>
             var options = GetConstraints(slots, placedAt).Options;
             var value = inserted[srcIndex];
 
-            if (options.Count == 0)
-            {
-                return at; // slot cannot accept any value, treat as no-op
-            }
+            //if (options.Count == 0)
+            //{
+            //    return at; // slot cannot accept any value, treat as no-op
+            //}
 
             // slot accepts multiple values
             if (options.Contains(value, _equalityComparer))
             {
+                // When inserting without removal (pure insertion), we need to push the existing value
+                // to a subsequent slot where it's allowed
+                if (removed == 0 && srcIndex == 0)
+                {
+                    var existingValue = slots[placedAt];
+                    // Push the existing value if slot has content (not default) or content differs from inserted
+                    if (
+                        !_equalityComparer.Equals(existingValue, default)
+                        || !_equalityComparer.Equals(existingValue, value)
+                    )
+                    {
+                        slots[placedAt] = value;
+
+                        // Try to push the existing value to subsequent slots
+                        bool pushedSuccessfully = false;
+                        for (int pushPos = placedAt + 1; pushPos < slots.Length; pushPos++)
+                        {
+                            var pushOptions = GetConstraints(slots, pushPos).Options;
+                            if (pushOptions.Contains(existingValue, _equalityComparer))
+                            {
+                                slots[pushPos] = existingValue;
+
+                                // Autoset the slots between insertion and push position first
+                                Autoset(slots, placedAt + 1, pushPos - 1);
+                                // Then autoset remaining slots after push position
+                                Autoset(slots, pushPos + 1, slots.Length - 1);
+
+                                pushedSuccessfully = true;
+                                // Caret goes after the pushed value; bounds checked by while loop condition
+                                placedAt = pushPos + 1;
+                                break;
+                            }
+                        }
+
+                        if (pushedSuccessfully)
+                        {
+                            srcIndex++;
+                            // Update slots and continue with next inserted value if any
+                            _slots = slots;
+                            continue;
+                        }
+                        else
+                        {
+                            // Could not push, revert the slot change
+                            slots[placedAt] = existingValue;
+                        }
+                    }
+                }
+
                 slots[placedAt] = value;
 
                 // Allow autoset to propagate deterministic fills between insertions
@@ -118,7 +168,7 @@ public class Mask<TSymbol> : IMask<TSymbol>
                     else
                     {
                         placedAt = j + 1;
-                        
+
                         if (srcIndex == 0 && allowForce)
                         {
                             var theseSlots = _slots;

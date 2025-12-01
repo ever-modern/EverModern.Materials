@@ -1,4 +1,5 @@
-﻿using DestallMaterials.WheelProtection.DataStructures.Text;
+﻿using System.Linq;
+using DestallMaterials.WheelProtection.DataStructures.Text;
 
 namespace DestallMaterials.Tests.XUnit;
 
@@ -12,12 +13,12 @@ public class NumberMaskTests
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
 
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. from.ToString()]);
+        var mask = new ImmutableMask<char>([.. from.ToString()], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
+        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['2']), out var carretPosition);
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal([.. "2000"], mask.Slots);
+        Assert.Equal([.. "2000"], newMask.ToArray());
     }
 
     [Fact]
@@ -28,12 +29,12 @@ public class NumberMaskTests
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
 
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. from.ToString()]);
+        var mask = new ImmutableMask<char>([.. from.ToString()], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['8']));
+        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['8']), out var carretPosition);
 
         Assert.Equal(3, carretPosition);
-        Assert.Equal([.."1985"], mask.Slots);
+        Assert.Equal([.. "1985"], newMask.ToArray());
     }
 
     [Fact]
@@ -43,12 +44,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2025"]);
+        var mask = new ImmutableMask<char>([.. "2025"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
+        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['2']), out var carretPosition);
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '0', '2', '5'], mask.Slots);
+        Assert.Equal(['2', '0', '2', '5'], newMask.ToArray());
     }
 
     // Backspace Operations Tests
@@ -59,12 +60,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2000"]);
+        var mask = new ImmutableMask<char>([.. "2000"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 1, Removed: 1, Inserted: []));
+        var newMask = mask.Change(new(At: 1, Removed: 1, Inserted: []), out var carretPosition);
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
     }
 
     [Fact]
@@ -74,12 +75,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2000"]);
+        var mask = new ImmutableMask<char>([.. "2000"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 2, Removed: 1, Inserted: []));
+        var newMask = mask.Change(new(At: 2, Removed: 1, Inserted: []), out var carretPosition);
 
         Assert.Equal(2, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
     }
 
     [Fact]
@@ -89,12 +90,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2000"]);
+        var mask = new ImmutableMask<char>([.. "2000"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 4, Removed: 1, Inserted: []));
+        var newMask = mask.Change(new(At: 4, Removed: 1, Inserted: []), out var carretPosition);
 
         Assert.Equal(4, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
     }
 
     // Delete Operations Tests
@@ -105,12 +106,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2000"]);
+        var mask = new ImmutableMask<char>([.. "2000"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 1, Removed: 1, Inserted: []));
+        var newMask = mask.Change(new(At: 1, Removed: 1, Inserted: []), out var carretPosition);
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
     }
 
     [Fact]
@@ -120,12 +121,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2000"]);
+        var mask = new ImmutableMask<char>([.. "2000"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 3, Removed: 1, Inserted: []));
+        var newMask = mask.Change(new(At: 3, Removed: 1, Inserted: []), out var carretPosition);
 
         Assert.Equal(3, carretPosition);
-        Assert.Equal(['2', '0', '0', '0'], mask.Slots);
+        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
     }
 
     // Multi-character Insertion Tests
@@ -136,14 +137,15 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(
-            new(At: 0, Removed: 4, Inserted: ['1', '9', '8', '5'])
+        var newMask = mask.Change(
+            new(At: 0, Removed: 4, Inserted: ['1', '9', '8', '5']),
+            out var carretPosition
         );
 
         Assert.Equal(4, carretPosition);
-        Assert.Equal([.. "1985"], mask.Slots);
+        Assert.Equal([.. "1985"], newMask.ToArray());
     }
 
     [Fact]
@@ -153,14 +155,15 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(
-            new(At: 0, Removed: 2, Inserted: ['2', '0', '0', '0'])
+        var newMask = mask.Change(
+            new(At: 0, Removed: 2, Inserted: ['2', '0', '0', '0']),
+            out var carretPosition
         );
 
         Assert.Equal(4, carretPosition);
-        Assert.Equal([.. "2000"], mask.Slots);
+        Assert.Equal([.. "2000"], newMask.ToArray());
     }
 
     // Range Replacement Tests
@@ -171,12 +174,15 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 1, Removed: 2, Inserted: ['9', '8']));
+        var newMask = mask.Change(
+            new(At: 1, Removed: 2, Inserted: ['9', '8']),
+            out var carretPosition
+        );
 
         Assert.Equal(3, carretPosition);
-        Assert.Equal([.. "1985"], mask.Slots);
+        Assert.Equal([.. "1985"], newMask.ToArray());
     }
 
     [Fact]
@@ -186,12 +192,15 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 1, Removed: 2, Inserted: ['9', '9']));
+        var newMask = mask.Change(
+            new(At: 1, Removed: 2, Inserted: ['9', '9']),
+            out var carretPosition
+        );
 
         Assert.Equal(3, carretPosition);
-        Assert.Equal(['1', '9', '9', '5'], mask.Slots);
+        Assert.Equal(['1', '9', '9', '5'], newMask.ToArray());
     }
 
     // Boundary Condition Tests
@@ -202,12 +211,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['1']));
+        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['1']), out var carretPosition);
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal([.. "1975"], mask.Slots);
+        Assert.Equal([.. "1975"], newMask.ToArray());
     }
 
     [Fact]
@@ -217,12 +226,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2025"]);
+        var mask = new ImmutableMask<char>([.. "2025"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['2']));
+        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['2']), out var carretPosition);
 
         Assert.Equal(1, carretPosition);
-        Assert.Equal(['2', '0', '2', '5'], mask.Slots);
+        Assert.Equal(['2', '0', '2', '5'], newMask.ToArray());
     }
 
     // Number Extension/Truncation Tests
@@ -233,12 +242,12 @@ public class NumberMaskTests
         const int to = 9999;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 4, Removed: 0, Inserted: ['0']));
+        var newMask = mask.Change(new(At: 4, Removed: 0, Inserted: ['0']), out var carretPosition);
 
         Assert.Equal(4, carretPosition);
-        Assert.Equal(['1', '9', '7', '5'], mask.Slots);
+        Assert.Equal(['1', '9', '7', '5'], newMask.ToArray());
     }
 
     [Fact]
@@ -248,12 +257,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1981"]);
+        var mask = new ImmutableMask<char>([.. "1981"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 2, Removed: 2, Inserted: []));
+        var newMask = mask.Change(new(At: 2, Removed: 2, Inserted: []), out var carretPosition);
 
         Assert.Equal(2, carretPosition);
-        Assert.Equal([.."1980"], mask.Slots);
+        Assert.Equal([.. "1980"], newMask.ToArray());
     }
 
     // Edge Case Tests
@@ -264,12 +273,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 4, Inserted: []));
+        var newMask = mask.Change(new(At: 0, Removed: 4, Inserted: []), out var carretPosition);
 
         Assert.Equal(0, carretPosition);
-        Assert.Equal([.."1975"], mask.Slots);
+        Assert.Equal([.. "1975"], newMask.ToArray());
     }
 
     [Fact]
@@ -279,12 +288,12 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "1975"]);
+        var mask = new ImmutableMask<char>([.. "1975"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 1, Inserted: ['3']));
+        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['3']), out var carretPosition);
 
         Assert.Equal(0, carretPosition);
-        Assert.Equal([.."1975"], mask.Slots);
+        Assert.Equal([.. "1975"], newMask.ToArray());
     }
 
     [Fact]
@@ -294,11 +303,11 @@ public class NumberMaskTests
         const int to = 2025;
 
         var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new Mask<char>(numberConstraints, initialSlots: [.. "2005"]);
+        var mask = new ImmutableMask<char>([.. "2005"], numberConstraints);
 
-        var carretPosition = mask.AcceptChange(new(At: 0, Removed: 0, Inserted: ['2']));
+        var newMask = mask.Change(new(At: 0, Removed: 0, Inserted: ['2']), out var carretPosition);
 
         Assert.Equal(3, carretPosition);
-        Assert.Equal([.. "2025"], mask.Slots);
+        Assert.Equal([.. "2025"], newMask.ToArray());
     }
 }
