@@ -22,12 +22,6 @@ public interface IOwnedEntity<TId, in TOwner> : IOwnedEntity<TId>
 {
 }
 
-public class DataSchemaAnalyzer<TId, TBaseEntity>
-{
-    DataSchemaAnalyzer() { }
-    public static DataSchemaAnalyzer<TId, TBaseEntity> Instance => new();
-}
-
 public abstract class EnlightenedDbContext<TId, TBaseEntity> : DbContext
     where TBaseEntity : class, IEntity<TId>
 {

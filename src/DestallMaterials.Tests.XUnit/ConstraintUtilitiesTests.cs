@@ -5,6 +5,15 @@ namespace DestallMaterials.Tests.XUnit;
 public class ConstraintUtilitiesTests
 {
     [Fact]
+    public void FirstIsLimitedToOne()
+    {
+        const int from = 1975;
+        const int to = 2025;
+        var result = SlotOptionFunctions.GetOptionsForSlot(0, "1980", 4, from, to);
+        Assert.Equal([.. "1"], result);
+    }
+
+    [Fact]
     public void SpecificExample_ToPush2InFront()
     {
         const int from = 1975;

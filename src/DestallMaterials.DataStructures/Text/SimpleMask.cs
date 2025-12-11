@@ -2,13 +2,13 @@
 
 namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSymbol>>
+public class SimpleMask<TSymbol> : IImmutableMask<TSymbol, SimpleMask<TSymbol>>
 {
     readonly IReadOnlyList<TSymbol> _slots;
     readonly IEqualityComparer<TSymbol> _equalityComparer;
     readonly ISlotConstraintsSource<TSymbol> _constraintsSource;
 
-    public ImmutableMask(
+    public SimpleMask(
         IReadOnlyList<TSymbol> slots,
         ISlotConstraintsSource<TSymbol> constraintsSource,
         IEqualityComparer<TSymbol> equalityComparer
@@ -19,7 +19,7 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
         _constraintsSource = constraintsSource;
     }
 
-    public ImmutableMask(
+    public SimpleMask(
         IReadOnlyList<TSymbol> slots,
         ISlotConstraintsSource<TSymbol> constraintsSource
     )
@@ -33,7 +33,7 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
 
     public int Count => _slots.Count;
 
-    public ImmutableMask<TSymbol> Change(
+    public SimpleMask<TSymbol> Change(
         ContentChange<TSymbol> contentChange,
         out int caretPosition
     )
@@ -70,12 +70,11 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
             }
         }
 
-        AutosetOther(Math.Min(length - 1, at + removed));
-
         if (inserted.Length == 0)
         {
-            caretPosition = at;
-            return new(slots, _constraintsSource, _equalityComparer);
+            AutosetOther(Math.Min(length - 1, at + removed));
+            caretPosition = ReachAnyOptionsLeft(tryingSlots, at);
+            return new(tryingSlots, _constraintsSource, _equalityComparer);
         }
 
         var optionsToCheck = GetConstraints(slots, at).Options;
@@ -99,6 +98,8 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
             }
             AutosetOther(caretPosition);
         }
+
+        caretPosition = ReachAnyOptionsRight(tryingSlots, caretPosition);
 
         return new(tryingSlots, _constraintsSource, _equalityComparer);
     }
@@ -128,43 +129,74 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
     bool ForceInsert(Span<TSymbol> slots, TSymbol inserted, int at, out int caretPosition)
     {
         var value = inserted;
+
+        var initialSlots = slots;
+
+        slots = new TSymbol[slots.Length];
+        initialSlots.CopyTo(slots);
+
         slots[at] = value;
 
         var autosetSlots = slots.ToArray();
 
-        var (autosetRight, hadToForce, _) =
-            at > 0
-                ? Autoset(autosetSlots, at - 1, 0, allowOriginalValues: true)
-                : new(true, false, at);
+        AutosetResult AutosetLeft(bool allowOriginalValues) =>
+            at > 0 ? Autoset(autosetSlots, at - 1, 0, allowOriginalValues) : new(true, true, at);
 
-        var (autosetLeft, hadToForceLeft, _) = autosetRight is true
-            ? at < slots.Length - 1
-                ? Autoset(autosetSlots, at + 1, slots.Length - 1, hadToForce)
-                : new(true, false, at)
-            : new(false, false, at);
+        AutosetResult AutosetRight(bool allowOriginalValues) =>
+            at < autosetSlots.Length - 1
+                ? Autoset(autosetSlots, at + 1, autosetSlots.Length - 1, allowOriginalValues)
+                : new(true, true, at);
 
-        at++;
-        caretPosition = at;
-
-        if (autosetLeft)
+        var autoset = AutosetLeft(true);
+        if (autoset.Success is false)
         {
-            slots[at] = value;
+            autoset = AutosetRight(true);
+            if (autoset.Success)
+            {
+                autoset = AutosetLeft(autoset.ValuesWereFit);
+            }
+        }
+        else
+        {
+            autoset = AutosetRight(autoset.ValuesWereFit);
+        }
+
+        if (autoset.Success)
+        {
+            autosetSlots.CopyTo(initialSlots);
+            caretPosition = at + 1;
             return true;
         }
 
         if (at >= slots.Length - 1)
         {
+            caretPosition = at;
             return false;
         }
 
-        var tryPushFurther = ForceInsert(slots, inserted, at, out caretPosition);
+        initialSlots.CopyTo(slots);
 
-        return tryPushFurther;
+        for (int i = at + 1; i < slots.Length; i++)
+        {
+            var nextSlotOptions = GetConstraints([.. slots], i).Options;
+            if (nextSlotOptions.Contains(value))
+            {
+                caretPosition = i + 1;
+                slots[i] = value;
+                slots.CopyTo(initialSlots);
+                return true;
+            }
+        }
+
+        caretPosition = at;
+        return false;
     }
 
     AutosetResult Autoset(TSymbol[] slots, int from, int to, bool allowOriginalValues)
     {
         bool directionRight = to > from;
+        var initialSlots = slots;
+        slots = [.. slots];
         for (
             int i = from;
             (directionRight ? to - i : i - from) >= 0 && i < slots.Length && i >= 0;
@@ -187,7 +219,28 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
             }
         }
 
+        slots.CopyTo(initialSlots, 0);
         return new(true, allowOriginalValues, to);
+    }
+
+    int ReachAnyOptionsRight(TSymbol[] slots, int from)
+    {
+        while (from < slots.Length && GetConstraints(slots, from).Options.Count <= 1)
+        {
+            from++;
+        }
+
+        return from;
+    }
+
+    int ReachAnyOptionsLeft(TSymbol[] slots, int from)
+    {
+        while (from > 0 && GetConstraints(slots, from - 1).Options.Count <= 1)
+        {
+            from--;
+        }
+
+        return from;
     }
 
     static TSymbol[] Replaced(TSymbol[] source, int from, int to, TSymbol with)
@@ -207,5 +260,5 @@ public class ImmutableMask<TSymbol> : IImmutableMask<TSymbol, ImmutableMask<TSym
         return result;
     }
 
-    record struct AutosetResult(bool ManagedAutoset, bool HadToForce, int LastIndex);
+    record struct AutosetResult(bool Success, bool ValuesWereFit, int LastIndex);
 }

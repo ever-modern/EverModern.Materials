@@ -34,25 +34,17 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
         if (firstRender)
         {
             BindToLifetime(
-                globalClickCatcher.OnKeyPressed(
-                    async (_, _) =>
-                    {
-                        _lastPosition = await GetCarretPositionAsync();
-                    }
-                ),
-                globalClickCatcher.OnMouseClicked(
-                    async (_, _) =>
-                    {
-                        _lastPosition = await GetCarretPositionAsync();
-                    }
-                ),
                 Js.OnChange(
                     _inputId,
                     (currentState) =>
                     {
                         var (newValue, carretPosition) = currentState;
 
-                        Mask<char> mask = _mask;
+                        SimpleMask<char> mask = new(
+                            Value ?? ConstraintsSource.GetDefaultValue(),
+                            ConstraintsSource,
+                            EqualityComparer
+                        );
 
                         var oldValue = FormatMask(base.Value ?? []);
 
@@ -62,19 +54,21 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
                             carretPosition
                         );
 
+                        if (contentChange.At >= mask.Count) { }
+
                         GlobalLogger.Debug(
                             $"Inferred change from {oldValue} -> {newValue} with finishing carret position {carretPosition}: {contentChange}"
                         );
 
-                        carretPosition = mask.AcceptChange(contentChange);
+                        mask = mask.Change(contentChange, out carretPosition);
 
                         GlobalLogger.Debug($"Carret position = {carretPosition}");
 
                         //StateHasChanged();
 
-                        base.OnValueChanged(mask.Slots);
+                        base.OnValueChanged(mask);
 
-                        var displayText = FormatMask(mask.Slots);
+                        var displayText = FormatMask(mask);
 
                         return new(displayText, carretPosition);
                     }
@@ -86,19 +80,11 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        _mask = new(ConstraintsSource, base.Value ?? [], EqualityComparer);
+        Value = Value ?? ConstraintsSource.GetDefaultValue();
     }
 
     readonly string _inputId;
-    Mask<char> _mask;
     int _lastPosition;
 
     IInputManipulator Js => ui.Inputs;
-
-    async Task<int> GetCarretPositionAsync()
-    {
-        var result = (int)await Js.GetCarretPositionAsync(_inputId);
-        GlobalLogger.Debug($"Carret position is {result}");
-        return result;
-    }
 }

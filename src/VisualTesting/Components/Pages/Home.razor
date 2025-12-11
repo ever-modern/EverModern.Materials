@@ -42,14 +42,14 @@
 
     </section> *@
 
-    <MaskedInput ConstraintsSource="new IntegerConstraintsSource(1975, 2025)"
+    @* <MaskedInput ConstraintsSource="new IntegerConstraintsSource(1975, 2025)"
                  OnValueChanged="cs => int.TryParse([.. cs], out _number)"
                  Value="[.._number.ToString()]" />
-
-    @* <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
+ *@
+    <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
                Value="_date"
                MaxValue="DateOnly.FromDateTime(DateTime.Today)"
-               MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" /> *@
+               MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" />
 
     <p>@_date</p>
 

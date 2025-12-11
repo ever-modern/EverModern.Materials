@@ -47,6 +47,25 @@ public class DateSlotConstraintsSource(DateTimeRange range, DateFormatting forma
 
         var (dayRange, monthRange, yearRange) = formatting.GetComponentRanges();
 
+        var wrongSeparators = currentFilling
+            .Select(
+                (c, i) =>
+                {
+                    if (Contains(dayRange, i) || Contains(monthRange, i) || Contains(yearRange, i))
+                    {
+                        return false;
+                    }
+
+                    return c != delimiter && c != default;
+                }
+            )
+            .Any(w => w is true);
+
+        if (wrongSeparators is true)
+        {
+            return new([]);
+        }
+
         int.TryParse(new string(slots[yearRange]), out var year);
         int.TryParse(new string(slots[monthRange]), out var month);
 

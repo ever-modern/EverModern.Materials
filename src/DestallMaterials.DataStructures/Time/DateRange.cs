@@ -3,15 +3,15 @@ using DateTime = System.DateTime;
 
 namespace DestallMaterials.WheelProtection.DataStructures.Time;
 
-public readonly struct DateTimeRange : IEquatable<DateTimeRange>
+public readonly struct DateRange : IEquatable<DateRange>
 {
-    public DateTime Start { get; }
-    public DateTime End { get; }
+    public DateOnly Start { get; }
+    public DateOnly End { get; }
 
     [Obsolete("Do not call parameterless constructor.", true)]
-    public DateTimeRange() { }
+    public DateRange() { }
 
-    public DateTimeRange(DateTime start, DateTime end)
+    public DateRange(DateOnly start, DateOnly end)
     {
         if (Start > End)
         {
@@ -22,17 +22,17 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
         End = end;
     }
 
-    public TimeSpan Duration => End - Start;
+    public int DurationDays => End.DayNumber - Start.DayNumber;
 
-    public DateTimeRange[] Split(TimeSpan duration)
+    public DateRange[] Split(int days)
     {
-        var n = (int)Math.Ceiling((decimal)Duration.Ticks / duration.Ticks);
-        var result = new DateTimeRange[n];
-        var current = new DateTimeRange(Start, Start + duration);
+        var n = (int)Math.Ceiling((decimal)DurationDays / DurationDays);
+        var result = new DateRange[n];
+        var current = new DateRange(Start, Start.AddDays(DurationDays));
         result[0] = current;
         for (int i = 1; i < n; i++)
         {
-            current = new(current.Start + duration, current.End + duration);
+            current = new(current.Start.AddDays(DurationDays), current.End.AddDays(DurationDays));
             result[i] = current;
         }
         var last = result[n - 1];
@@ -41,7 +41,7 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
         return result;
     }
 
-    public bool Contains(DateTime dateTime) => dateTime <= End && dateTime >= Start;
+    //public bool Contains(DateTime dateTime) => dateTime.Date.Da <= End && dateTime >= Start;
 
     public static DateTimeRange Merge(params IEnumerable<DateTimeRange> ranges)
     {
@@ -67,12 +67,12 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
         return new DateTimeRange(resultStart, resultEnd);
     }
 
-    public static implicit operator DateTimeRange((DateTime start, DateTime end) other) =>
+    public static implicit operator DateRange((DateOnly start, DateOnly end) other) =>
         new(other.start, other.end);
 
-    public static bool operator ==(DateTimeRange left, DateTimeRange right) => left.Equals(right);
+    public static bool operator ==(DateRange left, DateRange right) => left.Equals(right);
 
-    public static DateTimeRange operator +(DateTimeRange left, DateTimeRange other)
+    public static DateRange operator +(DateRange left, DateRange other)
     {
         if (left.End >= other.Start && left.Start <= other.Start)
         {
@@ -88,27 +88,27 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
         }
     }
 
-    public static bool operator !=(DateTimeRange left, DateTimeRange right) => !(left == right);
+    public static bool operator !=(DateRange left, DateRange right) => !(left == right);
 
-    public void Deconstruct(out DateTime start, out DateTime end)
+    public void Deconstruct(out DateOnly start, out DateOnly end)
     {
         start = this.Start;
         end = this.End;
     }
 
     public override bool Equals([NotNullWhen(true)] object? obj) =>
-        obj is DateTimeRange dtr && Start == dtr.Start && End == dtr.End;
+        obj is DateRange dtr && Start == dtr.Start && End == dtr.End;
 
-    public bool Equals(DateTimeRange other) => Start.Equals(other.Start) && End.Equals(other.End);
+    public bool Equals(DateRange other) => Start.Equals(other.Start) && End.Equals(other.End);
 
     public override int GetHashCode() => HashCode.Combine(Start, End);
 
     public override string ToString() => $"{Start} - {End}";
 
-    public bool Intersects(DateTimeRange other) =>
+    public bool Intersects(DateRange other) =>
         End >= other.Start && Start <= other.Start || other.End >= Start && other.Start <= Start;
 
-    public bool Intersects(DateTimeRange other, out DateTimeRange intersection)
+    public bool Intersects(DateRange other, out DateRange intersection)
     {
         if (End >= other.Start && Start <= other.Start)
         {
