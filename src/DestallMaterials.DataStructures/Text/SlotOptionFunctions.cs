@@ -179,28 +179,6 @@ public static class SlotOptionFunctions
 
         var currentValue = char.IsDigit(currentChar) ? (byte?)ToNumber(currentChar) : null;
 
-        //if (slotIndex == 0)
-        //{
-        //    result = currentValue switch
-        //    {
-        //        null => (maxDigit - minDigit) switch
-        //        {
-        //            > 1 => DigitConstraint.Free,
-        //            1 => DigitConstraint.WithinTwoTens,
-        //            0 => DigitConstraint.WithinSingleTen,
-        //            _ => DigitConstraint.Free,
-        //        },
-        //        _ when currentValue == maxDigit && currentValue == minDigit =>
-        //            DigitConstraint.WithinSingleTen,
-        //        _ when currentValue == minDigit => DigitConstraint.WithinLowerTen,
-        //        _ when currentValue == maxDigit => DigitConstraint.WithinUpperTen,
-        //        _ => DigitConstraint.Free,
-        //    };
-
-        //    return result;
-        //}
-
-
         var prevConstraint =
             slotIndex == 0
                 ? LeftToRightDigitConstraint.WithinSingleTen
@@ -257,138 +235,6 @@ public static class SlotOptionFunctions
         return result;
     }
 
-    static char[] GetOptionsForSlotReliable(
-        byte slotIndex,
-        ReadOnlySpan<char> currentFilling,
-        byte length,
-        long min,
-        long max
-    )
-    {
-        char[] filling = [.. currentFilling];
-        filling[slotIndex] = '0';
-
-        //if (filling.All(c => c != default) && long.TryParse(filling, out var definiteNumber))
-        //{
-        //    return GetOptionsForDefiniteNumber(slotIndex, definiteNumber, length, min, max);
-        //}
-
-        var divider = (int)Math.Pow(10, length - 1 - slotIndex);
-
-        Constraint[] constraints = new Constraint[length];
-
-        foreach (var (digit, index) in ToDigits(filling).Select((d, i) => (d, i)))
-        {
-            var thisDivider = (long)Math.Pow(10, length - index - 1);
-
-            var isTargetSlot = index == slotIndex;
-
-            var minDigit = (byte)((min / thisDivider) % 10);
-            var maxDigit = (byte)((max / thisDivider) % 10);
-
-            if (index == 0)
-            {
-                if (minDigit > maxDigit)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(min),
-                        $"{nameof(min)} > {nameof(max)}"
-                    );
-                }
-                var options = DigitSpan(minDigit, maxDigit);
-                constraints[index] = new(
-                    options,
-                    DigitSpan(minDigit, maxDigit),
-                    index == slotIndex ? null : digit
-                );
-
-                continue;
-            }
-
-            var (prevMinMax, prevOptions, prevSelected) = constraints[index - 1];
-
-            char[] thisConstraint;
-            if (prevSelected is null)
-            {
-                thisConstraint = prevMinMax.Length switch
-                {
-                    0 => [],
-                    1 => DigitSpan(minDigit, maxDigit),
-                    2 => maxDigit > minDigit ? DigitSpan(0, 9) : DigitSpan(minDigit, maxDigit),
-                    _ => DigitSpan(0, 9),
-                };
-            }
-            else
-            {
-                thisConstraint = prevMinMax.Length switch
-                {
-                    0 => [],
-                    1 => DigitSpan(minDigit, maxDigit),
-                    2 => prevSelected == prevMinMax[0]
-                        ? DigitSpan(minDigit, 9)
-                        : DigitSpan(0, maxDigit),
-                    _ => DigitSpan(0, 9),
-                };
-            }
-
-            if (digit is not null && isTargetSlot == false)
-            {
-                var digitChar = ToChar(digit.Value);
-                if (thisConstraint.Contains(digitChar) is false)
-                {
-                    return [];
-                }
-                else
-                {
-                    thisConstraint = [digitChar];
-                }
-            }
-
-            constraints[index] = new(
-                thisConstraint,
-                DigitSpan(minDigit, maxDigit),
-                index == slotIndex ? null : digit
-            );
-        }
-
-        for (var i = length - 1; i >= 2; i--)
-        {
-            var (_, constraint, selected) = constraints[i];
-            if (constraint.Length == 0)
-            {
-                return [];
-            }
-
-            var (_, prePrevConstraint, prePrevSelected) = constraints[i - 2];
-
-            if (constraint.Length > 1 || prePrevConstraint.Length > 2)
-            {
-                continue;
-            }
-
-            var digit = ToNumber(constraint[0]);
-
-            var thisDivider = (long)Math.Pow(10, length - i - 1);
-
-            var minDigit = (byte)((min / thisDivider) % 10);
-            var maxDigit = (byte)((max / thisDivider) % 10);
-
-            var (prevOptions, prevPossibleDigits, prevSelected) = constraints[i - 1];
-
-            prevPossibleDigits =
-                (digit > maxDigit && digit < minDigit) ? prevPossibleDigits[1..^1]
-                : digit < minDigit ? prevPossibleDigits[1..]
-                : digit > maxDigit ? prevPossibleDigits[..^1]
-                : prevPossibleDigits;
-
-            constraints[i - 1] = new(prevOptions, prevPossibleDigits, prevSelected);
-        }
-
-        var result = constraints[slotIndex];
-
-        return [.. result.Options.Distinct()];
-    }
-
     public static char[] GetOptionsForSlot(
         byte slotIndex,
         ReadOnlySpan<char> currentFilling,
@@ -414,88 +260,9 @@ public static class SlotOptionFunctions
         return GetOptionsForSlot_V3(slotIndex, currentFilling, min, max);
     }
 
-    public static char[][] ToCharOptionsOld(
-        int minValue,
-        int maxValue,
-        byte length,
-        ReadOnlySpan<char> currentFilling
-    )
-    {
-        char[][] result = new char[length][];
-
-        var prevDiff = FillingSituation.TopAndBottomAreSame;
-
-        for (int i = length - 1; i >= 0; i--)
-        {
-            var divider = (int)Math.Pow(10, i);
-            var minDigit = (minValue / divider) % 10;
-            var maxDigit = (maxValue / divider) % 10;
-
-            var (from, to) = prevDiff switch
-            {
-                FillingSituation.AtTop => (0, maxDigit),
-                FillingSituation.AtBottom => (minDigit, 9),
-                FillingSituation.NarrowOptions => (maxDigit, minDigit),
-                FillingSituation.TopAndBottomAreSame => (minDigit, maxDigit),
-                FillingSituation.Middle => (0, 9),
-                _ => (0, 9),
-            };
-
-            var at = length - 1 - i;
-
-            if (from <= to)
-            {
-                result[at] = [.. Enumerable.Range(from, (to - from + 1)).Select(ToChar)];
-            }
-            else
-            {
-                result[at] =
-                [
-                    .. Enumerable.Range(from, 10 - from).Select(ToChar),
-                    .. Enumerable.Range(0, to + 1).Select(ToChar),
-                ];
-            }
-
-            var currentChar = currentFilling[at];
-
-            if (from == to)
-            {
-                prevDiff = FillingSituation.TopAndBottomAreSame;
-            }
-            else if (char.IsDigit(currentChar))
-            {
-                var current = ToNumber(currentChar);
-
-                prevDiff =
-                    current == from ? FillingSituation.AtBottom
-                    : current == to ? FillingSituation.AtTop
-                    : FillingSituation.Middle;
-            }
-            else
-            {
-                prevDiff =
-                    to
-                    - from switch
-                    {
-                        0 => FillingSituation.TopAndBottomAreSame,
-                        1 => FillingSituation.NarrowOptions,
-                        _ => FillingSituation.Middle,
-                    };
-            }
-        }
-        return result;
-    }
-
     public static byte ToNumber(this char digit) => (byte)(digit - '0');
 
     public static char ToChar(this int digit) => (char)((digit % 10) + '0');
-
-    public static char ToChar(this long digit) => (char)((digit % 10) + '0');
-
-    public static IEnumerable<byte?> ToDigits(IEnumerable<char> chars) =>
-        chars.Select(c => char.IsDigit(c) ? (byte?)ToNumber(c) : null);
-
-    static char[] DigitSpan(char from, char to) => DigitSpan(ToNumber(from), ToNumber(to));
 
     static char[] DigitSpan(byte from, byte to) =>
         (from <= to)
@@ -522,41 +289,6 @@ public static class SlotOptionFunctions
         return chars;
     }
 
-    //static bool IsInTopPart(IEnumerable<byte> options, byte option)
-    //{
-    //    byte? prev = default;
-    //    bool broke = false;
-    //    foreach (var op in options)
-    //    {
-    //        if (prev == default)
-    //        {
-    //            prev = op;
-    //        }
-
-    //        if (broke is false && op > prev)
-    //        {
-    //            broke = true;
-    //        }
-
-    //        if (op == option)
-    //        {
-    //            return broke;
-    //        }
-    //    }
-
-    //    throw new InvalidOperationException();
-    //}
-
-    enum FillingSituation
-    {
-        AtBottom = 1,
-        NarrowOptions = 2,
-        TopAndBottomAreSame = 3,
-        AtTop = 4,
-        Middle = 5,
-        NarrowOptionsOverflowing = 6,
-    }
-
     internal static bool Contains(this Range range, int value) =>
-        range.Start.Value <= value && value <= range.End.Value;
+        range.Start.Value <= value && value < range.End.Value;
 }

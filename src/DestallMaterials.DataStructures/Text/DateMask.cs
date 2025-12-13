@@ -26,7 +26,7 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
 
         for (int i = removed - 1; i >= 0; i--)
         {
-            var options = GetSlotOptions(slots, at + i);
+           var options = GetSlotOptions(slots, at + i);
             slots[at + i] = options[0];
         }
 
@@ -37,19 +37,24 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
             var newValue = DateOnly.Parse(slots);
             newValue = Clamp(newValue);
 
+            if (caretPosition > 0 && slots[caretPosition - 1] == format.Delimiter)
+            {
+                caretPosition--;
+            }
+
             return new(format, minValue, maxValue, newValue);
         }
 
         var insertedCharacters = inserted.Select((c, i) => (c, at + i));
-        if (
-            format.DateFormat
-            is DateFormat.DayMonth
-                or DateFormat.DayMonthYear
-                or DateFormat.MonthDayYear
-        )
-        {
-            insertedCharacters = [.. insertedCharacters.Reverse()];
-        }
+        //if (
+        //    format.DateFormat
+        //    is DateFormat.DayMonth
+        //        or DateFormat.DayMonthYear
+        //        or DateFormat.MonthDayYear
+        //)
+        //{
+        //    insertedCharacters = [.. insertedCharacters.Reverse()];
+        //}
 
         foreach (var (symbol, insertedAt) in insertedCharacters)
         {
@@ -59,10 +64,7 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
             if (dayRange.Contains(insertedAt) && isNumber)
             {
                 var (minDay, maxDay) = AllowedDays(currentValue);
-                var dayMask = new SimpleMask<char>(
-                    slots[dayRange],
-                    new IntegerConstraintsSource(minDay, maxDay)
-                );
+                var dayMask = new IntegerMask(currentValue.Day, minDay, maxDay, 2);
                 char[] daySlots =
                 [
                     .. dayMask.Change(
@@ -79,14 +81,13 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
                 daySlots.CopyTo(
                     slots.AsSpan(dayRange.Start.Value, dayRange.End.Value - dayRange.Start.Value)
                 );
+
+                caretPosition += dayRange.Start.Value;
             }
             else if (monthRange.Contains(insertedAt) && isNumber)
             {
                 var (minMonth, maxMonth) = AllowedMonths(currentValue);
-                var monthMask = new SimpleMask<char>(
-                    slots[monthRange],
-                    new IntegerConstraintsSource(minMonth, maxMonth)
-                );
+                var monthMask = new IntegerMask(currentValue.Month, minMonth, maxMonth, 2);
                 char[] monthSlots =
                 [
                     .. monthMask.Change(
@@ -122,15 +123,19 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
                             dayRange.End.Value - dayRange.Start.Value
                         )
                     );
+
+                caretPosition += monthRange.Start.Value;
             }
             else if (yearRange.Contains(insertedAt) && isNumber)
             {
                 var minYear = minValue.Year;
                 var maxYear = maxValue.Year;
 
-                var yearMask = new SimpleMask<char>(
-                    slots[yearRange],
-                    new IntegerConstraintsSource(minYear, maxYear)
+                var yearMask = new IntegerMask(
+                    currentValue.Year,
+                    minYear,
+                    maxYear,
+                    format.YearLength
                 );
 
                 char[] yearSlots =
@@ -146,7 +151,15 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
                     ),
                 ];
 
-                var (minDay, maxDay) = AllowedDays(int.Parse(yearSlots), currentValue.Month);
+                caretPosition += yearRange.Start.Value;
+
+                var yearValue = int.Parse(yearSlots);
+
+                var (minMonth, maxMonth) = AllowedMonths(yearValue);
+
+                var monthValue = Math.Clamp(currentValue.Month, minMonth, maxMonth);
+
+                var (minDay, maxDay) = AllowedDays(yearValue, monthValue);
 
                 var day = Math.Clamp(currentValue.Day, minDay, maxDay);
 
@@ -159,15 +172,44 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
                             dayRange.End.Value - dayRange.Start.Value
                         )
                     );
+
+                monthValue
+                    .ToString()
+                    .PadLeft(2, '0')
+                    .AsSpan()
+                    .CopyTo(
+                        slots.AsSpan(
+                            monthRange.Start.Value,
+                            monthRange.End.Value - monthRange.Start.Value
+                        )
+                    );
+
+                yearValue
+                    .ToString()
+                    .PadLeft(format.YearLength, '0')
+                    .AsSpan()
+                    .CopyTo(
+                        slots.AsSpan(
+                            yearRange.Start.Value,
+                            yearRange.End.Value - yearRange.Start.Value
+                        )
+                    );
             }
             else
             {
-                if (symbol != format.Delimiter)
+                if (symbol != format.Delimiter || IsDelimiterPosition(insertedAt) == false)
                 {
                     var newValue = DateOnly.Parse(slots);
                     return new DateMask(format, minValue, maxValue, newValue);
                 }
             }
+
+            //caretPosition = insertedAt + 1;
+        }
+
+        if (caretPosition < format.Length && slots[caretPosition] == format.Delimiter)
+        {
+            caretPosition++;
         }
 
         var finalValue = DateOnly.Parse(slots);
@@ -189,9 +231,10 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
         Year,
     }
 
-    (int MinMonth, int MaxMonth) AllowedMonths(DateOnly dateOnly)
+    (int MinMonth, int MaxMonth) AllowedMonths(DateOnly dateOnly) => AllowedMonths(dateOnly.Year);
+
+    (int MinMonth, int MaxMonth) AllowedMonths(int year)
     {
-        var year = dateOnly.Year;
         var (minMonth, maxMonth) = (1, 12);
         if (year == minValue.Year)
         {
@@ -233,7 +276,7 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
             var (minDay, maxDay) = AllowedDays(value);
             return SlotOptionFunctions.GetOptionsForSlot(
                 slotIndex: (byte)(position - dayRange.Start.Value),
-                currentFilling: value.Day.ToString(),
+                currentFilling: value.Day.ToString().PadLeft(2, '0'),
                 length: 2,
                 min: minDay,
                 max: maxDay
@@ -244,7 +287,7 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
             var (minMonth, maxMonth) = AllowedMonths(value);
             return SlotOptionFunctions.GetOptionsForSlot(
                 slotIndex: (byte)(position - monthRange.Start.Value),
-                currentFilling: value.Month.ToString(),
+                currentFilling: value.Month.ToString().PadLeft(2, '0'),
                 length: 2,
                 min: minMonth,
                 max: maxMonth
@@ -279,5 +322,13 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
         }
 
         return value;
+    }
+
+    bool IsDelimiterPosition(int position)
+    {
+        var (yearRange, monthRange, dayRange) = format.GetComponentRanges();
+        return !dayRange.Contains(position)
+            && !monthRange.Contains(position)
+            && !yearRange.Contains(position);
     }
 }

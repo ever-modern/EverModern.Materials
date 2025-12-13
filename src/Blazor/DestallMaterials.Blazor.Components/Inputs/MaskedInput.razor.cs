@@ -4,23 +4,14 @@ using Microsoft.AspNetCore.Components;
 
 namespace DestallMaterials.Blazor.Components.Inputs;
 
-public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
+public partial class MaskedInput<TMask> : BaseInput<TMask>
+    where TMask : IImmutableMask<char, TMask>
 {
     public MaskedInput()
     {
         _inputId = $"masked-input-{this.GetHashCode()}";
         base.OnValueChanged = _ => { };
     }
-
-    [Parameter]
-    [EditorRequired]
-    public ISlotConstraintsSource<char> ConstraintsSource { get; set; }
-
-    [Parameter]
-    public Func<IReadOnlyList<char>, string> FormatMask { get; set; } = (x) => new string([.. x]);
-
-    [Parameter]
-    public IEqualityComparer<char> EqualityComparer { get; set; } = EqualityComparer<char>.Default;
 
     [Parameter]
     public string? Placeholder { get; set; }
@@ -40,13 +31,9 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
                     {
                         var (newValue, carretPosition) = currentState;
 
-                        SimpleMask<char> mask = new(
-                            Value ?? ConstraintsSource.GetDefaultValue(),
-                            ConstraintsSource,
-                            EqualityComparer
-                        );
+                        var mask = Value;
 
-                        var oldValue = FormatMask(base.Value ?? []);
+                        var oldValue = ToString(Value);
 
                         var contentChange = ContentChange<char>.Get(
                             oldValue,
@@ -68,7 +55,7 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
 
                         base.OnValueChanged(mask);
 
-                        var displayText = FormatMask(mask);
+                        var displayText = ToString(mask);
 
                         return new(displayText, carretPosition);
                     }
@@ -77,14 +64,10 @@ public partial class MaskedInput : BaseInput<IReadOnlyList<char>>
         }
     }
 
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        Value = Value ?? ConstraintsSource.GetDefaultValue();
-    }
-
     readonly string _inputId;
     int _lastPosition;
 
     IInputManipulator Js => ui.Inputs;
+
+    static string ToString(TMask? mask) => mask is null ? "" : new string([.. mask]);
 }

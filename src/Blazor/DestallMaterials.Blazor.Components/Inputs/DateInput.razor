@@ -10,7 +10,8 @@
 
 @{
     var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has-clear-button" : "")} {CssClass}";
-    var constraintsSource = new DateSlotConstraintsSource(new(MinValue.ToDateTime(default), MaxValue.ToDateTime(default)), DateFormatting);
+    var format = DateFormatting.Parse(Format);
+    var mask = new DateMask(format, MinValue, MaxValue, Value);
 }
 
 <div class="@cssClass" id="@Id"
@@ -24,7 +25,7 @@
     }
     <div class="flexible-date-picker-input-wrapper">
 
-        <MaskedInput ConstraintsSource="constraintsSource" OnValueChanged="OnCharInputChanged" Value="@_valueChars" />
+        <MaskedInput OnValueChanged="OnCharInputChanged" Value="@mask" />
 
         @if (Clearable && Value != default)
         {
@@ -254,7 +255,7 @@
 
         UpdateInputValueFromComponents(day, _selectedMonth, _selectedYear);
         UpdateValueFromPicker();
-        CenterScrollToSelectedItems();        
+        CenterScrollToSelectedItems();
     }
 
     private void SelectMonth(int month)
@@ -364,7 +365,7 @@
         }
 
         _showCustomPicker = !_showCustomPicker;
-        
+
         if (show == true)
         {
             CenterScrollToSelectedItems();

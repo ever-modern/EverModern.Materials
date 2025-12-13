@@ -1,16 +1,19 @@
 ﻿@using DestallMaterials.Blazor.Components.Common
 @using DestallMaterials.Blazor.Components.Services.UI
+@using DestallMaterials.WheelProtection.DataStructures.Text
 
 @namespace DestallMaterials.Blazor.Components.Inputs
 
-@inherits BaseInput<IReadOnlyList<char>>
+@typeparam TMask
+
+@inherits BaseInput<TMask>
 
 @inject IUiManipulator ui
 @inject IGlobalClickCatcher globalClickCatcher
 
 <input type="text"
        disabled="@(Disabled)"
-       value="@FormatMask(Value)"
+       value="@(Value is null ? "" : new string([.. Value]))"
        class="@($"masked-input {CssClass}")"
        id="@_inputId"
        style="@CssStyle"

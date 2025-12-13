@@ -5,109 +5,84 @@ namespace DestallMaterials.Tests.XUnit;
 
 public class NumberMaskTests
 {
+    const int _from = 1975;
+    const int _to = 2025;
+
+    static IntegerMask CreateMask(long value) => new(value, _from, _to, 4);
+
     [Fact]
     public void WriteOverflowingValue()
     {
-        const int from = 1975;
-        const int to = 2025;
+        var mask = CreateMask(_to);
 
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-
-        var mask = new SimpleMask<char>([.. from.ToString()], numberConstraints);
-
-        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['2']), out var caretPosition);
+        var newMask = mask.Change(new(At: 0, Removed: 0, Inserted: ['2']), out var caretPosition);
 
         Assert.Equal(2, caretPosition);
-        Assert.Equal([.. "2000"], newMask.ToArray());
+        Assert.Equal([.. $"{_to}"], newMask);
     }
 
     [Fact]
     public void ForceOne_AtStart_RecalcOther()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-
-        var mask = new SimpleMask<char>([.. to.ToString()], numberConstraints);
+        var mask = CreateMask(_from);
 
         var newMask = mask.Change(new(At: 0, Removed: 0, Inserted: ['1']), out var caretPosition);
 
         Assert.Equal(2, caretPosition);
-        Assert.Equal([.. "1975"], newMask.ToArray());
+        Assert.Equal([.. "1975"], newMask);
     }
 
     [Fact]
     public void ForceOne_AtSecondDigit_RecalcOther()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-
-        var mask = new SimpleMask<char>([.. to.ToString()], numberConstraints);
+        var mask = CreateMask(_to);
 
         var newMask = mask.Change(new(At: 1, Removed: 0, Inserted: ['9']), out var caretPosition);
 
-        Assert.Equal([.. "1975"], newMask.ToArray());
-        Assert.Equal(2, caretPosition);        
+        Assert.Equal([.. _to.ToString()], newMask);
+        Assert.Equal(1, caretPosition);
     }
 
     [Fact]
     public void WriteOverflowingValue_MustWriteToEnd()
     {
-        const int from = 1975;
-        const int to = 2025;
+        var mask = CreateMask(_from);
 
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-
-        var mask = new SimpleMask<char>([.. from.ToString()], numberConstraints);
-
-        var newMask = mask.Change(new(At: 2, Removed: 1, Inserted: ['8']), out var caretPosition);
+        var newMask = mask.Change(new(At: 2, Removed: 0, Inserted: ['8']), out var caretPosition);
 
         Assert.Equal(3, caretPosition);
-        Assert.Equal([.. "1985"], newMask.ToArray());
+        Assert.Equal([.. "1985"], newMask);
     }
 
     [Fact]
     public void WriteTopEdgeNumber()
     {
-        const int from = 1975;
-        const int to = 2025;
+        var mask = CreateMask(_to);
 
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2025"], numberConstraints);
-
-        var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['2']), out var caretPosition);
+        var newMask = mask.Change(new(At: 0, Removed: 0, Inserted: ['2']), out var caretPosition);
 
         Assert.Equal(2, caretPosition);
-        Assert.Equal(['2', '0', '2', '5'], newMask.ToArray());
+        Assert.Equal(['2', '0', '2', '5'], newMask);
     }
 
     // Backspace Operations Tests
     [Fact]
-    public void BackspaceFromBeginning()
+    public void DeleteToBeginning()
     {
-        const int from = 1975;
-        const int to = 2025;
+        var mask = CreateMask(2000);
 
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2000"], numberConstraints);
+        ContentChange<char> change = new(At: 2, Removed: 1, Inserted: []);
 
-        var newMask = mask.Change(new(At: 1, Removed: 1, Inserted: []), out var caretPosition);
+        var newMask = mask.Change(change, out var caretPosition);
 
         Assert.Equal(0, caretPosition);
-        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
+        Assert.Equal(['2', '0', '0', '0'], newMask);
     }
 
     [Fact]
-    public void BackspaceFromMiddle()
+    public void DeleteFromSecondSlot()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2000"], numberConstraints);
+        var mask = CreateMask(2000);
 
         var newMask = mask.Change(new(At: 2, Removed: 1, Inserted: []), out var caretPosition);
 
@@ -118,58 +93,44 @@ public class NumberMaskTests
     [Fact]
     public void BackspaceFromEnd()
     {
-        const int from = 1975;
-        const int to = 2025;
+        var mask = CreateMask(2000);
 
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2000"], numberConstraints);
+        ContentChange<char> change = new(At: 3, Removed: 1, Inserted: []);
+        var newMask = mask.Change(change, out var caretPosition);
 
-        var newMask = mask.Change(new(At: 4, Removed: 1, Inserted: []), out var caretPosition);
-
-        Assert.Equal(4, caretPosition);
-        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
+        Assert.Equal(2, caretPosition);
+        Assert.Equal(['2', '0', '0', '0'], newMask);
     }
 
     // Delete Operations Tests
     [Fact]
     public void DeleteFromMiddle()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2000"], numberConstraints);
+        var mask = CreateMask(2000);
 
         var newMask = mask.Change(new(At: 1, Removed: 1, Inserted: []), out var caretPosition);
 
         Assert.Equal(0, caretPosition);
-        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
+        Assert.Equal(['2', '0', '0', '0'], newMask);
     }
 
     [Fact]
     public void DeleteFromEnd()
     {
-        const int from = 1975;
-        const int to = 2025;
+        var mask = CreateMask(2000);
 
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2000"], numberConstraints);
+        ContentChange<char> change = new(At: 3, Removed: 1, Inserted: []);
+        var newMask = mask.Change(change, out var caretPosition);
 
-        var newMask = mask.Change(new(At: 3, Removed: 1, Inserted: []), out var caretPosition);
-
-        Assert.Equal(3, caretPosition);
-        Assert.Equal(['2', '0', '0', '0'], newMask.ToArray());
+        Assert.Equal(2, caretPosition);
+        Assert.Equal(['2', '0', '0', '0'], newMask);
     }
 
     // Multi-character Insertion Tests
     [Fact]
     public void InsertMultipleCharacters()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(
             new(At: 0, Removed: 4, Inserted: ['1', '9', '8', '5']),
@@ -177,17 +138,13 @@ public class NumberMaskTests
         );
 
         Assert.Equal(4, caretPosition);
-        Assert.Equal([.. "1985"], newMask.ToArray());
+        Assert.Equal([.. "1985"], newMask);
     }
 
     [Fact]
     public void InsertWithOverflow()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(
             new(At: 0, Removed: 2, Inserted: ['2', '0', '0', '0']),
@@ -195,18 +152,14 @@ public class NumberMaskTests
         );
 
         Assert.Equal(4, caretPosition);
-        Assert.Equal([.. "2000"], newMask.ToArray());
+        Assert.Equal([.. "2000"], newMask);
     }
 
     // Range Replacement Tests
     [Fact]
     public void ReplaceMiddleRange()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(
             new(At: 1, Removed: 2, Inserted: ['9', '8']),
@@ -214,17 +167,13 @@ public class NumberMaskTests
         );
 
         Assert.Equal(3, caretPosition);
-        Assert.Equal([.. "1985"], newMask.ToArray());
+        Assert.Equal([.. "1985"], newMask);
     }
 
     [Fact]
     public void ReplaceWithInvalidInput()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(
             new(At: 1, Removed: 2, Inserted: ['9', '9']),
@@ -232,98 +181,85 @@ public class NumberMaskTests
         );
 
         Assert.Equal(3, caretPosition);
-        Assert.Equal(['1', '9', '9', '5'], newMask.ToArray());
+        Assert.Equal(['1', '9', '9', '5'], newMask);
     }
 
     // Boundary Condition Tests
     [Fact]
     public void InputAtMinimumBoundary()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['1']), out var caretPosition);
 
         Assert.Equal(2, caretPosition);
-        Assert.Equal([.. "1975"], newMask.ToArray());
+        Assert.Equal([.. "1975"], newMask);
     }
 
     [Fact]
     public void InputAtMaximumBoundary()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2025"], numberConstraints);
+        var mask = CreateMask(2025);
 
         var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['2']), out var caretPosition);
 
         Assert.Equal(2, caretPosition);
-        Assert.Equal(['2', '0', '2', '5'], newMask.ToArray());
+        Assert.Equal(['2', '0', '2', '5'], newMask);
     }
 
     [Fact]
     public void TruncateNumber()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1981"], numberConstraints);
+        var mask = CreateMask(1981);
 
         var newMask = mask.Change(new(At: 2, Removed: 2, Inserted: []), out var caretPosition);
 
         Assert.Equal(0, caretPosition);
-        Assert.Equal([.. "1980"], newMask.ToArray());
+        Assert.Equal([.. "1980"], newMask);
     }
 
     // Edge Case Tests
     [Fact]
     public void EraseAllScenario()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(new(At: 0, Removed: 4, Inserted: []), out var caretPosition);
 
         Assert.Equal(0, caretPosition);
-        Assert.Equal([.. "1975"], newMask.ToArray());
+        Assert.Equal([.. "1975"], newMask);
     }
 
     [Fact]
     public void ComplexPropagationScenario()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "1975"], numberConstraints);
+        var mask = CreateMask(1975);
 
         var newMask = mask.Change(new(At: 0, Removed: 1, Inserted: ['3']), out var caretPosition);
 
         Assert.Equal(0, caretPosition);
-        Assert.Equal([.. "1975"], newMask.ToArray());
+        Assert.Equal([.. "1975"], newMask);
     }
 
     [Fact]
     public void Insert_PushOneSlotForth()
     {
-        const int from = 1975;
-        const int to = 2025;
-
-        var numberConstraints = new IntegerConstraintsSource(from, to);
-        var mask = new SimpleMask<char>([.. "2005"], numberConstraints);
+        var mask = CreateMask(2005);
 
         var newMask = mask.Change(new(At: 1, Removed: 0, Inserted: ['2']), out var caretPosition);
 
         Assert.Equal(3, caretPosition);
-        Assert.Equal([.. "2025"], newMask.ToArray());
+        Assert.Equal([.. "2025"], newMask);
+    }
+
+    [Fact]
+    public void Insert9_AtTheEnd()
+    {
+        var mask = CreateMask(2000);
+
+        var newMask = mask.Change(new(At: 3, Removed: 0, Inserted: ['9']), out var caretPosition);
+
+        Assert.Equal(4, caretPosition);
+        Assert.Equal([.. "2009"], newMask);
     }
 }

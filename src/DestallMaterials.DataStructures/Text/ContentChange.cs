@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿namespace DestallMaterials.WheelProtection.DataStructures.Text;
 
-namespace DestallMaterials.WheelProtection.DataStructures.Text;
-
-public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
+public record struct ContentChange<T>(
+    int At,
+    int Removed,
+    T[] Inserted
+)
 {
     public static ContentChange<T> Get(
         ReadOnlySpan<T> start,
@@ -16,7 +16,7 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
         ReadOnlySpan<T> start,
         ReadOnlySpan<T> finish,
         IEqualityComparer<T> equalityComparer,
-        int carretFinishedAt = -1
+        int caretFinishedAt = -1
     )
     {
         int startLength = start.Length;
@@ -51,10 +51,10 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
             if (prefixLength == startLength && prefixLength == finishLength)
             {
                 // Both lists are identical
-                if (carretFinishedAt >= 0)
+                if (caretFinishedAt >= 0)
                 {
                     // Handle cursor-based removal for identical content
-                    if (carretFinishedAt >= startLength)
+                    if (caretFinishedAt >= startLength)
                     {
                         // Cursor at or beyond end - this implies removal of last character
                         if (startLength > 0)
@@ -71,17 +71,17 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
                             return new ContentChange<T>(0, 0, []);
                         }
                     }
-                    else if (carretFinishedAt > 0)
+                    else if (caretFinishedAt > 0)
                     {
                         // Cursor in the middle or at position 1
                         // carretAt indicates the position after removal, so the removed character is at carretAt-1
-                        int removedAt = carretFinishedAt - 1;
+                        int removedAt = caretFinishedAt - 1;
                         if (removedAt >= 0 && removedAt < startLength)
                         {
                             return new ContentChange<T>(removedAt, 1, [start[removedAt]]);
                         }
                     }
-                    else if (carretFinishedAt == 0)
+                    else if (caretFinishedAt == 0)
                     {
                         // Cursor at beginning - this would mean first character was removed
                         if (startLength > 0)
@@ -100,24 +100,24 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
             int newElementsCount = finishLength - prefixLength;
 
             // Handle carretAt for prefix-based scenarios (when one list is contained in another)
-            if (carretFinishedAt >= 0)
+            if (caretFinishedAt >= 0)
             {
                 if (startLength > finishLength)
                 {
                     // Deletion scenario: determine position based on carretAt
-                    if (carretFinishedAt <= prefixLength)
+                    if (caretFinishedAt <= prefixLength)
                     {
-                        if (carretFinishedAt == 0)
+                        if (caretFinishedAt == 0)
                             changeAt = 0;
                         else
-                            changeAt = Math.Min(carretFinishedAt, startLength - 1);
+                            changeAt = Math.Min(caretFinishedAt, startLength - 1);
                     }
                 }
                 else if (finishLength > startLength)
                 {
                     // Insertion scenario: use caret to locate where insertion likely happened
                     // caretFinishedAt is position in finished content; insertion start is caret - number of new elements
-                    changeAt = Math.Max(0, carretFinishedAt - newElementsCount);
+                    changeAt = Math.Max(0, caretFinishedAt - newElementsCount);
                 }
                 // else lengths equal handled above
             }
@@ -162,7 +162,7 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
 
         // Special handling for backward compatibility: adjust removal count for common scenarios
         // When we have insertions and the prefix is minimal, ensure we don't over-report removals
-        if (removed > 0 && insertedCount > 0 && prefixLength == 1 && carretFinishedAt < 0)
+        if (removed > 0 && insertedCount > 0 && prefixLength == 1 && caretFinishedAt < 0)
         {
             removed = Math.Min(removed, Math.Max(1, insertedCount));
         }
@@ -175,7 +175,7 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
         }
 
         // Handle carretAt for cursor-based disambiguation
-        if (carretFinishedAt >= 0)
+        if (caretFinishedAt >= 0)
         {
             // For deletion scenarios, carretAt determines the exact position
             if (removed > 0 && insertedCount == 0)
@@ -183,11 +183,11 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
                 // Key insight: carretAt represents the final cursor position in the finished content
                 // If carretAt is within the prefix area, it indicates which deletion occurred
 
-                if (carretFinishedAt <= prefixLength)
+                if (caretFinishedAt <= prefixLength)
                 {
                     // Cursor is within or at the end of the common prefix
                     // This suggests deletion affected the area where cursor ended up
-                    if (carretFinishedAt == 0)
+                    if (caretFinishedAt == 0)
                     {
                         at = 0; // Deletion at beginning
                     }
@@ -195,7 +195,7 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
                     {
                         // The key fix: use carretAt directly as the deletion position
                         // when cursor is within the prefix
-                        at = Math.Min(carretFinishedAt, startLength - 1);
+                        at = Math.Min(caretFinishedAt, startLength - 1);
                     }
                 }
                 // else: cursor beyond prefix, keep calculated position
@@ -205,7 +205,7 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
             {
                 // caretFinishedAt indicates the final caret position in the finished text.
                 // The insertion start index is therefore caret - number of inserted elements.
-                at = Math.Max(0, carretFinishedAt - insertedCount);
+                at = Math.Max(0, caretFinishedAt - insertedCount);
             }
         }
 
@@ -260,7 +260,9 @@ public record struct ContentChange<T>(int At, int Removed, T[] Inserted)
         int suffixLen = source.Length - suffixSrcStart;
         if (suffixLen > 0)
         {
-            source.Slice(suffixSrcStart, suffixLen).CopyTo(result.AsSpan(at + (Inserted?.Length ?? 0), suffixLen));
+            source
+                .Slice(suffixSrcStart, suffixLen)
+                .CopyTo(result.AsSpan(at + (Inserted?.Length ?? 0), suffixLen));
         }
 
         return result;
