@@ -128,7 +128,7 @@ public sealed class CodeGenerationWorkspace : ICompilationSource, IDisposable
         return workspace;
     }
 
-    public void Cancel()
+    public void Dispose()
         => _onProjectsChange.Clear();
 }
 
@@ -159,5 +159,5 @@ file class DisposableCallback : IDisposable
     public static implicit operator DisposableCallback(Action onDisposed)
         => new DisposableCallback(onDisposed);
 
-    public void Cancel() => OnDisposed();
+    public void Dispose() => OnDisposed();
 }

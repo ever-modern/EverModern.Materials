@@ -21,7 +21,7 @@
             <TimeInput Culture=Culture
                        CssClass="datetime-input-time"
                        OnValueChanged="t => _ = OnTimeChanged(t)"
-                       Time="Time"
+                       Value="TimeOnly.FromDateTime(Value)"
                        Error=@(Error) />
             <button type="button"
                     class="datetime-input-clear @(Date == default ? "hidden" : "")"
@@ -44,7 +44,7 @@
     {
         <TimeInput Culture=Culture
                    OnValueChanged="t => _ = OnTimeChanged(t)"
-                   Time="Time"
+                   Value="TimeOnly.FromDateTime(Value)"
                    Label="@Label"
                    Error=@(Error) />
     }
@@ -60,9 +60,6 @@
 
     [Parameter]
     public DateTime MinValue { get; set; } = new DateTime(2000, 1, 1);
-
-    [Parameter]
-    public CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.CurrentCulture;
 
     protected override void OnParametersSet()
     {

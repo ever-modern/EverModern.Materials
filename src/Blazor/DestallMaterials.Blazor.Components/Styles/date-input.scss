@@ -53,10 +53,10 @@
     border-color: #ef4444;
 }
 
-.flexible-date-picker.errored .flexible-date-picker-field:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
+    .flexible-date-picker.errored .flexible-date-picker-field:focus {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
 
 .flexible-date-picker-clear {
     position: absolute;
@@ -73,9 +73,9 @@
     transition: color 0.2s;
 }
 
-.flexible-date-picker-clear:hover {
-    color: #ef4444;
-}
+    .flexible-date-picker-clear:hover {
+        color: #ef4444;
+    }
 
 .flexible-date-picker-error {
     font-size: 12px;
@@ -94,12 +94,14 @@
     border-radius: 8px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     padding: 8px;
-    min-width: 300px;
+    min-width: 240px;
+    padding-bottom: 21px;
 }
 
 .date-picker-scroll-container {
     display: flex;
     gap: 8px;
+    height: 200px;
 }
 
 .date-picker-scroll-column {
@@ -127,23 +129,23 @@
     scrollbar-color: #d1d5db #f9fafb;
 }
 
-.date-picker-scroll-items::-webkit-scrollbar {
-    width: 6px;
-}
+    .date-picker-scroll-items::-webkit-scrollbar {
+        width: 6px;
+    }
 
-.date-picker-scroll-items::-webkit-scrollbar-track {
-    background: #f9fafb;
-    border-radius: 4px;
-}
+    .date-picker-scroll-items::-webkit-scrollbar-track {
+        background: #f9fafb;
+        border-radius: 4px;
+    }
 
-.date-picker-scroll-items::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 4px;
-}
+    .date-picker-scroll-items::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+    }
 
-.date-picker-scroll-items::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-}
+        .date-picker-scroll-items::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
 
 .date-picker-item {
     padding: 8px 12px;
@@ -155,16 +157,16 @@
     user-select: none;
 }
 
-.date-picker-item:hover {
-    background: #e5e7eb;
-}
+    .date-picker-item:hover {
+        background: #e5e7eb;
+    }
 
-.date-picker-item.selected {
-    background: #3b82f6;
-    color: white;
-    font-weight: 600;
-}
+    .date-picker-item.selected {
+        background: #3b82f6;
+        color: white;
+        font-weight: 600;
+    }
 
-.date-picker-item.selected:hover {
-    background: #2563eb;
-}
+        .date-picker-item.selected:hover {
+            background: #2563eb;
+        }

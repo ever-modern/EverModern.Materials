@@ -20,31 +20,11 @@
 
 @code {
     [Parameter]
-    public TimeSpan Time { get; set; }
-
-    [Parameter]
-    public CultureInfo Culture { get; set; } = CultureInfo.CurrentCulture;
-
-    [Parameter]
     public string Style { get; set; } = "";
 
-    protected override void OnParametersSet()
-    {
-        // Sync TimeSpan parameter with TimeOnly Value
-        if (Time != default)
-        {
-            Value = TimeOnly.FromTimeSpan(Time);
-        }
-        base.OnParametersSet();
-    }
 
     private string CurrentValue
-    {
-        get
-        {
-            return Value != default ? Value.ToString("HH:mm") : TimeOnly.FromTimeSpan(Time).ToString("HH:mm");
-        }
-    }
+        => Value.ToString("HH:mm");
 
     private void OnTimeChanged(ChangeEventArgs e)
     {

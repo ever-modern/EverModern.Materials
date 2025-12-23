@@ -214,7 +214,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         if (tran is not null)
         {
             await tran.CommitAsync(cancellationToken);
-            tran.Cancel();
+            tran.Dispose();
         }
 
         HasChanges = false;
@@ -239,7 +239,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         if (tran is not null)
         {
             await tran.RollbackAsync(cancellationToken);
-            tran?.Cancel();
+            tran?.Dispose();
         }
 
         HasChanges = false;
@@ -263,7 +263,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
     }
 
 
-    public void Cancel()
+    public void Dispose()
     {
         lock (this)
         {
@@ -278,7 +278,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
                 {
                     _reservedDbContext.Dispose();
                     var dbContext = _reservedDbContext.Item;
-                    dbContext.Database.CurrentTransaction?.Cancel();
+                    dbContext.Database.CurrentTransaction?.Dispose();
                 }
 
                 _disposed = true;
@@ -323,7 +323,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
 
             dbContext.ChangeTracker.Clear();
 
-            dbContext.Database.CurrentTransaction?.Cancel();
+            dbContext.Database.CurrentTransaction?.Dispose();
 
             var reservedDbContext = _reservedDbContext;
 
@@ -424,7 +424,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         var transaction = dbContext.Database.CurrentTransaction;
         if (transaction is null || !IsHealthy(transaction))
         {
-            transaction?.Cancel();
+            transaction?.Dispose();
             transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         }
 

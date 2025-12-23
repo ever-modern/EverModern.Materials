@@ -24,7 +24,7 @@ partial class LoadEmulator
     {
         bool _isBusy = false;
 
-        public void Cancel()
+        public void Dispose()
         {
 
         }
@@ -54,7 +54,7 @@ partial class LoadEmulator
         }
 
         protected override void Discard(RequestProcessor item)
-        => item.Cancel();
+        => item.Dispose();
 
         protected override bool IsWell(RequestProcessor item)
         => true;

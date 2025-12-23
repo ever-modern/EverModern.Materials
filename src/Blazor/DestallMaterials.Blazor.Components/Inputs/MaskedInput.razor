@@ -14,7 +14,7 @@
 <input type="text"
        disabled="@(Disabled)"
        value="@(Value is null ? "" : new string([.. Value]))"
-       class="@($"masked-input {CssClass}")"
+       class="@($"base-input masked-input {CssClass}")"
        id="@_inputId"
        style="@CssStyle"
        @onfocus="OnFocus"

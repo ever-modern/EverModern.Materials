@@ -1,0 +1,35 @@
+﻿@using DestallMaterials.CodeGeneration;
+@using DestallMaterials.WheelProtection.Extensions.Strings;
+@using Microsoft.AspNetCore.Components;
+
+@using static DestallMaterials.CodeGeneration.SourceGenerationTemplate.SourceCodeRenderingSymbols;
+@using static System.Linq.Enumerable;
+
+
+@inherits DestallMaterials.CodeGeneration.SourceGenerationTemplate;
+
+@{
+    const string nameSpace = "DestallMaterials.WheelProtection.Linq";
+    var filePath = (string method) => new ProjectRelativeFilePath("DestallMaterials.WheelProtection.LinqToTuples", $"{method}.cs");
+    var path = filePath("TupleExtensions");
+
+    var ts = (int count) => Enumerable.Repeat("T", count).Join(", ");
+    var touts = (int count) => Enumerable.Repeat("TOut", count).Join(", ");
+    var tkeytvalues = (int count) => Enumerable.Repeat("TKey, TValue", count).Join(", ");
+}
+    
+<DestallMaterials.CodeGeneration.SourceFile Path="@path">
+
+    namespace @nameSpace 
+    {
+              
+    }
+        
+</DestallMaterials.CodeGeneration.SourceFile>
+
+
+@code {
+    [Microsoft.AspNetCore.Components.Parameter]
+    public byte TupleSize { get; set; } = 32;
+
+}

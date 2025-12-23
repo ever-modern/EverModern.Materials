@@ -16,7 +16,7 @@
             {
                 var item = _addedItems[i];
                 <RenderPiece ReferenceAction="@(r => item.RenderPiece = r)">
-                    <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)" @oncontextmenu:preventDefault="true">
+                    <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)">
                         @Line(item.Model)
                     </tr>
                 </RenderPiece>
@@ -28,7 +28,7 @@
         var item = _loadedItems[i];
 
             <RenderPiece ReferenceAction="r => item.RenderPiece = r">
-                <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)" @oncontextmenu:preventDefault="true">
+                <tr @oncontextmenu="async () => await OnLineRightClickAsync(item)">
                     @Line(item.Model)
                 </tr>
             </RenderPiece>

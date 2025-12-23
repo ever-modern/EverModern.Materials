@@ -6,15 +6,15 @@ namespace CodeGenerationTests;
 
 public class GeneratePackageContents
 {
-    [Test]
+    [Fact]
     public async Task GenerateLinqToTuples()
     {
         const byte maxTupleSize = 20;
         const string projectName = "DestallMaterials.WheelProtection.LinqToTuples";
 
-        var parentFolder = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent;
+        var parentFolder = Directory.GetParent(Directory.GetCurrentDirectory())!.Parent!.Parent!.Parent!.Parent;
 
-        var files = parentFolder.GetFiles();
+        var files = parentFolder!.GetFiles();
 
         var linqToTuplesProject = Directory.GetFiles(parentFolder.FullName, $"*{projectName}.csproj", SearchOption.AllDirectories).First();
 
@@ -29,5 +29,11 @@ public class GeneratePackageContents
                 nameof(TestComponents.GeneratePackageContents.TupleSize), (object)maxTupleSize
             ).ToDictionary(),
             default);
+    }
+
+    [Fact]
+    public async Task GenerateSvgs()
+    {
+
     }
 }

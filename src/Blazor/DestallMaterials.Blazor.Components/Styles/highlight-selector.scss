@@ -1,0 +1,17 @@
+﻿.highlight-selector {
+    height: inherit;
+    width: 70px;
+    padding-bottom: 10px;
+
+    .scroll-picker-items {
+        overflow: scroll;
+        height: inherit;
+        overflow-x: hidden;
+    }
+
+    .selected {
+        background: #3b82f6;
+        color: white;
+        font-weight: 600;
+    }
+}

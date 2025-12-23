@@ -4,16 +4,12 @@
 @using DestallMaterials.Blazor.Components.Services.UI
 @using DestallMaterials.WheelProtection.DataStructures.Text
 
-@inject IGlobalClickInvoker clickInvoker
 
 <PageTitle>Component Visual Testing</PageTitle>
 
 <h1>DestallMaterials.Blazor.Components - Visual Testing</h1>
 
-<div style="padding:100px"
-     @onclick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
-     @onmousedown="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
-     @onkeydown="e => clickInvoker.FireKeyClickEvent(e)">
+<div style="padding:100px">
 
     @* <!-- SearchSelectorSingular Component Tests -->
     <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
@@ -46,12 +42,22 @@
                  OnValueChanged="cs => int.TryParse([.. cs], out _number)"
                  Value="[.._number.ToString()]" />
  *@
-    <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
+    @*  <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
                Value="_date"
                MaxValue="DateOnly.FromDateTime(DateTime.Today)"
-               MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" />
+               MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" /> *@
 
-    <p>@_date</p>
+    <DateTimeInput OnValueChanged="dt => {  _dateTime = dt; StateHasChanged(); }" Value="_dateTime" />
+@* 
+    <HighlightSelector T="int"
+                       Options="Enumerable.Range(0, 100).Select(n => (SelectOption<int>)n).ToArray()"
+                       OnValueChanged="v => { _number = v.FirstOrDefault(); StateHasChanged(); }"
+                       CssStyle="height: 150px;"
+                       Value="[_number]" />
+ *@
+    <p>@_number</p>
+
+    <p>@_dateTime</p>
 
 </div>
 
@@ -62,4 +68,6 @@
     static readonly DateFormatting _dateFormatting = new();
 
     int _number = 1975;
+
+    DateTime _dateTime = DateTime.Now;
 }

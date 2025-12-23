@@ -1,0 +1,143 @@
+﻿@using DestallMaterials.Blazor.Components.Services.UI
+@typeparam T
+
+@inject IUiManipulator uiManipulator
+
+@inherits BaseInput<IReadOnlyList<T>>
+
+<div class="highlight-selector @CssClass" style="@CssStyle">
+    @if (string.IsNullOrEmpty(Label) == false)
+    {
+        <span>
+            @Label
+        </span>
+    }
+
+    <div class="scroll-picker-items" id="@ElementId">
+        @for (int i = 0; i < Options.Count; i++)
+        {
+            var (value, disabled) = Options[i];
+            var isSelected = Value?.Contains(value, EqualityComparer) ?? false;
+            var id = GetItemId(value);
+            Action onClick = () => Select(value);
+            <div id="@id"
+                 class="date-picker-item @(isSelected ? "selected" : "") @(disabled ? "disabled" : "")"
+                 @onclick="onClick">
+                @ItemToString(value)
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Func<T, string> ItemToString { get; set; } = x => x?.ToString() ?? "";
+
+    [Parameter]
+    [EditorRequired]
+    public IReadOnlyList<SelectOption<T>> Options { get; set; }
+
+    [Parameter]
+    public IEqualityComparer<T> EqualityComparer { get; set; } = EqualityComparer<T>.Default;
+
+    [Parameter]
+    public int MinSelected { get; set; } = 1;
+
+    [Parameter]
+    public int MaxSelected { get; set; } = 1;
+
+    [Parameter]
+    public bool CenterSelected { get; set; } = true;
+
+    T _centeredItem;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        Options = [.. Options];
+        Value = Value ?? [];
+        if (CenterSelected && Value.Any())
+        {
+            var lastItem = Value[^1];
+            if (EqualityComparer.Equals(_centeredItem, lastItem) is false)
+            {
+                CenterItemAsync(lastItem).GetType();
+            }            
+        }
+    }
+
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (CenterSelected && Value.Any())
+        {
+            var lastItem = Value[^1];
+            CenterItemAsync(lastItem).GetType();
+        }
+    }
+
+    public HighlightSelector()
+    {
+        _hashCode = this.GetHashCode();
+        ElementId = $"scroll-picker-{Id}";
+        Options = [];
+    }
+
+    readonly int _hashCode;
+    public string ElementId { get; }
+
+    string GetItemId(T item) => $"{ElementId}-item-{EqualityComparer.GetHashCode(item ?? throw new InvalidOperationException("Option with value null encountered."))}";
+
+    async Task CenterItemAsync(T selectedItem)
+    {
+        if (Value?.Count > 0 is false)
+        {
+            return;
+        }
+
+        var itemId = GetItemId(selectedItem);
+        await uiManipulator.CenterInContainerAsync(itemId, ElementId);
+        _centeredItem = selectedItem;
+    }
+
+    void Select(T selectedItem)
+    {
+        if (Value is null)
+        {
+            OnValueChanged([selectedItem]);
+            return;
+        }
+
+        IEnumerable<T> resultValue = Value;
+        bool shouldCenter = false;
+
+        if (resultValue.Contains(selectedItem, EqualityComparer))
+        {
+            if (Value.Count > MinSelected)
+            {
+                resultValue = Value.Except([selectedItem], EqualityComparer);
+            }
+        }
+        else
+        {
+            var selectedItems = resultValue
+                .Union([selectedItem], EqualityComparer)
+                .TakeLast(MaxSelected)
+                .ToArray();
+
+            shouldCenter = CenterSelected;
+
+            resultValue = selectedItems;
+        }
+
+        if (resultValue != Value)
+        {
+            OnValueChanged([.. resultValue]);
+            if (shouldCenter)
+            {
+                CenterItemAsync(selectedItem).GetType();
+            }
+        }
+    }
+}
