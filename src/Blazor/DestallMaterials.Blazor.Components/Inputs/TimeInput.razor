@@ -1,49 +1,80 @@
-@using System.Globalization
+﻿@using System.Globalization
+@using DestallMaterials.Blazor.Components.Services.UI
+@using DestallMaterials.WheelProtection.DataStructures.Text
 
 @inherits BaseInput<TimeOnly>
 
-<div class="time-picker @(HasError ? "errored" : "") @CssClass" style="@Style">
+
+@inject IGlobalClickCatcher clickCatcher
+@inject IUiManipulator uiManipulator
+
+@{
+    var mask = new TimeMask(MinValue, MaxValue, Value, IncludeSeconds);
+    var cssClass = $"time-picker {(HasError ? "errored" : "")}";
+}
+
+<div class="@cssClass" id="@Id"
+     @onmouseout="() => _mouseOnInput = false"
+     @onmouseover="() => _mouseOnInput = true">
+
     @if (!string.IsNullOrEmpty(Label))
     {
-        <label class="time-picker-label">@Label</label>
+        <label class="flexible-date-picker-label">@Label</label>
     }
-    <input type="time"
-           class="time-picker-field"
-           value="@CurrentValue"
-           @onchange="OnTimeChanged"
-           step="60" />
-    @if (HasError)
-    {
-        <span class="time-picker-error">Invalid time</span>
-    }
-</div>
+    <div class="flexible-date-picker-input-wrapper">
 
-@code {
-    [Parameter]
-    public string Style { get; set; } = "";
+        <MaskedInput OnValueChanged="OnCharInputChanged" Value="@mask" Error="@Error" />
 
-
-    private string CurrentValue
-        => Value.ToString("HH:mm");
-
-    private void OnTimeChanged(ChangeEventArgs e)
-    {
-        var value = e.Value?.ToString();
-        if (!string.IsNullOrEmpty(value) && TimeOnly.TryParse(value, out var parsed))
+        @if (Clearable && Value != default)
         {
-            var newTime = parsed;
-            if (Value != newTime)
-            {
-                Value = newTime;
-                _ = OnValueChangedAsync(newTime);
-            }
+            <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
         }
-    }
 
-    private async Task OnValueChangedAsync(TimeOnly newValue)
-    {
-        OnValueChanged?.Invoke(newValue);
-        await Task.CompletedTask;
-        StateHasChanged();
-    }
-}
+        @if (_showCustomPicker)
+        {
+            <div class="@($"date-picker-dropdown date-picker-scroll-container {(IncludeSeconds ? "include-seconds" : "")}") "
+                 @onmouseout="() => _mouseOnPicker = false"
+                 @onmouseover="() => _mouseOnPicker = true">
+
+                @{
+                    var (minHour, maxHour) = mask.AllowedHours();
+                    var hourOptions = OptionsRange(0, 24, minHour, maxHour);
+
+                    var (minMinute, maxMinute) = mask.AllowedMinutes(Value.Hour);
+                    var minuteOptions = OptionsRange(0, 60, minMinute, maxMinute);
+
+                    var (minSecond, maxSecond) = mask.AllowedSeconds(Value.Hour, Value.Minute);
+                    var secondOptions = OptionsRange(0, 60, minSecond, maxSecond);
+                }
+                <HighlightSelector T="int"
+                                   Label="Hour"
+                                   Options="hourOptions"
+                                   ItemToString="@(d => d.ToString("D2"))"
+                                   OnValueChanged="d => SelectHour(d[0])"
+                                   Value="[Value.Hour]"
+                                   MinSelected="1"
+                                   MaxSelected="1" />
+                <HighlightSelector T="int"
+                                   Label="Minute"
+                                   Options="minuteOptions"
+                                   ItemToString="@(d => d.ToString("D2"))"
+                                   OnValueChanged="d => SelectMinute(d[0])"
+                                   Value="[Value.Minute]"
+                                   MinSelected="1"
+                                   MaxSelected="1" />
+                @if (IncludeSeconds)
+                {
+                    <HighlightSelector T="int"
+                                       Label="Second"
+                                       Options="secondOptions"
+                                       ItemToString="@(d => d.ToString($"D2"))"
+                                       OnValueChanged="d => SelectSecond(d[0])"
+                                       Value="[Value.Second]"
+                                       MinSelected="1"
+                                       MaxSelected="1" />
+                }
+
+            </div>
+        }
+    </div>
+</div>

@@ -47,7 +47,7 @@
                MaxValue="DateOnly.FromDateTime(DateTime.Today)"
                MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" /> *@
 
-    <DateTimeInput OnValueChanged="dt => {  _dateTime = dt; StateHasChanged(); }" Value="_dateTime" />
+    <DateTimeInput OnValueChanged="dt => {  _dateTime = dt; StateHasChanged(); }" Value="_dateTime" IncludeSeconds=true />
 @* 
     <HighlightSelector T="int"
                        Options="Enumerable.Range(0, 100).Select(n => (SelectOption<int>)n).ToArray()"

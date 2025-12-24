@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace DestallMaterials.Blazor.Components.Inputs;
 
-public partial class DateInput
+public partial class TimeInput
 {
     private bool _showCustomPicker = false;
 
@@ -14,27 +14,28 @@ public partial class DateInput
     public string ValueNotSetText { get; set; } = "Not set";
 
     [Parameter]
-    public DateOnly MinValue { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddYears(-50));
+    public TimeOnly MinValue { get; set; } = TimeOnly.MinValue;
 
     [Parameter]
-    public DateOnly MaxValue { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    public TimeOnly MaxValue { get; set; } = TimeOnly.MaxValue;
 
     [Parameter]
-    public string Format { get; set; } = "dd.MM.yyyy";
+    public bool IncludeSeconds { get; set; }
 
     bool _renderScheduled = false;
 
-    void OnCharInputChanged(DateMask mask)
+    void OnCharInputChanged(TimeMask newMask)
     {
-        var newValue = mask.Value;
+        var newValue = newMask.Value;
+
         if (newValue != Value)
         {
             OnValueChanged(newValue);
             ScheduleRender();
         }
     }
-    
-    DateOnly _initValue;
+
+    TimeOnly _initValue;
 
     protected override void OnParametersSet()
     {
@@ -74,23 +75,23 @@ public partial class DateInput
         ScheduleRender();
     }
 
-    private void SelectDay(int day)
+    private void SelectSecond(int day)
     {
-        var newValue = new DateOnly(Value.Year, Value.Month, day);
+        var newValue = new TimeOnly(Value.Hour, Value.Minute, day);
         OnValueChanged(newValue);
         ScheduleRender();
     }
 
-    private void SelectMonth(int month)
+    private void SelectMinute(int month)
     {
-        var newValue = new DateOnly(Value.Year, month, Value.Day);
+        var newValue = new TimeOnly(Value.Hour, month, Value.Second);
         OnValueChanged(newValue);
         ScheduleRender();
     }
 
-    private void SelectYear(int year)
+    private void SelectHour(int hour)
     {
-        var newValue = new DateOnly(year, Value.Month, Value.Day);
+        var newValue = new TimeOnly(hour, Value.Minute, Value.Second);
         OnValueChanged(newValue);
         ScheduleRender();
     }
@@ -100,7 +101,7 @@ public partial class DateInput
         base.OnAfterRender(firstRender);
 
         if (firstRender)
-        {            
+        {
             BindToLifetime(
                 clickCatcher.OnMouseClicked(
                     (_, _) =>
@@ -134,7 +135,7 @@ public partial class DateInput
     bool _mouseOnInput = false;
     bool _mouseOnPicker = false;
 
-    SelectOption<int>[] OptionsRange(int start, int finish, int minValue, int maxValue) =>
+    static SelectOption<int>[] OptionsRange(int start, int finish, int minValue, int maxValue) =>
         [
             .. Enumerable
                 .Range(start, finish - start + 1)

@@ -26,7 +26,7 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
 
         for (int i = removed - 1; i >= 0; i--)
         {
-           var options = GetSlotOptions(slots, at + i);
+            var options = GetSlotOptions(slots, at + i);
             slots[at + i] = options[0];
         }
 
@@ -46,15 +46,6 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
         }
 
         var insertedCharacters = inserted.Select((c, i) => (c, at + i));
-        //if (
-        //    format.DateFormat
-        //    is DateFormat.DayMonth
-        //        or DateFormat.DayMonthYear
-        //        or DateFormat.MonthDayYear
-        //)
-        //{
-        //    insertedCharacters = [.. insertedCharacters.Reverse()];
-        //}
 
         foreach (var (symbol, insertedAt) in insertedCharacters)
         {
