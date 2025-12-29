@@ -10,8 +10,7 @@
 
 @{
     var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has-clear-button" : "")} {CssClass}";
-    var format = DateFormatting.Parse(Format);
-    var mask = new DateMask(format, MinValue, MaxValue, Value);
+    var mask = new DateMask(Format, MinValue, MaxValue, Value);
 }
 
 <div class="@cssClass" id="@Id"
@@ -61,7 +60,6 @@
                 <HighlightSelector T="int"
                                    Label="Day"
                                    Options="dayOptions"
-                                   ItemToString="@(d => d.ToString("D2"))"
                                    OnValueChanged="d => SelectDay(d[0])"
                                    Value="[Value.Day]"
                                    MinSelected="1"
@@ -69,7 +67,6 @@
                 <HighlightSelector T="int"
                                    Label="Month"
                                    Options="monthOptions"
-                                   ItemToString="@(d => d.ToString("D2"))"
                                    OnValueChanged="d => SelectMonth(d[0])"
                                    Value="[Value.Month]"
                                    MinSelected="1"
@@ -77,7 +74,6 @@
                 <HighlightSelector T="int"
                                    Label="Year"
                                    Options="yearOptions"
-                                   ItemToString="@(d => d.ToString($"D{format.YearLength}"))"
                                    OnValueChanged="d => SelectYear(d[0])"
                                    Value="[Value.Year]"
                                    MinSelected="1"

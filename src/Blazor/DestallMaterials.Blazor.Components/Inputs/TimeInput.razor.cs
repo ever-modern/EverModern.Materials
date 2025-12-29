@@ -44,6 +44,7 @@ public partial class TimeInput
         if (Value != _initValue)
         {
             _initValue = Value;
+            ScheduleRender();
         }
     }
 
@@ -139,9 +140,10 @@ public partial class TimeInput
         [
             .. Enumerable
                 .Range(start, finish - start + 1)
-                .Select(month => new SelectOption<int>(
-                    month,
-                    month > maxValue || month < minValue
+                .Select(number => new SelectOption<int>(
+                    number,
+                    number.ToString("D2"),
+                    number > maxValue || number < minValue
                 )),
         ];
 

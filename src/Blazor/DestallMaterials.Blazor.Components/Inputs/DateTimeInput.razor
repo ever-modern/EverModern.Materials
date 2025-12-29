@@ -1,4 +1,5 @@
 ﻿@using System.Globalization
+@using DestallMaterials.WheelProtection.DataStructures.Text
 
 @inherits BaseInput<DateTime>
 
@@ -17,7 +18,8 @@
                        ValueNotSetText="Date"
                        Culture=Culture
                        CssClass="datetime-input-date"
-                       Error="@Error" />
+                       Error="@Error"
+                       Format="@DateFormat" />
             <TimeInput Culture=Culture
                        CssClass="datetime-input-time"
                        OnValueChanged=SetTime
@@ -40,7 +42,8 @@
                    ValueNotSetText="Date"
                    Culture=Culture
                    Label="@Label"
-                   Error="@Error" />
+                   Error="@Error"
+                   Format="@DateFormat" />
     }
     else if (PickTime)
     {
@@ -71,6 +74,9 @@
     [Parameter]
     public bool IncludeSeconds { get; set; }
 
+    [Parameter]
+    public DateFormatting DateFormat { get; set; } = DateFormatting.Default;
+
     protected override void OnParametersSet()
     {
         if (!PickDate && !PickTime)
@@ -80,8 +86,6 @@
 
         base.OnParametersSet();
     }
-
-    string ValueString => Value > new DateTime(2200, 01, 01) ? "∞" : Value.ToString();
 
     public void SetTime(TimeOnly newTime)
     {
@@ -105,6 +109,7 @@
     void ClearValue()
     {
         OnValueChanged(MinValue);
+        Value = MinValue;
         StateHasChanged();
     }
 

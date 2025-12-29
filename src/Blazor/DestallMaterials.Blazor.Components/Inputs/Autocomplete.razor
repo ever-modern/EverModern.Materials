@@ -67,7 +67,7 @@
                         @onmouseleave="unsetHoveredItem"
                         @onmouseenter="setHoveredItem">
 
-                        @if (ItemTemplate != null)
+                        @if (ItemTemplate is not null)
                         {
                             @ItemTemplate(item)
                         }

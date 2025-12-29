@@ -18,6 +18,8 @@ public record DateFormatting(
     char YearChar = 'y'
 )
 {
+    public static DateFormatting Default { get; } = new(); 
+
     public int Length =>
         DateFormat switch
         {

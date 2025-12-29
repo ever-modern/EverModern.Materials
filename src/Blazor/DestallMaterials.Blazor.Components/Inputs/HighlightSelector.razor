@@ -16,23 +16,20 @@
     <div class="scroll-picker-items" id="@ElementId">
         @for (int i = 0; i < Options.Count; i++)
         {
-            var (value, disabled) = Options[i];
+            var (value, name, disabled) = Options[i];
             var isSelected = Value?.Contains(value, EqualityComparer) ?? false;
             var id = GetItemId(value);
             Action onClick = () => Select(value);
             <div id="@id"
                  class="date-picker-item @(isSelected ? "selected" : "") @(disabled ? "disabled" : "")"
                  @onclick="onClick">
-                @ItemToString(value)
+                @name
             </div>
         }
     </div>
 </div>
 
 @code {
-    [Parameter]
-    public Func<T, string> ItemToString { get; set; } = x => x?.ToString() ?? "";
-
     [Parameter]
     [EditorRequired]
     public IReadOnlyList<SelectOption<T>> Options { get; set; }
@@ -62,10 +59,9 @@
             if (EqualityComparer.Equals(_centeredItem, lastItem) is false)
             {
                 CenterItemAsync(lastItem).GetType();
-            }            
+            }
         }
     }
-
 
     protected override void OnAfterRender(bool firstRender)
     {

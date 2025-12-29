@@ -20,7 +20,7 @@ public partial class DateInput
     public DateOnly MaxValue { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
     [Parameter]
-    public string Format { get; set; } = "dd.MM.yyyy";
+    public DateFormatting Format { get; set; } = DateFormatting.Default;
 
     bool _renderScheduled = false;
 
@@ -43,6 +43,7 @@ public partial class DateInput
         if (Value != _initValue)
         {
             _initValue = Value;
+            ScheduleRender();
         }
     }
 
@@ -140,6 +141,7 @@ public partial class DateInput
                 .Range(start, finish - start + 1)
                 .Select(month => new SelectOption<int>(
                     month,
+                    month.ToString("D2"),
                     month > maxValue || month < minValue
                 )),
         ];

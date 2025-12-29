@@ -47,17 +47,23 @@
                MaxValue="DateOnly.FromDateTime(DateTime.Today)"
                MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" /> *@
 
-    <DateTimeInput OnValueChanged="dt => {  _dateTime = dt; StateHasChanged(); }" Value="_dateTime" IncludeSeconds=true />
-@* 
+    @* <DateTimeInput OnValueChanged="ChangeDate" Value="_dateTime" IncludeSeconds=true /> *@
+    @* 
     <HighlightSelector T="int"
                        Options="Enumerable.Range(0, 100).Select(n => (SelectOption<int>)n).ToArray()"
                        OnValueChanged="v => { _number = v.FirstOrDefault(); StateHasChanged(); }"
                        CssStyle="height: 150px;"
                        Value="[_number]" />
  *@
+    <Autocomplete TItem="int"
+                  ValueChanged="n => { _number = n; StateHasChanged(); }"
+                  SearchFunc="async (s, ct) => await Task.FromResult(Enumerable.Range(0, 1000).ToArray())" />
+
     <p>@_number</p>
 
     <p>@_dateTime</p>
+
+    <button @onclick="() => StateHasChanged()">Confirm changes</button>
 
 </div>
 
@@ -66,6 +72,12 @@
     DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
 
     static readonly DateFormatting _dateFormatting = new();
+
+    void ChangeDate(DateTime dateTime)
+    {
+        _dateTime = dateTime;
+        StateHasChanged();
+    }
 
     int _number = 1975;
 

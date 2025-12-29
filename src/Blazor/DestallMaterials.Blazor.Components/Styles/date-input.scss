@@ -174,3 +174,62 @@
         .date-picker-item.selected:hover {
             background: #2563eb;
         }
+
+.datetime-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.datetime-input-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 2px;
+}
+
+.datetime-input-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: flex-start;
+}
+
+.datetime-input-date,
+.datetime-input-time {
+    flex: 0 0 auto;
+}
+
+.datetime-input-clear {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    margin-top: 0;
+    transition: color 0.2s;
+    flex-shrink: 0;
+    align-self: center;
+    height: auto;
+    display: flex;
+    align-items: center;
+}
+
+.datetime-input-clear:hover {
+    color: #ef4444;
+}
+
+.datetime-input-clear.hidden {
+    visibility: hidden;
+}
+
+.datetime-input.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.datetime-input.errored {
+    /* Error styling handled by child components */
+}
