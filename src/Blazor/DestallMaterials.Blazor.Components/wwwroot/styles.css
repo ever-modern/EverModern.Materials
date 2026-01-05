@@ -263,10 +263,6 @@
   margin-bottom: 2px;
 }
 
-.autocomplete-input-wrapper {
-  position: relative;
-}
-
 .autocomplete-field {
   padding: 8px 12px;
   padding-right: 32px;
@@ -370,4 +366,8 @@ input.base-input {
   border: none;
   border-bottom: 1px solid #000;
   outline: none;
+}
+
+.hovered {
+  background-color: blueviolet;
 }

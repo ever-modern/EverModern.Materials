@@ -31,21 +31,21 @@ public class JsUiManipulator : IUiManipulator
 
     public async Task<uint> Y_Deviation(string itemId, string containerId)
     {
-        const string deviation = $"{_scrollsModule}.Y_elementDeviation";
+        const string deviation = $"{_scrollsModule}.y_elementDeviation";
         var result = await _runtime.InvokeAsync<uint>(deviation, itemId, containerId);
         return result;
     }
 
     public async Task<uint> X_Deviation(string itemId, string containerId)
     {
-        const string deviation = $"{_scrollsModule}.X_elementDeviation";
+        const string deviation = $"{_scrollsModule}.x_elementDeviation";
         var result = await _runtime.InvokeAsync<uint>(deviation, itemId, containerId);
         return result;
     }
 
     public async Task ScrollToFit_Y(string itemId, string containerId)
     {
-        const string command = $"{_scrollsModule}.Y_scrollToFit";
+        const string command = $"{_scrollsModule}.y_scrollToFit";
         await _runtime.InvokeVoidAsync(command, itemId, containerId);
     }
 

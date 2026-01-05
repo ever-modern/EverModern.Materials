@@ -1,12 +1,14 @@
-﻿@using DestallMaterials.Blazor.Components.Services.UI
+﻿@using DestallMaterials.Blazor.Components.Containers
+@using DestallMaterials.Blazor.Components.Services.UI
 @inherits LayoutComponentBase
 
 
 @inject IGlobalClickInvoker clickInvoker
 
-<div @onclick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
-     @onmousedown="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
-     @onkeydown="e => clickInvoker.FireKeyClickEvent(e)">
+@* <p @onkeydown="e => clickInvoker.FireKeyClickEvent(new())" /> *@
+
+<Container OnInnerClick="(e) => clickInvoker.FireGlobalMouseClickEvent(e)"
+           OnKeyClicked="k => clickInvoker.FireKeyClickEvent(k)">
 
     @Body
 
@@ -15,5 +17,5 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
-</div>
+</Container>
 

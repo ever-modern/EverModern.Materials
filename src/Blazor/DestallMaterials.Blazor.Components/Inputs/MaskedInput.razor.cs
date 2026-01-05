@@ -31,7 +31,7 @@ public partial class MaskedInput<TMask> : BaseInput<TMask>
                     {
                         var (newValue, carretPosition) = currentState;
 
-                        var mask = Value;
+                        var mask = Value ?? throw new InvalidOperationException("Mask Value was null.");
 
                         var oldValue = ToString(Value);
 

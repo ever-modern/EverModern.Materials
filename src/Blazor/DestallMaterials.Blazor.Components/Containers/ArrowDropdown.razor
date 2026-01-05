@@ -42,12 +42,13 @@
 
 @code {
     [Parameter]
-    public string Text { get; set; }
+    public string Text { get; set; } = "";
 
     [Parameter]
     public bool Open { get; set; }
 
     [Parameter]
+    [EditorRequired]
     public IEnumerable<DropdownMenuOption> Options { get; set; }
 
     protected override async Task OnOuterClickAsync(MouseEventArgs mouseEventArgs)

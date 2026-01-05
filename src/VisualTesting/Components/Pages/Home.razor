@@ -3,6 +3,7 @@
 @using System.Globalization
 @using DestallMaterials.Blazor.Components.Services.UI
 @using DestallMaterials.WheelProtection.DataStructures.Text
+@using DestallMaterials.Blazor.Components.Containers;
 
 
 <PageTitle>Component Visual Testing</PageTitle>
@@ -55,15 +56,16 @@
                        CssStyle="height: 150px;"
                        Value="[_number]" />
  *@
-    <Autocomplete TItem="int"
-                  ValueChanged="n => { _number = n; StateHasChanged(); }"
-                  SearchFunc="async (s, ct) => await Task.FromResult(Enumerable.Range(0, 1000).ToArray())" />
 
     <p>@_number</p>
 
     <p>@_dateTime</p>
 
     <button @onclick="() => StateHasChanged()">Confirm changes</button>
+
+    <Autocomplete TItem="int"
+                  ValueChanged="n => { _number = n; StateHasChanged(); }"
+                  SearchFunc="async (s, ct) => await Task.FromResult(Enumerable.Range(0, 1000).ToArray())" />
 
 </div>
 
