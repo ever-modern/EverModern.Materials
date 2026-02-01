@@ -1,0 +1,84 @@
+﻿@using System.Globalization
+
+@using EverModern.Blazor.Components.Services.UI
+@using EverModern.WheelProtection.DataStructures.Text
+
+@inherits BaseInput<DateOnly>
+
+@inject IGlobalClickCatcher clickCatcher
+@inject IUiManipulator uiManipulator
+
+@{
+    var cssClass = $"date-input flexible-date-picker {(HasError ? "errored" : "")} {(Clearable && Value != default ? "has-clear-button" : "")} {CssClass}";
+    var mask = new DateMask(Format, MinValue, MaxValue, Value);
+}
+
+<div class="@cssClass" id="@Id"
+     @onmouseout="() => _mouseOnInput = false"
+     @onmouseover="() => _mouseOnInput = true">
+
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="flexible-date-picker-label">@Label</label>
+    }
+    <div class="flexible-date-picker-input-wrapper">
+
+        <MaskedInput OnValueChanged="OnCharInputChanged" Value="@mask" Error="@Error" />
+
+        @if (Clearable && Value != default)
+        {
+            <button type="button" class="flexible-date-picker-clear" @onclick="ClearValue">×</button>
+        }
+
+        @if (_showCustomPicker)
+        {
+            <div class="date-picker-dropdown date-picker-scroll-container"
+                 @onmouseout="() => _mouseOnPicker = false"
+                 @onmouseover="() => _mouseOnPicker = true">
+
+                @{
+                    var maxDay = Value.Year == MaxValue.Year && MaxValue.Month == Value.Month ?
+                    MaxValue.Day :
+                    31;
+
+                    var minDay = Value.Year == MinValue.Year && MinValue.Month == Value.Month ?
+                    MinValue.Day :
+                    1;
+
+                    var maxMonth = Value.Year == MaxValue.Year ?
+                    MaxValue.Month :
+                    31;
+
+                    var minMonth = Value.Year == MinValue.Year ?
+                    MinValue.Month :
+                    1;
+
+                    var dayOptions = OptionsRange(1, 31, minDay, maxDay);
+                    var monthOptions = OptionsRange(1, 12, minMonth, maxMonth);
+                    var yearOptions = OptionsRange(MinValue.Year, MaxValue.Year, 0, MaxValue.Year);
+                }
+                <HighlightSelector T="int"
+                                   Label="Day"
+                                   Options="dayOptions"
+                                   OnValueChanged="d => SelectDay(d[0])"
+                                   Value="[Value.Day]"
+                                   MinSelected="1"
+                                   MaxSelected="1" />
+                <HighlightSelector T="int"
+                                   Label="Month"
+                                   Options="monthOptions"
+                                   OnValueChanged="d => SelectMonth(d[0])"
+                                   Value="[Value.Month]"
+                                   MinSelected="1"
+                                   MaxSelected="1" />
+                <HighlightSelector T="int"
+                                   Label="Year"
+                                   Options="yearOptions"
+                                   OnValueChanged="d => SelectYear(d[0])"
+                                   Value="[Value.Year]"
+                                   MinSelected="1"
+                                   MaxSelected="1" />
+            </div>
+        }
+    </div>
+</div>

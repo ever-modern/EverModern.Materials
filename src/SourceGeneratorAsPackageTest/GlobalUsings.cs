@@ -1,1 +1,1 @@
-﻿global using DestallMaterials.Extensions.Tuples;
+﻿

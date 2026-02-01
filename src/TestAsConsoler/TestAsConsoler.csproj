@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DestallMaterials.DataStructures\DestallMaterials.WheelProtection.DataStructures.csproj" />
-    <ProjectReference Include="..\DestallPackages.WheelProtection.Queues\DestallMaterials.WheelProtection.Queues.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.WheelProtection.Queues.csproj" />
   </ItemGroup>
 
 </Project>

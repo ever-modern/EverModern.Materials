@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net9.0</TargetFrameworks>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Version>1.2.11</Version>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\EverModern.Chronos\EverModern.Chronos.csproj" />
+	  <ProjectReference Include="..\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
+	</ItemGroup>
+
+</Project>

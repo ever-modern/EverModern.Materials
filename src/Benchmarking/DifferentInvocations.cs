@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
-using DestallMaterials.WheelProtection.Extensions.Tasks;
 
 [SimpleJob(RuntimeMoniker.Net90)]
 [MemoryDiagnoser]
@@ -17,17 +16,17 @@ public class DifferentInvocations
 
     [Benchmark]
     public (int, int, int) Using_Task_WhenAll()
-        => DestallMaterials.WheelProtection.Extensions.Tasks.TaskExtensions.GetAwaiter((RunBigTask(), RunBigTask(), RunBigTask()))
+        => EverModern.WheelProtection.Extensions.Tasks.TaskExtensions.GetAwaiter((RunBigTask(), RunBigTask(), RunBigTask()))
             .GetResult();
 
     [Benchmark]
     public (int, int, int, int, int) Using_Task_WhenAll_5()
-    => DestallMaterials.WheelProtection.Extensions.Tasks.TaskExtensions.GetAwaiter((RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask()))
+    => EverModern.WheelProtection.Extensions.Tasks.TaskExtensions.GetAwaiter((RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask()))
         .GetResult();
 
     [Benchmark]
     public (int, int, int, int, int, int, int) Using_Task_WhenAll_7()
-        => DestallMaterials.WheelProtection.Extensions.Tasks.TaskExtensions.GetAwaiter_TaskWhenAll((RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask()))
+        => EverModern.WheelProtection.Extensions.Tasks.TaskExtensions.GetAwaiter_TaskWhenAll((RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask(), RunBigTask()))
             .GetResult();
     Task<int> RunBigTask() => Task.Run(() =>
     {

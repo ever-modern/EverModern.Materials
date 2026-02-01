@@ -1,0 +1,318 @@
+﻿@using EverModern.CodeGeneration
+@using EverModern.WheelProtection.Extensions
+@using EverModern.WheelProtection.Extensions.Strings
+@using Microsoft.AspNetCore.Components;
+@using static EverModern.CodeGeneration.SourceGenerationTemplate.SourceCodeRenderingSymbols
+@using static System.Linq.Enumerable;
+
+
+@inherits EverModern.CodeGeneration.SourceGenerationTemplate;
+
+@{
+    const string nameSpace = "DestallMaterials.WheelProtection.Linq";
+    var filePath = (string method) => new ProjectRelativeFilePath("DestallMaterials.WheelProtection.LinqToTuples", $"{method}.cs");
+    var path = filePath("TupleExtensions");
+
+    var ts = (int count) => Enumerable.Repeat("T", count).Merge(", ");
+    var touts = (int count) => Enumerable.Repeat("TOut", count).Merge(", ");
+    var tkeytvalues = (int count) => Enumerable.Repeat("TKey, TValue", count).Merge(", ");
+}
+    
+<EverModern.CodeGeneration.SourceFile Path="@path">
+
+    namespace @nameSpace 
+    {
+        public static class TupleExtensions
+        {
+            @for (byte i = 2; i < TupleSize; i++)
+            {
+                <text>
+
+                public static System.Collections.Generic.IEnumerable`T/` AsEnumerable`T/`(this (@(ts(i))) items)
+                {
+                    @Range(1, i).Select(n => $"yield return items.Item{n};").Merge("\n")
+                }
+
+                public static (@touts(i)) Select`T, TOut/`(this (@ts(i)) items, System.Func`T, TOut/` selector)
+                    => (
+                        @for (int j = 1; j <= i; j++)
+                        {
+                            @if (j > 1)
+                            {
+                                <text>
+                                    ,
+                                </text>
+                            }
+                            <text>
+                                selector(items.Item@(j))
+                            </text>
+                        }
+                    );
+
+                public static bool Any`T/`(this (@ts(i)) items, System.Func`T, bool/` selector)
+                    =>  @for (int j = 1; j <= i; j++)
+                        {
+                            @if (j > 1)
+                            {
+                                <text>||</text>
+                            }
+                            <text>
+                                selector(items.Item@(j))
+                            </text>
+                        };
+
+                public static bool All`T/`(this (@ts(i)) items, System.Func`T, bool/` selector)
+                    => @for (int j = 1; j <= i; j++)
+                        {
+                            @if (j > 1)
+                            {
+                                <text>&&</text>
+                            }
+                            <text>
+                                selector(items.Item@(j))
+                            </text>
+                        };
+
+                public static T First`T/`(this (@ts(i)) items, System.Func`T, bool/` selector)
+                {
+                    @for (int j = 1; j <= i; j++)
+                    {
+                        <text>
+                            if (selector(items.Item@(j)))
+                            {
+                                return items.Item@(j);
+                            }
+                        </text>
+                    }
+                    throw new System.InvalidOperationException("Tuple doesn't contain mathcing elements.");
+                }
+
+                public static T FirstOrDefault`T/`(this (@ts(i)) items, System.Func`T, bool/` selector)
+                {
+                    @for (int j = 1; j <= i; j++)
+                    {
+                        <text>
+                            if (selector(items.Item@(j)))
+                            {
+                                return items.Item@(j);
+                            }
+                        </text>
+                    }
+                    return default;
+                }
+
+                public static bool Contains`T/`(this (@ts(i)) items, T soughtItem)
+                {
+                    @for (int j = 1; j <= i; j++)
+                    {
+                        <text>
+                            if (items.Item@(j)?.Equals(soughtItem) == true)
+                            {
+                                return true;
+                            }
+                        </text>
+                    }
+                    return false;
+                }
+
+                public static int Count`T/`(this (@ts(i)) items, System.Func`T, bool/` filter)
+                {
+                    int result = 0;
+                    @for (int j = 1; j <= i; j++)
+                    {
+                        <text>
+                            if (filter(items.Item@(j)))
+                            {
+                                result++;
+                            }
+                        </text>
+                    }
+                    return result;
+                }
+
+                public static System.Collections.Generic.Dictionary`TKey, TValue/` ToDictionary`TKey, TValue/`(this (@(Repeat("TKey, TValue", i - 1).Merge(", "))) keysValues)
+                    => new System.Collections.Generic.Dictionary`TKey, TValue/`(@((i - 1)))
+                    {
+                        @for (byte j = 0; j < i - 1; j++)
+                        {
+                            <text>
+                                { keysValues.Item@(j * 2 + 1), keysValues.Item@(j * 2 + 2) },
+                            </text>
+                        }
+                    };
+
+                public static (@(Repeat("(T1, T2)", i).Merge(", "))) Zip`T1, T2/`(this 
+                        (@(Repeat("T1", i).Merge(","))) tuple1, 
+                        (@(Repeat("T2", i).Merge(","))) tuple2)
+                    => (
+                        @for (byte j = 1; j <= i; j++)
+                        {
+                            @if (j > 1)
+                            {
+                                <text>
+                                    ,
+                                </text>
+                            }
+                            <text>
+                                (tuple1.Item@(j), tuple2.Item@(j))
+                            </text>
+                        }
+                    ); 
+
+                public static (@(Repeat("TResult", i).Merge(","))) Map`T1, T2, TResult/`(this 
+                    (@(Repeat("T1", i).Merge(","))) tuple1,
+                    (@(Repeat("T2", i).Merge(","))) tuple2,
+                    System.Func`T1, T2, TResult/` mappingFunction)
+                    => (
+                        @for (byte j = 1; j <= i; j++)
+                        {
+                            if (j > 1)
+                            {
+                                <text>
+                                    ,
+                                </text>
+                            }
+                            <text>
+                                mappingFunction(
+                                    tuple1.Item@(j),
+                                    tuple2.Item@(j)
+                                )
+                            </text>
+                        }
+                    );
+
+                public static T At`T/`(this (@(ts(i))) tuple, byte index)
+                {
+                    switch (index)
+                    {
+                        @for (byte j = 0; j < i; j++)
+                        {
+                            <text>
+                                case @(j):
+                                    return tuple.Item@(j + 1);
+                            </text>
+                        }
+                        default:
+                            throw new System.ArgumentOutOfRangeException(nameof(index));
+                    }
+                }
+
+                public static (@ts(i)) Reverse`T, TSelector/`(this (@(ts(i))) tuple, System.Func`T, TSelector/` selector)
+                    => (@for (var j = i; j > 0; j--)
+                    {
+                        <text>
+                            tuple.Item@(j)
+                        </text>
+                        @if (j > 1)
+                        {
+                            <text>
+                                ,
+                            </text>
+                        }
+                    });
+
+                public static (@ts(i+1)) Prepend`T/`(this (@(ts(i))) input, T newItem)
+                    => (
+                        newItem,
+                        @for (byte j = 1; j <= i; j++)
+                        {
+                            if (j > 1)
+                            {
+                                <text>
+                                    ,
+                                </text>
+                            }
+                            <text>
+                                input.Item@(j)
+                            </text>
+                        }
+                    );
+
+                public static (@ts(i+1)) Append`T/`(this (@(ts(i))) input, T newItem)
+                => (
+                    @for (byte j = 1; j <= i; j++)
+                    {
+                        @if (j > 1)
+                        {
+                            <text>
+                                ,
+                            </text>
+                        }
+                        <text>
+                            input.Item@(j)
+                        </text>
+                    }
+                    
+                    , newItem
+                );
+
+                public static T[] ToArray`T/`(this (@(ts(i))) items)
+                    => new T[@i] 
+                    {
+                        @Range(1, i).Select(n => $"items.Item{n}").Merge(",")
+                    };
+
+                public static System.Collections.Generic.IEnumerator`T/` GetEnumerator`T/`(this (@(ts(i))) items)
+                {
+                    @Range(1, i).Select(n => $"yield return items.Item{n};").Merge("\n")
+                }
+
+                @for (byte j = 2; j <= i; j++)
+                {
+                    <text>
+                        public static (@(ts(j + i))) Concat`T/`(this (@(ts(i))) tuple1, (@(ts(j))) tuple2)
+                            => (
+                                @for (int x = 1; x <= i; x++)
+                                {
+                                    <text>
+                                        tuple1.Item@(x),
+                                    </text>
+                                }
+                                @for (int x = 1; x <= j; x++)
+                                {
+                                    @if (x > 1)
+                                    {
+                                        <text>
+                                            ,
+                                        </text>
+                                    }
+                                    <text>
+                                        tuple2.Item@(x)
+                                    </text>
+                                }
+                            );
+                    </text>
+                }
+
+                @foreach (string numberType in new string[] 
+                {
+                    "int", "uint", "short", "ushort", "long", "ulong", 
+                    "decimal", "double", "float"
+                })
+                {
+                    <text>
+                        public static @numberType Sum(
+                            this (@Repeat(numberType, i).Merge(",")) numbers
+                        ) => (@(numberType))(@Range(1, i).Select(n => $"numbers.Item{n}").Merge(" + "));
+
+                        public static @numberType Sum`T/`(
+                            this (@Repeat("T", i).Merge(",")) items,
+                            System.Func`T, @(numberType)/` selector
+                        ) => (@(numberType))(@Range(1, i).Select(n => $"selector(items.Item{n})").Merge(" + "));
+                    </text>
+                }
+                        
+                </text>
+            }
+        }
+        
+    }
+        
+</EverModern.CodeGeneration.SourceFile>
+
+
+@code {
+    [Microsoft.AspNetCore.Components.Parameter]
+    public byte TupleSize { get; set; } = 32;
+
+}

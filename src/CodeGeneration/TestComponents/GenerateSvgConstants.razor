@@ -1,0 +1,35 @@
+﻿@using EverModern.CodeGeneration
+@using EverModern.WheelProtection.Extensions
+@using EverModern.WheelProtection.Extensions.Strings
+@using Microsoft.AspNetCore.Components;
+@using static EverModern.CodeGeneration.SourceGenerationTemplate.SourceCodeRenderingSymbols
+@using static System.Linq.Enumerable;
+
+
+@inherits EverModern.CodeGeneration.SourceGenerationTemplate;
+
+@{
+    const string nameSpace = "DestallMaterials.WheelProtection.Linq";
+    var filePath = (string method) => new ProjectRelativeFilePath("DestallMaterials.WheelProtection.LinqToTuples", $"{method}.cs");
+    var path = filePath("TupleExtensions");
+
+    var ts = (int count) => Enumerable.Repeat("T", count).Merge(", ");
+    var touts = (int count) => Enumerable.Repeat("TOut", count).Merge(", ");
+    var tkeytvalues = (int count) => Enumerable.Repeat("TKey, TValue", count).Merge(", ");
+}
+    
+<EverModern.CodeGeneration.SourceFile Path="@path">
+
+    namespace @nameSpace 
+    {
+              
+    }
+        
+</EverModern.CodeGeneration.SourceFile>
+
+
+@code {
+    [Microsoft.AspNetCore.Components.Parameter]
+    public byte TupleSize { get; set; } = 32;
+
+}

@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace SourceGenerator
+namespace EverModern.SyntaxGenerator
 {
     public class TupleSyntaxReceiver : ISyntaxReceiver
     {

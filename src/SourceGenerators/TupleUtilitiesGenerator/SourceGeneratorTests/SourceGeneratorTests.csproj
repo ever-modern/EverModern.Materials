@@ -28,8 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SourceGenerator\DestallMaterials.SyntaxGenerator.csproj" />
-    <ProjectReference Include="..\SourceGenerator\SourceGenerator.csproj" />
+    <ProjectReference Include="..\SourceGenerator\EverModern.SyntaxGenerator.csproj" />
   </ItemGroup>
 
 </Project>

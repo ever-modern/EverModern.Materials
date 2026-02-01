@@ -1,4 +1,4 @@
-using DestallMaterials.Blazor.Components.Services.UI;
+using EverModern.Blazor.Components.Services.UI;
 using VisualTesting.Components;
 
 var builder = WebApplication.CreateBuilder(args);

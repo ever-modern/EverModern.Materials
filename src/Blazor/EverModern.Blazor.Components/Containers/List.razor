@@ -1,0 +1,18 @@
+﻿@using EverModern.Blazor.Components.Common
+
+
+@inherits Container
+
+@RenderElementWithAttributes("ul")
+
+@code {
+    [Parameter]
+    public string ListStyleType { get; set; } = "none";
+
+    protected override void SetAttributes(
+        Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder renderTreeBuilder)
+    {
+        base.SetAttributes(renderTreeBuilder);
+        renderTreeBuilder.AddAttribute(1001, "style", $"list-style-type: {ListStyleType}; {CssStyle}");
+    }
+}

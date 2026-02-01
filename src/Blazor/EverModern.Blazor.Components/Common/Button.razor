@@ -1,0 +1,15 @@
+﻿@using EverModern.Blazor.Components.Containers
+@inherits EverModern.Blazor.Components.Containers.Area
+
+<button type="button" class="@Class" @onclick="@OnClick"
+        @onmouseout="() => MouseIn = false"
+        @onmouseover="() => MouseIn = true"
+        @onmouseleave="() => MouseIn = false"
+        @onmouseenter="() => MouseIn = true">
+    @ChildContent
+</button>
+
+@code {
+    [Parameter]
+    public Action OnClick { get; set; } = () => { };
+}

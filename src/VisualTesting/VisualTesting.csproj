@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Blazor\DestallMaterials.Blazor.Components\DestallMaterials.Blazor.Components.csproj" />
+    <ProjectReference Include="..\Blazor\EverModern.Blazor.Components\EverModern.Blazor.Components.csproj" />
   </ItemGroup>
 
 </Project>

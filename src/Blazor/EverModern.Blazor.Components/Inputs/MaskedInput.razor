@@ -1,0 +1,21 @@
+﻿@using EverModern.Blazor.Components.Inputs
+@using EverModern.Blazor.Components.Services.UI
+
+@namespace EverModern.Blazor.Components.Inputs
+
+@typeparam TMask
+
+@inherits BaseInput<TMask>
+
+@inject IUiManipulator ui
+@inject IGlobalClickCatcher globalClickCatcher
+
+<input type="text"
+       disabled="@(Disabled)"
+       value="@(Value is null ? "" : new string([.. Value]))"
+       class="@($"base-input masked-input {CssClass}")"
+       id="@_inputId"
+       style="@CssStyle"
+       @onfocus="OnFocus"
+       @onclick="OnClick" />
+
