@@ -41,7 +41,7 @@ public class EnumerableExtensionsTests
             return 0;
         });
 
-        Assert.ThrowsAsync<AggregateException>(() => tasks.ToListAsync());
+        Assert.ThrowsAsync<AggregateException>(async () => await tasks.ToListAsync());
     }
 
     [Test]

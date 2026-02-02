@@ -40,21 +40,6 @@ public static class EnumerableExtensions
     public static Task<T[]> WhenAll<T>(this IEnumerable<Task<T>> items) =>
         Task.WhenAll(items);
 
-    public static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> items, CancellationToken cancellationToken = default)
-    {
-        var result = new List<T>();
-
-        await foreach (var item in items.WithCancellation(cancellationToken))
-        {
-            result.Add(item);
-        }
-
-        return result;
-    }
-
-    public static async Task<List<T>> ToListAsync<T>(this IEnumerable<Task<T>> items) =>
-        [.. await Task.WhenAll(items)];
-
     public static async Task<Dictionary<TKey, TValue>> ToDictionaryAsync<TIn, TKey, TValue>(
         this IEnumerable<TIn> ins,
         Func<TIn, Task<TKey>> asyncKeySelector,

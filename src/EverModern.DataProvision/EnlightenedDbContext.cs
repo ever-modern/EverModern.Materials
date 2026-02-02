@@ -44,7 +44,7 @@ public abstract class EnlightenedDbContext<TId, TBaseEntity> : DbContext
 
     public async Task<int> ExecuteUpdateAsync<TUpdatedEntity>(
         IQueryable<TUpdatedEntity> itemsToUpdate,
-        Expression<Func<SetPropertyCalls<TUpdatedEntity>, SetPropertyCalls<TUpdatedEntity>>> setters,
+       Action<UpdateSettersBuilder<TUpdatedEntity>> setters,
         CancellationToken cancellationToken)
         where TUpdatedEntity : class, TBaseEntity
     {
@@ -91,7 +91,7 @@ public abstract class EnlightenedDbContext<TId, TBaseEntity> : DbContext
 
     protected abstract Task<int> ExecuteUpdateInnerAsync<T>(
         IQueryable<T> query,
-        Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> setters,
+        Action<UpdateSettersBuilder<T>> setters,
         CancellationToken cancellationToken = default)
         where T : TBaseEntity;
 

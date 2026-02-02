@@ -36,8 +36,7 @@ public class TestDbContext : EnlightenedDbContext<long, TestBaseEntity>
 
     protected override Task<int> ExecuteUpdateInnerAsync<TUpdatedEntity>(
         IQueryable<TUpdatedEntity> entitiesToUpdate,
-        Expression<Func<SetPropertyCalls<TUpdatedEntity>,
-        SetPropertyCalls<TUpdatedEntity>>> setters,
+        Action<UpdateSettersBuilder<TUpdatedEntity>> setters,
         CancellationToken cancellationToken)
         => entitiesToUpdate.ExecuteUpdateAsync(setters, cancellationToken);
 
