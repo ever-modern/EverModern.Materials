@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -7,34 +8,41 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace EverModern.SyntaxGenerator
 {
     [Generator]
-    public class SourceGenerator : ISourceGenerator
+    public class SourceGenerator : IIncrementalGenerator
     {
-        readonly HashSet<TupleExpressionSyntax> _tupleSyntaxes = new HashSet<TupleExpressionSyntax>();
-        public void Execute(GeneratorExecutionContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            //context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("SG001", "Success", "Success", "Success", DiagnosticSeverity.Error, true), Location.None));
-
-            context.AddSource($"UtilityTypes.cs", UtilityTypes.All.Select(t => t.Code).Merge("\n"));
-
-            try
+            context.RegisterPostInitializationOutput(ctx =>
             {
-                var result = _tupleSyntaxes.GenerateExtensionClass(context.Compilation);
+                ctx.AddSource($"UtilityTypes.cs", UtilityTypes.All.Select(t => t.Code).Merge("\n"));
+            });
 
-                var code = result.ToString();
-                context.AddSource($"DestallTupleExtensions.cs", code);
-                //File.WriteAllText("DestallTupleExtensions.artifact", $"{code}");
+            var tupleExpressions = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    predicate: static (node, _) => node is TupleExpressionSyntax,
+                    transform: static (ctx, _) => (TupleExpressionSyntax)ctx.Node)
+                .Collect();
 
-                //context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("SG001", "Success", "Success", "Success", DiagnosticSeverity.Error, true), Location.None));
-            }
-            catch (System.Exception e)
+            context.RegisterSourceOutput(tupleExpressions, (ctx, tuples) =>
             {
-                context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("SG001", "Error", $"{e}", "Error", DiagnosticSeverity.Error, true), Location.None));
-                File.WriteAllText("artifact.tt", $"{e}");
-            }
+                try
+                {
+                    var tupleSyntaxes = new HashSet<TupleExpressionSyntax>(tuples);
+                    var result = tupleSyntaxes.GenerateExtensionClass();
+
+                    var code = result.ToString();
+                    ctx.AddSource($"DestallTupleExtensions.cs", code);
+                    //File.WriteAllText("DestallTupleExtensions.artifact", $"{code}");
+
+                    //ctx.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("SG001", "Success", "Success", "Success", DiagnosticSeverity.Error, true), Location.None));
+                }
+                catch (System.Exception e)
+                {
+                    ctx.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("SG001", "Error", $"{e}", "Error", DiagnosticSeverity.Error, true), Location.None));
+                    File.WriteAllText("artifact.tt", $"{e}");
+                }
+            });
         }
-
-        public void Initialize(GeneratorInitializationContext context)
-            => context.RegisterForSyntaxNotifications(() => new TupleSyntaxReceiver(_tupleSyntaxes));
     }
 }
 

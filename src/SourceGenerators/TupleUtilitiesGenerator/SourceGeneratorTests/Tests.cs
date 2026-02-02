@@ -129,7 +129,7 @@ namespace Foo
 
         var extensionsClass = tupleSyntaxes
             .DistinctBy(s => s.ToFullString())
-            .GenerateExtensionClass(compilation)
+            .GenerateExtensionClass()
             .ToString();
 
         compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(extensionsClass));
