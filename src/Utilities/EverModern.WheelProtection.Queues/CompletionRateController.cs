@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace EverModern.WheelProtection.Queues;
 
+/// <summary>
+/// Completion-based rate limiter that releases capacity when operations finish.
+/// </summary>
 public class CompletionRateController : ICompletionRateController
 {
     void Log(string message)
@@ -36,6 +39,11 @@ public class CompletionRateController : ICompletionRateController
 
     readonly Lock _locker = new();
 
+    /// <summary>
+    /// Initializes a new instance of the completion rate controller with a custom time provider.
+    /// </summary>
+    /// <param name="actionConstraints">The call constraints to enforce.</param>
+    /// <param name="nowProvider">The time provider.</param>
     public CompletionRateController(IEnumerable<CallConstraint> actionConstraints, IChronos nowProvider)
     {
         _actionConstraints = [.. actionConstraints.OptimizeConstraints()];
@@ -43,11 +51,16 @@ public class CompletionRateController : ICompletionRateController
         _commonCallSlotsNumber = _actionConstraints.Sum(a => a.MaxCallsCount);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the completion rate controller using real time.
+    /// </summary>
+    /// <param name="actionConstraints">The call constraints to enforce.</param>
     public CompletionRateController(IEnumerable<CallConstraint> actionConstraints)
         : this(actionConstraints, RealTimeChronos.Instance)
     {
     }
 
+    /// <inheritdoc />
     public ValueTask<ContinuationToken> WhenAllowed(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -98,6 +111,10 @@ public class CompletionRateController : ICompletionRateController
         }
     }
 
+    /// <summary>
+    /// Attempts to acquire a continuation token immediately.
+    /// </summary>
+    /// <param name="result">The acquired token, if successful.</param>
     public bool TryTakeImmediately(out ContinuationToken result)
     {
         lock (_locker)

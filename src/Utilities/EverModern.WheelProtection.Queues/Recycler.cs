@@ -8,11 +8,15 @@ namespace EverModern.WheelProtection.Queues;
 /// <summary>
 /// Works on a fixed pool of items. Creating new items will not happen.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">The item type.</typeparam>
 public abstract class FixedPoolRecycler<T> : Recycler<T> where T : class
 {
     readonly IReadOnlyList<T> _fixedPool;
     int _reachedItem;
+    /// <summary>
+    /// Initializes a new instance with the fixed pool items.
+    /// </summary>
+    /// <param name="items">The fixed pool items.</param>
     protected FixedPoolRecycler(IReadOnlyList<T> items)
         : base(items.Count)
     {
@@ -35,38 +39,41 @@ public abstract class FixedPoolRecycler<T> : Recycler<T> where T : class
 /// <summary>
 /// Accumulates pool of items up to the limit provided.
 /// Awaits items to be released from use and yields them once it's done.
-/// Creates new items, when other items in the pool are busy and there is still room in the pool.
+/// Creates new items when other items in the pool are busy and there is still room in the pool.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">The item type.</typeparam>
 public abstract class Recycler<T> : IDisposable
     where T : class
 {
     volatile bool _isDisposed;
     /// <summary>
-    /// Try to construct new produced item directly, if possible.
+    /// Tries to construct a new item if possible.
     /// </summary>
-    /// <param name="item">Created item</param>
+    /// <param name="item">The created item.</param>
     /// <returns>
-    /// True - item has been created. It will be used later.
-    /// False - item is not allowed to be created. Recycler will await other pooled items to be released.
+    /// <see langword="true"/> if an item was created; otherwise <see langword="false"/>.
     /// </returns>
     protected abstract bool TryCreateNew(out T item);
 
     /// <summary>
-    /// Determine if item can be returned to pool with its instant state.
+    /// Determines whether the item can be returned to the pool.
     /// </summary>
-    /// <param name="item"></param>
-    /// <returns></returns>
+    /// <param name="item">The item to validate.</param>
+    /// <returns><see langword="true"/> if the item can be reused.</returns>
     protected abstract bool IsWell(T item);
 
     /// <summary>
-    /// How to dispose of item, if its state is invalid, i.e. IsWell is false.
+    /// Disposes of an item that is not reusable.
     /// </summary>
-    /// <param name="item"></param>
+    /// <param name="item">The item to discard.</param>
     protected abstract void Discard(T item);
 
     readonly ItemManager[] _pool;
 
+    /// <summary>
+    /// Initializes a new recycler with the specified pool size.
+    /// </summary>
+    /// <param name="maxPoolSize">The maximum pool size.</param>
     protected Recycler(int maxPoolSize)
     {
         _pool = new ItemManager[maxPoolSize];
@@ -76,13 +83,11 @@ public abstract class Recycler<T> : IDisposable
         = [];
 
     /// <summary>
-    /// Request new item locker from the Recycler, waiting for once it's:
-    /// 1) created anew
-    /// 2) released from usage
-    /// 3) just taken out free from pool
+    /// Requests a new item locker, waiting for availability if needed.
     /// </summary>
-    /// <returns>Tool releasing item for usage in another request.</returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The item locker.</returns>
+    /// <exception cref="InvalidOperationException">No items can be created and none are available.</exception>
     public ValueTask<ItemLocker<T>> Another(CancellationToken cancellationToken = default)
     {
         lock (this)
@@ -200,6 +205,7 @@ public abstract class Recycler<T> : IDisposable
             }
         };
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_isDisposed)

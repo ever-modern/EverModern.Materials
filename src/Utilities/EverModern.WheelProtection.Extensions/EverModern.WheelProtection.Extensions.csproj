@@ -2,11 +2,14 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Copyright>Authored by Destall</Copyright>
+		<PackageReadmeFile>NuGetReadme.md</PackageReadmeFile>
 		<Description>All-encompassing extensions for standard objects.</Description>
-		<RepositoryType>https://github.com/dest-all/DestallMaterials</RepositoryType>
 		<NeutralLanguage>en</NeutralLanguage>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="NuGetReadme.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />

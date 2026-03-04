@@ -1,7 +1,15 @@
 ﻿namespace EverModern.WheelProtection.Extensions.Enumerables;
 
+/// <summary>
+/// Provides compression helpers for byte arrays.
+/// </summary>
 public static class ByteArrayExtensions
 {
+    /// <summary>
+    /// Compresses a byte array using a stream compressor asynchronously.
+    /// </summary>
+    /// <param name="byteArray">The input array.</param>
+    /// <param name="compressor">The compressor factory.</param>
     public static async Task<byte[]> CompressWithAsync(
         this byte[] byteArray,
         Func<Stream, Stream> compressor
@@ -20,6 +28,11 @@ public static class ByteArrayExtensions
         return result;
     }
 
+    /// <summary>
+    /// Compresses a byte array using a stream compressor.
+    /// </summary>
+    /// <param name="byteArray">The input array.</param>
+    /// <param name="compressor">The compressor factory.</param>
     public static byte[] CompressWith(this byte[] byteArray, Func<Stream, Stream> compressor)
     {
         using var inputStream = new MemoryStream(byteArray);
@@ -35,6 +48,11 @@ public static class ByteArrayExtensions
         return result;
     }
 
+    /// <summary>
+    /// Decompresses a byte array using a stream decompressor asynchronously.
+    /// </summary>
+    /// <param name="byteArray">The input array.</param>
+    /// <param name="decompressor">The decompressor factory.</param>
     public static async Task<byte[]> DecompressWithAsync(
         this byte[] byteArray,
         Func<Stream, Stream> decompressor
@@ -54,6 +72,11 @@ public static class ByteArrayExtensions
         return result;
     }
 
+    /// <summary>
+    /// Decompresses a byte array using a stream decompressor.
+    /// </summary>
+    /// <param name="byteArray">The input array.</param>
+    /// <param name="decompressor">The decompressor factory.</param>
     public static byte[] DecompressWith(this byte[] byteArray, Func<Stream, Stream> decompressor)
     {
         using var inputStream = new MemoryStream(byteArray);

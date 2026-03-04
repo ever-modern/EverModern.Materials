@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace EverModern.Chronos
+﻿namespace EverModern.Chronos
 {
     class ChronosCallback
     {

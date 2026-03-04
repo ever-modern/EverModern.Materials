@@ -1,11 +1,16 @@
 ﻿namespace EverModern.DataProvision;
 
+/// <summary>
+/// Provides a simple in-memory event dispatcher with subscription support.
+/// </summary>
 public class EventManager : IEventSubscriber
 {
+    /// <inheritdoc />
     public bool HasBeenFired { get; private set; }
 
     readonly List<Action> _subscriptions = [];
 
+    /// <inheritdoc />
     public SubscriptionHolder Subscribe(Action callback)
     {
         lock (_subscriptions)
@@ -16,6 +21,9 @@ public class EventManager : IEventSubscriber
         }
     }
 
+    /// <summary>
+    /// Fires the event and invokes all registered callbacks.
+    /// </summary>
     public void Fire()
     {
         lock (_subscriptions)

@@ -1,14 +1,16 @@
 ﻿namespace EverModern.WheelProtection.Extensions.Enumerables;
 
+/// <summary>
+/// Provides helper extensions for hash sets.
+/// </summary>
 public static class HashSetExtensions
 {
     /// <summary>
-    /// Adds item to the set and returns added item if it didn't exist. If existed, the existing item will be returned.
+    /// Adds an item if it does not exist and returns the stored instance.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="items"></param>
-    /// <param name="seekedItem"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">The item type.</typeparam>
+    /// <param name="items">The set.</param>
+    /// <param name="seekedItem">The item to ensure.</param>
     public static T EnsureExists<T>(this HashSet<T> items, T seekedItem)
     {
         if (items.TryGetValue(seekedItem, out var result))

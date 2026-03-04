@@ -1,7 +1,14 @@
 ﻿namespace EverModern.WheelProtection.DataWorks
 {
+    /// <summary>
+    /// Provides helpers for generating search index fragments.
+    /// </summary>
     public static class IndexCreation
     {
+        /// <summary>
+        /// Enumerates all contiguous substrings of the input.
+        /// </summary>
+        /// <param name="inputString">The input string.</param>
         public static IEnumerable<string> GetAllChunks(this string inputString)
         {
             var len = inputString.Length;

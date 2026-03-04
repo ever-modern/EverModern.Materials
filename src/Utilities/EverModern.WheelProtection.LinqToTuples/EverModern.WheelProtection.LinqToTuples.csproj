@@ -2,11 +2,10 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-
-		<PackageReadmeFile>readme.md</PackageReadmeFile>
+		<PackageReadmeFile>NuGetReadme.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="readme.md" Pack="true" PackagePath="\" />
+		<None Include="NuGetReadme.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 </Project>

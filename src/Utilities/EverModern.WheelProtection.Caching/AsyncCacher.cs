@@ -3,6 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace EverModern.WheelProtection.Caching;
 
+/// <summary>
+/// Caches parameterized asynchronous computations.
+/// </summary>
+/// <typeparam name="TIn">The input type.</typeparam>
+/// <typeparam name="TOut">The output type.</typeparam>
 public class AsyncCacher<TIn, TOut>
 {
     readonly Func<TIn, CancellationToken, Task<TOut>> _source;
@@ -12,6 +17,9 @@ public class AsyncCacher<TIn, TOut>
 
     readonly Func<TIn, int> _ComputeChecksum;
 
+    /// <summary>
+    /// Initializes a new async cache instance.
+    /// </summary>
     public AsyncCacher(
         Func<TIn, CancellationToken, Task<TOut>> source,
         Func<TIn, int> computeChecksum,
@@ -28,16 +36,28 @@ public class AsyncCacher<TIn, TOut>
         );
     }
 
+    /// <summary>
+    /// Invalidates the cache entry for a parameter.
+    /// </summary>
+    /// <param name="param">The parameter key.</param>
     public void InvalidateCache(TIn param)
     {
         _caches.Remove(param);
     }
 
+    /// <summary>
+    /// Invalidates all cache entries.
+    /// </summary>
     public void InvalidateCache()
     {
         _caches.Clear();
     }
 
+    /// <summary>
+    /// Gets a cached value or computes it if missing.
+    /// </summary>
+    /// <param name="parameter">The parameter key.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public async Task<TOut> RunAsync(TIn parameter, CancellationToken cancellationToken)
     {
         if (_caches.TryGetValue(parameter, out var resultTaskCached))
@@ -69,6 +89,11 @@ public class AsyncCacher<TIn, TOut>
         return result;
     }
 
+    /// <summary>
+    /// Computes the value and updates the cache.
+    /// </summary>
+    /// <param name="parameter">The parameter key.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public Task<TOut> RunDirectlyAsync(TIn parameter, CancellationToken cancellationToken)
     {
         var result = _source.Invoke(parameter, cancellationToken);
@@ -104,6 +129,10 @@ public class AsyncCacher<TIn, TOut>
     }
 }
 
+/// <summary>
+/// Caches parameterless asynchronous computations.
+/// </summary>
+/// <typeparam name="TOut">The output type.</typeparam>
 public class AsyncCacher<TOut>
 {
     readonly Func<CancellationToken, Task<TOut>> _source;
@@ -111,6 +140,9 @@ public class AsyncCacher<TOut>
 
     CachedValue<Task<TOut>> _cache;
 
+    /// <summary>
+    /// Initializes a new async cache instance.
+    /// </summary>
     public AsyncCacher(
         Func<CancellationToken, Task<TOut>> source,
         CachingSettings cachingSettings
@@ -120,11 +152,18 @@ public class AsyncCacher<TOut>
         _source = source;
     }
 
+    /// <summary>
+    /// Invalidates the cached value.
+    /// </summary>
     public void InvalidateCache()
     {
         _cache = default;
     }
 
+    /// <summary>
+    /// Gets a cached value or computes it if missing.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public async Task<TOut> RunAsync(CancellationToken cancellationToken)
     {
         var resultTaskCached = _cache;
@@ -155,6 +194,10 @@ public class AsyncCacher<TOut>
         return result;
     }
 
+    /// <summary>
+    /// Computes the value and updates the cache.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public Task<TOut> RunDirectlyAsync(CancellationToken cancellationToken)
     {
         var result = _source.Invoke(cancellationToken);

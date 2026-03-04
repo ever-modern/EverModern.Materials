@@ -1,7 +1,14 @@
 ﻿namespace EverModern.WheelProtection.PublishLast
 {
+    /// <summary>
+    /// Runs shell commands using the Windows command processor.
+    /// </summary>
     public static class CmdRunner
     {
+        /// <summary>
+        /// Executes a command and waits for completion.
+        /// </summary>
+        /// <param name="command">The command to execute.</param>
         public static void Run(string command)
         {
             System.Diagnostics.Process process = new System.Diagnostics.Process();

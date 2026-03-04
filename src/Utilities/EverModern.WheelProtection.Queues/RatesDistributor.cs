@@ -6,20 +6,37 @@ using System.Threading.Tasks;
 
 namespace EverModern.WheelProtection.Queues;
 
+/// <summary>
+/// Distributes calls across multiple completion rate controllers.
+/// </summary>
+/// <typeparam name="T">The item type to lock.</typeparam>
 public class RatesDistributor<T>
 {
     readonly KeyValuePair<CompletionRateController, T>[] _rateControllers;
 
+    /// <summary>
+    /// Initializes a new instance using a custom time provider.
+    /// </summary>
+    /// <param name="callConstraints">Pairs of items and their call constraints.</param>
+    /// <param name="nowProvider">The time provider.</param>
     public RatesDistributor(IEnumerable<KeyValuePair<T, IEnumerable<CallConstraint>>> callConstraints, IChronos nowProvider)
     {
         _rateControllers = [.. callConstraints.Select(cc => KeyValuePair.Create(new CompletionRateController(cc.Value, nowProvider), cc.Key))];
     }
 
+    /// <summary>
+    /// Initializes a new instance using real time.
+    /// </summary>
+    /// <param name="callConstraints">Pairs of items and their call constraints.</param>
     public RatesDistributor(IEnumerable<KeyValuePair<T, IEnumerable<CallConstraint>>> callConstraints) 
         : this(callConstraints, RealTimeChronos.Instance)
     {
     }
 
+    /// <summary>
+    /// Awaits the next available item locker across all controllers.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public async ValueTask<ItemLocker<T>> AwaitAnotherAsync(CancellationToken cancellationToken)
     {
         foreach (var (rateController, item) in _rateControllers)

@@ -1,4 +1,6 @@
-﻿namespace EverModern.DataProvision.Tests.Samples;
+﻿using EverModern.DataProvision.Abstractions;
+
+namespace EverModern.DataProvision.Tests.Samples;
 
 public abstract class TestBaseEntity : IEntity<long>
 {

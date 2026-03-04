@@ -7,13 +7,34 @@ using Microsoft.EntityFrameworkCore.Storage;
 using System.Data;
 using System.Data.Common;
 
+using EverModern.DataProvision.Abstractions;
+
 namespace EverModern.DataProvision;
 
+/// <summary>
+/// Provides a pooled context locker.
+/// </summary>
+/// <typeparam name="T">The DbContext type.</typeparam>
+/// <param name="cancellationToken">A cancellation token.</param>
+/// <returns>A context locker.</returns>
 public delegate Task<ItemLocker<T>> PooledDbContextSource<T>(CancellationToken cancellationToken);
+/// <summary>
+/// Provides a pooled context locker that indicates whether changes will be made.
+/// </summary>
+/// <typeparam name="T">The DbContext type.</typeparam>
+/// <param name="willMakeChanges">Whether the operation will modify data.</param>
+/// <param name="cancellationToken">A cancellation token.</param>
+/// <returns>A context locker.</returns>
 public delegate Task<ItemLocker<T>> ExpressionExecutingDbContextFactory<T>(
     bool willMakeChanges,
     CancellationToken cancellationToken);
 
+/// <summary>
+/// Repository base implementation backed by pooled DbContexts.
+/// </summary>
+/// <typeparam name="TId">The identifier type.</typeparam>
+/// <typeparam name="TBaseEntity">The base entity type.</typeparam>
+/// <typeparam name="TDbContext">The DbContext type.</typeparam>
 public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRepository<TId, TBaseEntity>, IDisposable
     where TDbContext : EnlightenedDbContext<TId, TBaseEntity>
     where TBaseEntity : class, IEntity<TId>
@@ -35,8 +56,14 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         }
     }
 
+    /// <inheritdoc />
     public bool HasChanges { get; protected set; }
 
+    /// <summary>
+    /// Initializes a new repository instance.
+    /// </summary>
+    /// <param name="contextFactory">The pooled context factory.</param>
+    /// <param name="sampleContext">A sample context for metadata access.</param>
     public EnlightenedRepository(
         PooledDbContextSource<TDbContext> contextFactory,
         TDbContext sampleContext)
@@ -45,6 +72,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         _sampleContext = sampleContext;
     }
 
+    /// <inheritdoc />
     public virtual async Task<int> CreateAsync<TCreatedEntity>(IEnumerable<TCreatedEntity> entities, CancellationToken cancellationToken)
         where TCreatedEntity : class, TBaseEntity
     {
@@ -53,12 +81,6 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         using var _ = await _contextInnerReservations.OccupyAsync(dbContext, cancellationToken);
         try
         {
-            var ids = entities.Select(e =>
-            {
-                dbContext.AssignValidId(e);
-                return e;
-            }).ToArray();
-
             var entityType = typeof(TCreatedEntity);
 
             var relations = _relationsSeeker.GatherOwningRelations(entityType);
@@ -124,6 +146,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
     }
 
 
+    /// <inheritdoc />
     public virtual async Task<int> UpdateAsync<TUpdatedEntity>(IEnumerable<TUpdatedEntity> entities, CancellationToken cancellationToken)
         where TUpdatedEntity : class, TBaseEntity
     {
@@ -176,6 +199,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         }
     }
 
+    /// <inheritdoc />
     public async Task<int> DeleteAsync<TDeletedEntity>(IQueryable<TDeletedEntity> selectQuery, CancellationToken cancellationToken)
         where TDeletedEntity : class, TBaseEntity
     {
@@ -198,6 +222,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         }
     }
 
+    /// <inheritdoc />
     public async ValueTask<bool> CommitChangesAsync(CancellationToken cancellationToken)
     {
         CheckDisposed();
@@ -223,6 +248,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         return true;
     }
 
+    /// <inheritdoc />
     public async ValueTask<bool> CancelChangesAsync(CancellationToken cancellationToken)
     {
         CheckDisposed();
@@ -248,6 +274,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         return true;
     }
 
+    /// <inheritdoc />
     public IQueryable<TBaseEntity> Set(Type type)
     {
         CheckDisposed();
@@ -255,6 +282,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
     }
 
 
+    /// <inheritdoc />
     public IQueryable<T> Set<T>()
     {
         CheckDisposed();
@@ -262,6 +290,7 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
     }
 
 
+    /// <inheritdoc />
     public void Dispose()
     {
         lock (this)

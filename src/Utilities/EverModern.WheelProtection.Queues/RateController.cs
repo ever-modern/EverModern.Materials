@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace EverModern.WheelProtection.Queues;
 
+/// <summary>
+/// Rate limiter that enforces call constraints within time windows.
+/// </summary>
 public class RateController : IRateController
 {
     readonly CallConstraint[] _actionConstraints;
@@ -15,6 +18,11 @@ public class RateController : IRateController
     readonly DateTimeOffset[] _calls;
     readonly TimeSpan _longestCallDistance;
 
+    /// <summary>
+    /// Initializes a new instance of the rate controller with a custom time provider.
+    /// </summary>
+    /// <param name="actionConstraints">The call constraints to enforce.</param>
+    /// <param name="nowProvider">The time provider.</param>
     public RateController(IEnumerable<CallConstraint> actionConstraints, IChronos nowProvider)
     {
         _actionConstraints = [.. actionConstraints.OptimizeConstraints()];
@@ -24,11 +32,16 @@ public class RateController : IRateController
         _longestCallDistance = _actionConstraints.MaxBy(c => c.Period).Period;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the rate controller using real time.
+    /// </summary>
+    /// <param name="actionConstraints">The call constraints to enforce.</param>
     public RateController(IEnumerable<CallConstraint> actionConstraints)
         : this(actionConstraints, RealTimeChronos.Instance)
     {
     }
 
+    /// <inheritdoc />
     public async ValueTask WhenAllowed(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -42,6 +55,7 @@ public class RateController : IRateController
         await WhenAllowed(cancellationToken);
     }
 
+    /// <inheritdoc />
     public bool TryImmediately(out DateTimeOffset tryAgainAt)
     {
         lock (this)

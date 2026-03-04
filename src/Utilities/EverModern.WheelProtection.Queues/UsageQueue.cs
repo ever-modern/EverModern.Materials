@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 
 namespace EverModern.WheelProtection.Queues;
 
+/// <summary>
+/// Coordinates exclusive usage of items by returning disposable lockers.
+/// </summary>
+/// <typeparam name="T">The item type.</typeparam>
 public class UsageQueue<T> : IDisposable 
     where T : class
 {
@@ -20,6 +24,7 @@ public class UsageQueue<T> : IDisposable
         }
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         lock (this)
@@ -36,6 +41,11 @@ public class UsageQueue<T> : IDisposable
         }
     }
 
+    /// <summary>
+    /// Asynchronously acquires a locker for the specified item.
+    /// </summary>
+    /// <param name="item">The item to lock.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public Task<ItemLocker<T>> OccupyAsync(T item, CancellationToken cancellationToken)
     {
         CheckDisposed();

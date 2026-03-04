@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
 
+using EverModern.DataProvision.Abstractions;
+
 namespace EverModern.DataProvision.Tests.Samples;
 
 public class TestDbContext : EnlightenedDbContext<long, TestBaseEntity>

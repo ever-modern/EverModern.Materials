@@ -1,5 +1,8 @@
 ﻿namespace EverModern.WheelProtection.DataStructures.Text;
 
+/// <summary>
+/// Defines date component ordering.
+/// </summary>
 public enum DateFormat
 {
     DayMonthYear,
@@ -9,6 +12,9 @@ public enum DateFormat
     DayMonth,
 }
 
+/// <summary>
+/// Describes date formatting options for masks.
+/// </summary>
 public record DateFormatting(
     DateFormat DateFormat = DateFormat.DayMonthYear,
     char Delimiter = '.',
@@ -18,8 +24,14 @@ public record DateFormatting(
     char YearChar = 'y'
 )
 {
+    /// <summary>
+    /// Gets the default formatting.
+    /// </summary>
     public static DateFormatting Default { get; } = new(); 
 
+    /// <summary>
+    /// Gets the formatted string length.
+    /// </summary>
     public int Length =>
         DateFormat switch
         {
@@ -31,6 +43,10 @@ public record DateFormatting(
             _ => throw new InvalidOperationException("Unknown date format."),
         };
 
+    /// <summary>
+    /// Parses a formatting string such as "dd.MM.yyyy".
+    /// </summary>
+    /// <param name="format">The format string.</param>
     public static DateFormatting Parse(string format)
     {
         // very small parser for e.g. "dd.MM.yyyy"
@@ -84,6 +100,7 @@ public record DateFormatting(
         throw new InvalidOperationException("Unsupported format");
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         // Build format like "dd.MM.yyyy" based on the formatting fields
@@ -119,6 +136,10 @@ public record DateFormatting(
         return result!;
     }
 
+    /// <summary>
+    /// Breaks the symbols into year, month, and day components.
+    /// </summary>
+    /// <param name="symbols">The formatted symbols.</param>
     public (char[] Year, char[] Month, char[] Day) BreakIntoComponents(char[] symbols)
     {
         var yearLength = YearLength;
@@ -126,6 +147,9 @@ public record DateFormatting(
         return (symbols[year].ToArray(), symbols[month].ToArray(), symbols[day].ToArray());
     }
 
+    /// <summary>
+    /// Gets the ranges for each component in the formatted string.
+    /// </summary>
     public (Range Year, Range Month, Range Day) GetComponentRanges()
     {
         var yearLength = YearLength;
@@ -145,8 +169,18 @@ public record DateFormatting(
         return ranges;
     }
 
+    /// <summary>
+    /// Formats a date using the current options.
+    /// </summary>
+    /// <param name="dateOnly">The date.</param>
     public string Stringify(DateOnly dateOnly) => dateOnly.ToString(ToString());
 
+    /// <summary>
+    /// Concatenates day, month, and year components according to the format.
+    /// </summary>
+    /// <param name="day">The day symbols.</param>
+    /// <param name="month">The month symbols.</param>
+    /// <param name="year">The year symbols.</param>
     public string Concat(IEnumerable<char> day, IEnumerable<char> month, IEnumerable<char> year) =>
         DateFormat switch
         {

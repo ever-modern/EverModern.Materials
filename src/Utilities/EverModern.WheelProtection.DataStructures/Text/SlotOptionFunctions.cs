@@ -2,6 +2,9 @@
 
 namespace EverModern.WheelProtection.DataStructures.Text;
 
+/// <summary>
+/// Provides helpers for determining available slot options.
+/// </summary>
 public static class SlotOptionFunctions
 {
     record Constraint(char[] Options, char[] PossibleDigits, byte? Selected);
@@ -260,8 +263,16 @@ public static class SlotOptionFunctions
         return GetOptionsForSlot_V3(slotIndex, currentFilling, min, max);
     }
 
+    /// <summary>
+    /// Converts a digit character to its numeric value.
+    /// </summary>
+    /// <param name="digit">The digit character.</param>
     public static byte ToNumber(this char digit) => (byte)(digit - '0');
 
+    /// <summary>
+    /// Converts a digit to its character representation.
+    /// </summary>
+    /// <param name="digit">The digit value.</param>
     public static char ToChar(this int digit) => (char)((digit % 10) + '0');
 
     static char[] DigitSpan(byte from, byte to) =>

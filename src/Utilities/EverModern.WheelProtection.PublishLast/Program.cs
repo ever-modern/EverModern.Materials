@@ -3,7 +3,7 @@
 string dir = Environment.CurrentDirectory;
 
 #if DEBUG
-dir = "C:\\Users\\user\\Documents\\projects\\csharp\\dest-all\\EverModern.Materials\\src";
+dir = "C:\\Users\\evermodern\\source\\repos\\ever-modern\\EverModern.Materials\\src";
 #endif
 
 var packageFolders = FindPackageFolders(dir);

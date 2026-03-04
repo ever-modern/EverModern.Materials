@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// A disposable list implementation that uses BorrowedArray<T> for underlying storage.
-/// When disposed, all underlying BorrowedArray<T> instances are disposed as well.
+/// A disposable list implementation that uses <see cref="BorrowedArray{T}"/> for underlying storage.
+/// When disposed, all underlying borrowed arrays are disposed as well.
 /// </summary>
-/// <typeparam name="T">The type of elements in the list</typeparam>
+/// <typeparam name="T">The type of elements in the list.</typeparam>
 public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
 {
     private readonly List<BorrowedArray<T>> _buffers;
@@ -17,12 +17,19 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
     private bool _disposed;
     private const int DefaultCapacity = 4;
 
+    /// <summary>
+    /// Initializes an empty list.
+    /// </summary>
     public BorrowedList()
     {
-        _buffers = new List<BorrowedArray<T>>();
+        _buffers = [];
         _count = 0;
     }
 
+    /// <summary>
+    /// Initializes a list with an initial capacity.
+    /// </summary>
+    /// <param name="capacity">The initial capacity.</param>
     public BorrowedList(int capacity)
     {
         if (capacity < 0)
@@ -36,6 +43,10 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         _count = 0;
     }
 
+    /// <summary>
+    /// Initializes a list with items from a collection.
+    /// </summary>
+    /// <param name="collection">The source collection.</param>
     public BorrowedList(IEnumerable<T> collection)
     {
         if (collection == null)
@@ -50,6 +61,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         }
     }
 
+    /// <inheritdoc />
     public T this[int index]
     {
         get
@@ -70,6 +82,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         }
     }
 
+    /// <inheritdoc />
     public int Count
     {
         get
@@ -79,8 +92,10 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         }
     }
 
+    /// <inheritdoc />
     public bool IsReadOnly => false;
 
+    /// <inheritdoc />
     public void Add(T item)
     {
         ThrowIfDisposed();
@@ -90,6 +105,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         _count++;
     }
 
+    /// <inheritdoc />
     public void Clear()
     {
         ThrowIfDisposed();
@@ -103,12 +119,14 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         _count = 0;
     }
 
+    /// <inheritdoc />
     public bool Contains(T item)
     {
         ThrowIfDisposed();
         return IndexOf(item) >= 0;
     }
 
+    /// <inheritdoc />
     public void CopyTo(T[] array, int arrayIndex)
     {
         ThrowIfDisposed();
@@ -124,6 +142,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         }
     }
 
+    /// <inheritdoc />
     public IEnumerator<T> GetEnumerator()
     {
         ThrowIfDisposed();
@@ -134,6 +153,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         }
     }
 
+    /// <inheritdoc />
     public int IndexOf(T item)
     {
         ThrowIfDisposed();
@@ -147,6 +167,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         return -1;
     }
 
+    /// <inheritdoc />
     public void Insert(int index, T item)
     {
         ThrowIfDisposed();
@@ -166,6 +187,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         _count++;
     }
 
+    /// <inheritdoc />
     public bool Remove(T item)
     {
         ThrowIfDisposed();
@@ -179,6 +201,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         return false;
     }
 
+    /// <inheritdoc />
     public void RemoveAt(int index)
     {
         ThrowIfDisposed();
@@ -195,8 +218,10 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         _count--;
     }
 
+    /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (!_disposed)

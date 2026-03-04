@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace EverModern.Chronos
 {
+    /// <summary>
+    /// Chronos implementation with manually controlled time flow.
+    /// </summary>
     public class ManualChronos : IChronos, IChronosControll
     {
         void Log(string message)
@@ -109,15 +107,28 @@ namespace EverModern.Chronos
 
         }
 
+        /// <summary>
+        /// Initializes a new instance with default speed.
+        /// </summary>
         public ManualChronos() : this(0)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance with a custom time source.
+        /// </summary>
+        /// <param name="realTimeSource">The real time source.</param>
         public ManualChronos(Func<DateTimeOffset> realTimeSource)
             : this(realTimeSource(), 0, realTimeSource)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance with custom parameters.
+        /// </summary>
+        /// <param name="initialTime">The initial time.</param>
+        /// <param name="relativeSpeed">The relative speed multiplier.</param>
+        /// <param name="realTimeSource">The real time source.</param>
         public ManualChronos(
             DateTimeOffset initialTime,
             decimal relativeSpeed,
@@ -138,16 +149,26 @@ namespace EverModern.Chronos
             return () => baseTime + stopwatch.Elapsed;
         }
 
+        /// <summary>
+        /// Initializes a new instance with a relative speed.
+        /// </summary>
+        /// <param name="relativeSpeed">The relative speed multiplier.</param>
         public ManualChronos(decimal relativeSpeed)
             : this(DateTimeOffset.Now, relativeSpeed, CreateStopwatchSource())
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance with an initial time and speed.
+        /// </summary>
+        /// <param name="initialTime">The initial time.</param>
+        /// <param name="relativeSpeed">The relative speed multiplier.</param>
         public ManualChronos(DateTimeOffset initialTime, decimal relativeSpeed)
             : this(initialTime, relativeSpeed, CreateStopwatchSource())
         {
         }
 
+        /// <inheritdoc />
         public DateTimeOffset Now
         {
             get
@@ -170,6 +191,7 @@ namespace EverModern.Chronos
             }
         }
 
+        /// <inheritdoc />
         public Task WhenComes(DateTimeOffset targetTime, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -209,6 +231,7 @@ namespace EverModern.Chronos
             }
         }
 
+        /// <inheritdoc />
         public Task WhenPasses(TimeSpan time, CancellationToken cancellationToken = default)
         {
             if (_relativeSpeed != 0 && time.Ticks / _relativeSpeed < _insignificantTicks)
@@ -242,6 +265,7 @@ namespace EverModern.Chronos
             AttuneTimeFlow();
         }
 
+        /// <inheritdoc />
         public void SetTime(DateTimeOffset newNow)
         {
             _baseTime = newNow;
@@ -259,6 +283,7 @@ namespace EverModern.Chronos
 
         }
 
+        /// <inheritdoc />
         public void MoveTime(TimeSpan moveForward)
         {
             _realTimeOffset += moveForward;
@@ -272,6 +297,7 @@ namespace EverModern.Chronos
             }
         }
 
+        /// <inheritdoc />
         public Task WhenComes(DateTime targetTimeUtc, CancellationToken cancellationToken = default)
         {
             var resultTime = new DateTimeOffset(targetTimeUtc);

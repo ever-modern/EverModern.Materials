@@ -2,17 +2,26 @@
 
 namespace EverModern.WheelProtection.DataStructures.Text;
 
+/// <summary>
+/// Immutable mask for date editing.
+/// </summary>
 public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValue, DateOnly value)
     : IImmutableMask<char, DateMask>
 {
     readonly string _formedDate = format.Stringify(value);
 
+    /// <inheritdoc />
     public char this[int index] => _formedDate[index];
 
+    /// <inheritdoc />
     public int Count => format.Length;
 
+    /// <summary>
+    /// Gets the current date value.
+    /// </summary>
     public DateOnly Value => value;
 
+    /// <inheritdoc />
     public DateMask Change(ContentChange<char> contentChange, out int caretPosition)
     {
         var (at, removed, inserted) = contentChange;
@@ -210,8 +219,10 @@ public class DateMask(DateFormatting format, DateOnly minValue, DateOnly maxValu
         return new DateMask(format, minValue, maxValue, finalValue);
     }
 
+    /// <inheritdoc />
     public IEnumerator<char> GetEnumerator() => _formedDate.GetEnumerator();
 
+    /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     enum MaskPosition

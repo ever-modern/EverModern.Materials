@@ -2,6 +2,9 @@
 
 namespace EverModern.WheelProtection.DataStructures.Text;
 
+/// <summary>
+/// Immutable mask for time editing.
+/// </summary>
 public class TimeMask(
     TimeOnly minValue,
     TimeOnly maxValue,
@@ -15,15 +18,21 @@ public class TimeMask(
         ? [.. value.ToString("HH:mm:ss")]
         : [.. value.ToString("HH:mm")];
 
+    /// <inheritdoc />
     public char this[int index] => _chars[index];
 
+    /// <inheritdoc />
     public int Count => _chars.Count;
 
     static (Range HoursRange, Range MinutesRange, Range SecondsRange) GetRanges() =>
         (0..2, 3..5, 6..8);
 
+    /// <summary>
+    /// Gets the current time value.
+    /// </summary>
     public TimeOnly Value => value;
 
+    /// <inheritdoc />
     public TimeMask Change(ContentChange<char> contentChange, out int caretPosition)
     {
         var (at, removed, inserted) = contentChange;
@@ -222,8 +231,10 @@ public class TimeMask(
         return new TimeMask(minValue, maxValue, finalValue, includeSeconds);
     }
 
+    /// <inheritdoc />
     public IEnumerator<char> GetEnumerator() => _chars.GetEnumerator();
 
+    /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     char[] GetSlotOptions(ReadOnlySpan<char> slots, int position)

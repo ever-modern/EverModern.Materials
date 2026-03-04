@@ -1,4 +1,3 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.0.11109.219
@@ -71,6 +70,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateDynamicPackageContent", "CodeGeneration\GenerateDynamicPackageContent\GenerateDynamicPackageContent.csproj", "{CDBB370A-9CDC-4116-94A8-7C6F30EB7016}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EverModern.DataProvision.Abstractions", "EverModern.DataProvision.Abstractions\EverModern.DataProvision.Abstractions.csproj", "{2E016F87-843C-4617-9237-DAD63CE09220}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -186,6 +187,10 @@ Global
 		{CDBB370A-9CDC-4116-94A8-7C6F30EB7016}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDBB370A-9CDC-4116-94A8-7C6F30EB7016}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDBB370A-9CDC-4116-94A8-7C6F30EB7016}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E016F87-843C-4617-9237-DAD63CE09220}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E016F87-843C-4617-9237-DAD63CE09220}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E016F87-843C-4617-9237-DAD63CE09220}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E016F87-843C-4617-9237-DAD63CE09220}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -219,9 +224,9 @@ Global
 		{C6C648F9-1EE8-4785-A374-EFD38EDEA86B} = {F1780A35-75A9-47EB-A195-A1B7349E9057}
 		{4344795D-2CAC-4B5D-9850-09B5D3DF747C} = {F1780A35-75A9-47EB-A195-A1B7349E9057}
 		{CDBB370A-9CDC-4116-94A8-7C6F30EB7016} = {FBF06A7C-DD83-4257-B012-CF37A8CA12AF}
+		{2E016F87-843C-4617-9237-DAD63CE09220} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F0F81FA6-ADDA-4AC5-A926-AC32F3A47ABD}
 	EndGlobalSection
 EndGlobal
-

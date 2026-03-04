@@ -3,17 +3,26 @@ using Number = System.Int64;
 
 namespace EverModern.WheelProtection.DataStructures.Text;
 
+/// <summary>
+/// Immutable mask for integer editing.
+/// </summary>
 public class IntegerMask(Number Value, Number MinValue, Number MaxValue, byte Length)
     : IImmutableMask<char, IntegerMask>
 {
     readonly string _valueString = Value.ToString().PadLeft(Length, '0');
 
+    /// <inheritdoc />
     public char this[int index] => _valueString[index];
 
+    /// <inheritdoc />
     public int Count => Length;
 
+    /// <summary>
+    /// Gets the current numeric value.
+    /// </summary>
     public Number Value => Value;
 
+    /// <inheritdoc />
     public IntegerMask Change(ContentChange<char> contentChange, out int caretPosition)
     {
         var (at, removed, inserted) = contentChange;
@@ -82,8 +91,10 @@ public class IntegerMask(Number Value, Number MinValue, Number MaxValue, byte Le
         return this;
     }
 
+    /// <inheritdoc />
     public IEnumerator<char> GetEnumerator() => _valueString.GetEnumerator();
 
+    /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     char[] GetOptionsForSlot(Span<char> currentFilling, int at) =>

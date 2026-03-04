@@ -4,9 +4,9 @@ namespace EverModern.WheelProtection.DataStructures.Buffers;
 
 /// <summary>
 /// Writes items to inner buffers, which are provided by an ArrayPool.
-/// When buffer limit is reached, new one is borrowed.
+/// When buffer limit is reached, a new one is borrowed.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">The element type.</typeparam>
 public class ArrayPoolWriter<T> : IBufferWriter<T>
 {
     const int _defaultExcessMultiplier = 3;
@@ -17,12 +17,20 @@ public class ArrayPoolWriter<T> : IBufferWriter<T>
     readonly ArrayPool<T> _source;
     readonly int _bufferExcessMultiplier;
 
+    /// <summary>
+    /// Initializes a new instance with a custom pool and growth multiplier.
+    /// </summary>
+    /// <param name="source">The array pool source.</param>
+    /// <param name="bufferExcessMultiplier">The growth multiplier.</param>
     public ArrayPoolWriter(ArrayPool<T> source, int bufferExcessMultiplier)
     {
         _source = source;
         _bufferExcessMultiplier = bufferExcessMultiplier;
     }
 
+    /// <summary>
+    /// Initializes a new instance using the shared pool.
+    /// </summary>
     public ArrayPoolWriter()
         : this(ArrayPool<T>.Shared, _defaultExcessMultiplier)
     {
@@ -30,6 +38,7 @@ public class ArrayPoolWriter<T> : IBufferWriter<T>
 
     int FreeCapacity => _buffer.Length - _index;
 
+    /// <inheritdoc />
     public void Advance(int count)
     {
         if (count < 0)
@@ -46,12 +55,14 @@ public class ArrayPoolWriter<T> : IBufferWriter<T>
         _index += count;
     }
 
+    /// <inheritdoc />
     public Memory<T> GetMemory(int sizeHint = 0)
     {
         EnsureCapacity(sizeHint);
         return _buffer.AsMemory(_index);
     }
 
+    /// <inheritdoc />
     public Span<T> GetSpan(int sizeHint = 0)
     {
         EnsureCapacity(sizeHint);
@@ -89,9 +100,9 @@ public class ArrayPoolWriter<T> : IBufferWriter<T>
     }
 
     /// <summary>
-    /// Take filled part of underlying buffer. The buffer writer will detach from it and will not write into it any longer.
+    /// Returns the filled part of the underlying buffer and detaches from it.
     /// </summary>
-    /// <returns>Releasable array if there is anything written to the buffer. Null otherwise.</returns>
+    /// <returns>The borrowed array if any data was written; otherwise <see langword="null"/>.</returns>
     public BorrowedArray<T>? ExtractResults()
     {
         if (_buffer is null)

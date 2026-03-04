@@ -1,17 +1,37 @@
 ﻿namespace EverModern.WheelProtection.DataStructures.Text;
 
+/// <summary>
+/// Describes a content change within a sequence.
+/// </summary>
+/// <typeparam name="T">The element type.</typeparam>
+/// <param name="At">The change position.</param>
+/// <param name="Removed">The number of removed elements.</param>
+/// <param name="Inserted">The inserted elements.</param>
 public record struct ContentChange<T>(
     int At,
     int Removed,
     T[] Inserted
 )
 {
+    /// <summary>
+    /// Computes the content change between two spans.
+    /// </summary>
+    /// <param name="start">The original content.</param>
+    /// <param name="finish">The new content.</param>
+    /// <param name="carretFinishedAt">The caret position after the change.</param>
     public static ContentChange<T> Get(
         ReadOnlySpan<T> start,
         ReadOnlySpan<T> finish,
         int carretFinishedAt = -1
     ) => Get(start, finish, EqualityComparer<T>.Default, carretFinishedAt);
 
+    /// <summary>
+    /// Computes the content change between two spans using a comparer.
+    /// </summary>
+    /// <param name="start">The original content.</param>
+    /// <param name="finish">The new content.</param>
+    /// <param name="equalityComparer">The comparer.</param>
+    /// <param name="caretFinishedAt">The caret position after the change.</param>
     public static ContentChange<T> Get(
         ReadOnlySpan<T> start,
         ReadOnlySpan<T> finish,

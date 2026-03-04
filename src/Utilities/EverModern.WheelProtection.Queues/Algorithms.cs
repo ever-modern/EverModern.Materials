@@ -4,8 +4,15 @@ using System.Linq;
 
 namespace EverModern.WheelProtection.Queues
 {
+    /// <summary>
+    /// Provides queue-related helper algorithms.
+    /// </summary>
     public static class Algorithms
     {
+        /// <summary>
+        /// Removes redundant constraints that are implied by shorter windows.
+        /// </summary>
+        /// <param name="constraints">The constraints to optimize.</param>
         public static IReadOnlyList<CallConstraint> OptimizeConstraints(this IEnumerable<CallConstraint> constraints)
         {
             constraints = [.. constraints.OrderByDescending(c => c.Period)];

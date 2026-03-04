@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageReadmeFile>NuGetReadme.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="NuGetReadme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
@@ -10,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EverModern.DataProvision.Abstractions\EverModern.DataProvision.Abstractions.csproj" />
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj" />
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.WheelProtection.Queues.csproj" />
   </ItemGroup>

@@ -1,6 +1,8 @@
 ﻿using System.Data;
 using System.Reflection;
 
+using EverModern.DataProvision.Abstractions;
+
 namespace EverModern.DataProvision;
 
 class EntityRelationsSeeker<TId, TEntity>
