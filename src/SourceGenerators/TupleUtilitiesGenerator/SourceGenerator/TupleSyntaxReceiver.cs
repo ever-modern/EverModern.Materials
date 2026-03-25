@@ -2,22 +2,17 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace SourceGenerator
+namespace EverModern.SyntaxGenerator
 {
     public class TupleSyntaxReceiver : ISyntaxReceiver
     {
-        readonly HashSet<TupleExpressionSyntax> _tuples;
-
-        public TupleSyntaxReceiver(HashSet<TupleExpressionSyntax> tuples)
-        {
-            _tuples = tuples;
-        }
+        public HashSet<TupleExpressionSyntax> Tuples { get; } = new HashSet<TupleExpressionSyntax>();
 
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
         {
             if (syntaxNode is TupleExpressionSyntax tes)
             {
-                _tuples.Add(tes);
+                Tuples.Add(tes);
             }
         }
     }

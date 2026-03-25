@@ -1,0 +1,65 @@
+﻿using System.Linq.Expressions;
+
+namespace EverModern.DataProvision.Abstractions;
+
+/// <summary>
+/// Read-only LINQ-to-entities query surface with asynchronous materialization.
+/// </summary>
+/// <typeparam name="T">The element type.</typeparam>
+public interface IReadOnlyAsyncQueryable<T> : IAsyncMaterializable<T>
+{
+    /// <summary>
+    /// Filters the query with the specified predicate.
+    /// </summary>
+    IReadOnlyAsyncQueryable<T> Where(Expression<Func<T, bool>> predicate);
+    /// <summary>
+    /// Projects each element into a new form.
+    /// </summary>
+    IReadOnlyAsyncQueryable<TResult> Select<TResult>(Expression<Func<T, TResult>> selector);
+    /// <summary>
+    /// Projects each element to a sequence and flattens the results.
+    /// </summary>
+    IReadOnlyAsyncQueryable<TResult> SelectMany<TResult>(Expression<Func<T, IEnumerable<TResult>>> selector);
+    /// <summary>
+    /// Projects each element to a sequence and flattens with a result selector.
+    /// </summary>
+    IReadOnlyAsyncQueryable<TResult> SelectMany<TCollection, TResult>(
+        Expression<Func<T, IEnumerable<TCollection>>> collectionSelector,
+        Expression<Func<T, TCollection, TResult>> resultSelector);
+    /// <summary>
+    /// Groups elements by the specified key.
+    /// </summary>
+    /// <typeparam name="TKey">The key type.</typeparam>
+    /// <param name="keySelector">The key selector.</param>
+    IReadOnlyAsyncQueryable<IGrouping<TKey, T>> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
+    /// <summary>
+    /// Groups elements by the specified key and projects elements.
+    /// </summary>
+    /// <typeparam name="TKey">The key type.</typeparam>
+    /// <typeparam name="TElement">The element type.</typeparam>
+    /// <param name="keySelector">The key selector.</param>
+    /// <param name="elementSelector">The element selector.</param>
+    IReadOnlyAsyncQueryable<IGrouping<TKey, TElement>> GroupBy<TKey, TElement>(
+        Expression<Func<T, TKey>> keySelector,
+        Expression<Func<T, TElement>> elementSelector);
+    /// <summary>
+    /// Orders elements by the specified key.
+    /// </summary>
+    IReadOnlyAsyncOrderedQueryable<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector);
+    /// <summary>
+    /// Orders elements by the specified key in descending order.
+    /// </summary>
+    IReadOnlyAsyncOrderedQueryable<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> keySelector);
+    /// <summary>
+    /// Skips the specified number of elements.
+    /// </summary>
+    IReadOnlyAsyncQueryable<T> Skip(int count);
+    /// <summary>
+    /// Takes the specified number of elements.
+    /// </summary>
+    IReadOnlyAsyncQueryable<T> Take(int count);
+    /// <summary>
+    /// Removes duplicate elements.
+    /// </summary>
+    IReadOnlyAsyncQueryable<T> Distinct();
+}

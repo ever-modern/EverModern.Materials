@@ -1,0 +1,13 @@
+@import "date-input.scss";
+@import "highlight-selector.scss";
+@import "autocomplete.scss";
+
+.flexible-date-picker-label {
+    color: red;
+}
+
+input.base-input {
+    border: none;
+    border-bottom: 1px solid #000;
+    outline: none;
+}

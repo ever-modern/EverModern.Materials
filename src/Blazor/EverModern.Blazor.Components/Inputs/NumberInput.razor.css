@@ -1,0 +1,73 @@
+.number-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.number-input-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 2px;
+}
+
+.number-input-field {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #1f2937;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.number-input-field:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.number-input-field:hover:not(:disabled) {
+    border-color: #9ca3af;
+}
+
+.number-input-field:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.number-input.errored .number-input-field {
+    border-color: #ef4444;
+}
+
+.number-input.errored .number-input-field:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.number-input-error {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 2px;
+}
+
+.number-input.disabled .number-input-field {
+    opacity: 0.6;
+}
+
+/* Hide default number input spinners */
+.number-input-field::-webkit-outer-spin-button,
+.number-input-field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input-field[type=number] {
+    -moz-appearance: textfield;
+}

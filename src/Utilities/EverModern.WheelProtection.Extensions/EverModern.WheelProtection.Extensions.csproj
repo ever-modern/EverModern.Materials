@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageReadmeFile>NuGetReadme.md</PackageReadmeFile>
+		<Description>All-encompassing extensions for standard objects.</Description>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="NuGetReadme.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
+		<ProjectReference Include="..\EverModern.WheelProtection.LinqToTuples\EverModern.WheelProtection.LinqToTuples.csproj" />
+	</ItemGroup>
+
+</Project>

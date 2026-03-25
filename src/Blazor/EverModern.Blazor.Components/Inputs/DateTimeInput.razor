@@ -1,0 +1,118 @@
+﻿@using System.Globalization
+@using EverModern.WheelProtection.DataStructures.Text
+
+@inherits BaseInput<DateTime>
+
+<div class="datetime-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @CssClass">
+    @if (PickDate && PickTime)
+    {
+        <!-- Show label only once when both are displayed -->
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <label class="datetime-input-label">@Label</label>
+        }
+        <div class="datetime-input-controls">
+            <DateInput Clearable="false"
+                       OnValueChanged="SetDate"
+                       Value=DateOnly.FromDateTime(Value)
+                       ValueNotSetText="Date"
+                       Culture=Culture
+                       CssClass="datetime-input-date"
+                       Error="@Error"
+                       Format="@DateFormat" />
+            <TimeInput Culture=Culture
+                       CssClass="datetime-input-time"
+                       OnValueChanged=SetTime
+                       Value="TimeOnly.FromDateTime(Value)"
+                       Error=@(Error)
+                       Clearable="false"
+                       IncludeSeconds="IncludeSeconds" />
+            <button type="button"
+                    class="datetime-input-clear @(Value == MinValue ? "hidden" : "")"
+                    @onclick="ClearValue">
+                ×
+            </button>
+        </div>
+    }
+    else if (PickDate)
+    {
+        <DateInput Clearable="@Clearable"
+                   OnValueChanged=SetDate
+                   Value=DateOnly.FromDateTime(Value)
+                   ValueNotSetText="Date"
+                   Culture=Culture
+                   Label="@Label"
+                   Error="@Error"
+                   Format="@DateFormat" />
+    }
+    else if (PickTime)
+    {
+        <TimeInput Culture=Culture
+                   OnValueChanged=SetTime
+                   Value="TimeOnly.FromDateTime(Value)"
+                   Label="@Label"
+                   Error=@(Error)
+                   Clearable="@Clearable"
+                   IncludeSeconds="IncludeSeconds" />
+    }
+</div>
+
+@code {
+
+    [Parameter]
+    public bool PickTime { get; set; } = true;
+
+    [Parameter]
+    public bool PickDate { get; set; } = true;
+
+    [Parameter]
+    public DateTime MinValue { get; set; } = new DateTime(2000, 1, 1);
+
+    [Parameter]
+    public bool Clearable { get; set; } = true;
+
+    [Parameter]
+    public bool IncludeSeconds { get; set; }
+
+    [Parameter]
+    public DateFormatting DateFormat { get; set; } = DateFormatting.Default;
+
+    protected override void OnParametersSet()
+    {
+        if (!PickDate && !PickTime)
+        {
+            throw new InvalidOperationException("At least either time or date should be pickable.");
+        }
+
+        base.OnParametersSet();
+    }
+
+    public void SetTime(TimeOnly newTime)
+    {
+        var dateOnly = DateOnly.FromDateTime(Value);
+        var newValue = dateOnly.ToDateTime(newTime);
+        OnValueChanged(newValue);
+    }
+
+    public void SetDate(DateOnly newDate)
+    {
+        var timeOnly = TimeOnly.FromDateTime(Value);
+        var newValue = newDate.ToDateTime(timeOnly);
+        OnValueChanged(newValue);
+    }
+
+    public DateTimeInput()
+    {
+        Value = DateTime.Now;
+    }
+
+    void ClearValue()
+    {
+        OnValueChanged(MinValue);
+        Value = MinValue;
+        StateHasChanged();
+    }
+
+    public DateTime WithTime(TimeOnly time) => Value.Date + time.ToTimeSpan();
+    public DateTime WithDate(DateOnly date) => date.ToDateTime(default) + Value.TimeOfDay;
+}

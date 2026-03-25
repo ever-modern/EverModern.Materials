@@ -1,0 +1,44 @@
+﻿@inherits BaseInput<bool>
+
+@{
+    string cssClass = $"flag base-input {(Disabled ? "disabled" : "")} {(Error is not null ? "errored" : "")} {CssClass}";
+}
+<label class="@cssClass">
+    <input type="checkbox"
+           class="flag-checkbox"
+           disabled="@Disabled"
+           @bind="CurrentValue"
+           @bind:event="onchange"
+           />
+    <span class="flag-checkmark"></span>
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <span class="flag-label">@Label</span>
+    }
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+</label>
+
+@code {
+    private bool CurrentValue
+    {
+        get => Value;
+        set
+        {
+            if (Value != value)
+            {
+                Value = value;
+                _ = OnValueChangedAsync(value);
+            }
+        }
+    }
+
+    private async Task OnValueChangedAsync(bool newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+}

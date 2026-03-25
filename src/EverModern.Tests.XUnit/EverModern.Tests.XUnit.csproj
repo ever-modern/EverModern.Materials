@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EverModern.Chronos\EverModern.Chronos.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.WheelProtection.Queues.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

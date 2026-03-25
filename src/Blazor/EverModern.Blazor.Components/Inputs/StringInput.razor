@@ -1,0 +1,40 @@
+﻿@inherits BaseInput<string>
+
+<div class="string-input base-input @(Disabled ? "disabled" : "") @(Error is not null ? "errored" : "") @CssClass">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="string-input-label">@Label</label>
+    }
+    <input type="text"
+           class="string-input-field"
+           @bind="CurrentValue"
+           @bind:event="oninput"
+           disabled="@Disabled"
+           placeholder="@Label" />
+    @if (Error is not null)
+    {
+        <span class="string-input-error">@Error</span>
+    }
+</div>
+
+@code {
+    private string CurrentValue
+    {
+        get => Value ?? string.Empty;
+        set
+        {
+            if (Value != value)
+            {
+                Value = value;
+                _ = OnValueChangedAsync(value);
+            }
+        }
+    }
+
+    private async Task OnValueChangedAsync(string newValue)
+    {
+        OnValueChanged?.Invoke(newValue);
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+}

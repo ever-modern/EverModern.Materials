@@ -1,0 +1,347 @@
+@using System.Threading
+@using EverModern.Blazor.Components.Common
+@using EverModern.Blazor.Components.Containers
+@using EverModern.Blazor.Components.Services.UI
+@typeparam TItem
+@inherits DisposableComponent
+
+@inject IGlobalClickCatcher globalClickCatcher;
+@inject IUiManipulator uiManipulator;
+
+@{
+    var containerClass = $"autocomplete {(Error ? "errored" : "")} {Class}";
+}
+
+<Container @ref="_inputContainer"
+           CssClass="@containerClass"
+           OnKeyClicked="OnKeyClicked">
+
+    @{
+        var (labelStyle, labelText) = string.IsNullOrWhiteSpace(Label) ? ("visibility: hidden", "---") : ("", Label);
+    }
+
+    <label class="autocomplete-label" style="@labelStyle">@labelText</label>
+
+    <input type="text"
+           class="autocomplete-field"
+           @oninput="@(async (s) =>
+           {
+               _searchText = (string)(s.Value ?? "");
+               _visibleText = _searchText;
+               await PerformSearchAsync(_searchText);
+           })"
+           @onfocus="OnFocus"
+           disabled="@Disabled"
+           placeholder="@(Disabled ? "" : Placeholder)"
+           value="@_visibleText"
+           style="width: stretch" />
+    @if (!Disabled && Clearable && (string.IsNullOrWhiteSpace(Text) == false))
+    {
+        <Button @ref="_clearButton" CssClass="autocomplete-clear" OnClick="Clear">
+            ×
+        </Button>
+    }
+
+    @if (Error)
+    {
+        <span class="autocomplete-error">@ErrorText</span>
+    }
+
+    @if (_showDropdown && Options.Any())
+    {
+        <List @ref="_optionsList" CssClass="autocomplete-dropdown">
+            @{
+                var itemsList = Options.Take(MaxItems).ToList();
+            }
+            @for (int i = 0; i < itemsList.Count; i++)
+            {
+                var item = itemsList[i];
+                var index = i;
+
+                var itemId = GetItemId(index);
+
+                const string highligtedCssClass = "highlighted";
+
+                var itemCssClass = index == _highlightedIndex ? highligtedCssClass : "";
+
+                <ListItem HoveredCssClass="highlighted"
+                          CssClass=@($"autocomplete-item {itemCssClass}")
+                          OnInnerClick="(_) => SelectItem(item)"
+                          Id="@itemId">
+                    @if (ItemTemplate is not null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                    else
+                    {
+                        @ToStringFunc(item)
+                    }
+                </ListItem>
+            }
+        </List>
+    }
+
+</Container>
+
+@code {
+
+    [Parameter]
+    [EditorRequired]
+    public Func<string, CancellationToken, Task<IReadOnlyList<TItem>>> SearchFunc { get; set; }
+
+    [Parameter]
+    public Func<TItem, string> ToStringFunc { get; set; } = item => item?.ToString() ?? "";
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public Action<TItem?> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "";
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool Clearable { get; set; }
+
+    [Parameter]
+    public Action? OnClearButtonClick { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = "";
+
+    [Parameter]
+    public bool Error { get; set; }
+
+    [Parameter]
+    public string ErrorText { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment<TItem>? ItemTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem>? ItemSelectedTemplate { get; set; }
+
+    [Parameter]
+    public int MaxItems { get; set; } = 50;
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    public bool MouseIn => _inputContainer?.MouseIn == true || _optionsList?.MouseIn == true;
+
+    private string _searchText = "";
+    private bool _showDropdown;
+    (string SearchText, IReadOnlyList<TItem> Items) _lastSearchResult = default;
+    private IReadOnlyList<TItem> Options => _lastSearchResult.Items ?? [];
+    private CancellationTokenSource _searchCts = new();
+    private int _highlightedIndex = -1;
+    private TItem? _hoveredItem;
+    private string _visibleText = "";
+    private bool _hasFocus = false;
+
+    Container? _inputContainer;
+    List? _optionsList;
+    Button? _clearButton;
+
+    async void OpenDropdown()
+    {
+        if (Disabled)
+            return;
+
+        // If there are no items and search text is empty, perform an initial search
+        if (!Options.Any())
+        {
+            await PerformSearchAsync("");
+        }
+
+        // Open dropdown if we have items
+        if (Options.Any())
+        {
+            _showDropdown = true;
+            ScheduleRerender();
+        }
+    }
+
+    void CloseDropdown()
+    {
+        _showDropdown = false;
+        ScheduleRerender();
+    }
+
+    async Task PerformSearchAsync(string searchText)
+    {
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+
+        if (searchText == _lastSearchResult.SearchText)
+        {
+            return;
+        }
+
+        try
+        {
+            var results = await SearchFunc(searchText, _searchCts.Token);
+            _lastSearchResult = (searchText, results);
+            _showDropdown = results.Any();
+            _highlightedIndex = -1;
+            ScheduleRerender();
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellation
+        }
+    }
+
+    void OnKeyClicked(KeyboardEventArgs args)
+    {
+        var key = args.Key;
+        if (_sensitiveKeys.Contains(key) is false || _hasFocus)
+        {
+            return;
+        }
+        if (Options.Any())
+        {
+            _showDropdown = true;
+
+            _highlightedIndex = key switch
+            {
+                "ArrowDown" => (_highlightedIndex + 1) % Options.Count,
+                "ArrowUp" => _highlightedIndex - 1,
+                _ => _highlightedIndex
+            };
+
+            if (_highlightedIndex >= Options.Count || _highlightedIndex >= MaxItems)
+            {
+                _highlightedIndex = 0;
+            }
+            else if (_highlightedIndex < 0)
+            {
+                _highlightedIndex = Math.Min(Options.Count, MaxItems) - 1;
+            }
+
+            ScrollToHighlighted().GetType();
+
+            if (key == "Enter")
+            {
+                SelectItem(Options[_highlightedIndex]);
+            }
+
+            ScheduleRerender();
+        }
+    }
+
+    void OnFocus()
+    {
+        if (Options.Any())
+        {
+            _showDropdown = true;
+            ScheduleRerender();
+        }
+    }
+
+    async Task OnBlurAsync()
+    {
+        await Task.Delay(200); // Delay to allow click on dropdown item
+        CloseDropdown();
+        _highlightedIndex = -1;
+        ScheduleRerender();
+    }
+
+    void SelectItem(TItem item)
+    {
+        Text = ToStringFunc(item);
+        _searchText = ToStringFunc(item);
+        _visibleText = _searchText;
+        CloseDropdown();
+        _highlightedIndex = -1;
+        ValueChanged?.Invoke(item);
+        ScheduleRerender();
+    }
+
+    void Clear()
+    {
+        Text = "";
+        _searchText = "";
+        _visibleText = "";
+        CloseDropdown();
+        _highlightedIndex = -1;
+        OnClearButtonClick?.Invoke();
+        ValueChanged?.Invoke(default);
+        ScheduleRerender();
+    }
+
+    protected override void BeforeDispose()
+    {
+        base.BeforeDispose();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (_lastSearchResult.SearchText is null)
+        {
+            var foundItems = await SearchFunc(_searchText, default);
+            _lastSearchResult = (_searchText, foundItems);
+
+        }
+    }
+
+    static readonly IReadOnlyList<string> _sensitiveKeys = "ArrowUp ArrowDown Enter".Split(" ");
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        GlobalLogger.Debug("Autcomplete renders");
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            _searchText = Text ?? "";
+
+            BindToLifetime(globalClickCatcher.OnMouseClicked((_, _) =>
+            {
+                if (MouseIn is false)
+                {
+                    CloseDropdown();
+                }
+            }));
+        }
+
+        if (_showDropdown)
+        {
+            await ScrollToHighlighted();
+        }
+
+        _shouldRerender = false;
+    }
+
+    string GetItemId(int index) => $"{this.Id}-item-{index}";
+
+    public string Id { get; } = $"autocomplete-{Guid.NewGuid()}";
+
+    bool _shouldRerender = false;
+    void ScheduleRerender()
+    {
+        _shouldRerender = true;
+        _inputContainer?.Refresh();
+        _optionsList?.Refresh();
+    }
+    protected override bool ShouldRender()
+    {
+        var result = _shouldRerender;
+        _shouldRerender = false;
+        return result;
+    }
+
+    async Task ScrollToHighlighted()
+    {
+        var highlightedId = GetItemId(_highlightedIndex);
+        await Task.Delay(50).ContinueWith((_) => { uiManipulator.ScrollToFit_Y(highlightedId, _optionsList?.Id ?? ""); });
+    }
+}

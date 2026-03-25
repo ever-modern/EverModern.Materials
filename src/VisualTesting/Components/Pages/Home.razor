@@ -1,0 +1,87 @@
+﻿@page "/"
+@using System.Globalization
+@using EverModern.Blazor.Components.Containers;
+@using EverModern.Blazor.Components.Inputs
+
+@using EverModern.WheelProtection.DataStructures.Text
+
+
+<PageTitle>Component Visual Testing</PageTitle>
+
+<h1>EverModern.Blazor.Components - Visual Testing</h1>
+
+<div style="padding:100px">
+
+    @* <!-- SearchSelectorSingular Component Tests -->
+    <section style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+        <h2>SearchSelectorSingular Component</h2>
+
+        <div style="margin: 10px 0;">
+            <h3>Basic Search Selector:</h3>
+            <SearchSelector TItem="string"
+                                    Label="Country"
+                                    GetItemsByFilter="SearchCountries"
+                                    GetItemRepresentation="item => item"
+                                    OnValueChanged="v => SelectedCountry = v"
+                                    Value="@SelectedCountry" />
+            <p>Selected Country: <strong>@(SelectedCountry ?? "None")</strong></p>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <DateInput 
+                Label="Event date"
+                OnValueChanged="v => EventDate = v"
+                Value="@EventDate"
+                MinValue="new(2024,4,6)"
+                MaxValue="DateOnly.FromDateTime(DateTime.Today)" />
+            <p>Event date: <strong>@(EventDate == default ? "None" : EventDate)</strong></p>
+        </div>
+
+    </section> *@
+
+    @* <MaskedInput ConstraintsSource="new IntegerConstraintsSource(1975, 2025)"
+                 OnValueChanged="cs => int.TryParse([.. cs], out _number)"
+                 Value="[.._number.ToString()]" />
+ *@
+    @*  <DateInput OnValueChanged="@(v => { _date = v; StateHasChanged(); })"
+               Value="_date"
+               MaxValue="DateOnly.FromDateTime(DateTime.Today)"
+               MinValue="DateOnly.FromDateTime(DateTime.Today.AddYears(-50))" /> *@
+
+    @* <DateTimeInput OnValueChanged="ChangeDate" Value="_dateTime" IncludeSeconds=true /> *@
+    @* 
+    <HighlightSelector T="int"
+                       Options="Enumerable.Range(0, 100).Select(n => (SelectOption<int>)n).ToArray()"
+                       OnValueChanged="v => { _number = v.FirstOrDefault(); StateHasChanged(); }"
+                       CssStyle="height: 150px;"
+                       Value="[_number]" />
+ *@
+
+    <p>@_number</p>
+
+    <p>@_dateTime</p>
+
+    <button @onclick="() => StateHasChanged()">Confirm changes</button>
+
+    <Autocomplete TItem="int"
+                  ValueChanged="n => { _number = n; StateHasChanged(); }"
+                  SearchFunc="async (s, ct) => await Task.FromResult(Enumerable.Range(0, 1000).ToArray())" />
+
+</div>
+
+@code {
+
+    DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
+
+    static readonly DateFormatting _dateFormatting = new();
+
+    void ChangeDate(DateTime dateTime)
+    {
+        _dateTime = dateTime;
+        StateHasChanged();
+    }
+
+    int _number = 1975;
+
+    DateTime _dateTime = DateTime.Now;
+}

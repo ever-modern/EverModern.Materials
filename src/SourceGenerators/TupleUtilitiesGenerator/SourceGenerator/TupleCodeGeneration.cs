@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,42 +6,32 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static System.Linq.Enumerable;
 
 
-namespace SourceGenerator
+namespace EverModern.SyntaxGenerator
 {
     public static class TupleCodeGeneration
     {
         public const string ExtensionClassName = "TupleExtensions";
-        public const string ExtensionNamespace = "DestallMaterials.Extensions.Tuples";
+        public const string ExtensionNamespace = "EverModern.Extensions.Tuples";
 
-        public static StringBuilder GenerateExtensionClass(this IEnumerable<TupleExpressionSyntax> tupleSyntaxes, Compilation compilation)
+        public static StringBuilder GenerateExtensionClass(this IEnumerable<TupleExpressionSyntax> tupleSyntaxes)
         {
-            
-            var tuples = tupleSyntaxes
-                .GroupBy(s => s.SyntaxTree)
-                .SelectMany(s =>
-                {
-                    var semanticModel = compilation.GetSemanticModel(s.Key);
-                    return s.Select(ss => semanticModel.GetDeclaredSymbol(ss));
-                })
-                .Distinct(SymbolEqualityComparer.Default)
-                .OfType<INamedTypeSymbol>()
+            var uniqueArities = tupleSyntaxes
+                .Select(t => t.Arguments.Count)
+                .Where(count => count > 0)
+                .Distinct()
                 .ToArray();
 
             var extensionMethods = new
             {
-                TasksRelated = tuples
-                    .SelectMany(t => t.ComposeTasksTupleExtensionsSyntax())
-                    .ToArray(),
-                General = tuples
-                    .DistinctBy(t => t.TupleElements.Length)
-                    .SelectMany(t => TupleCodeGeneration.ComposeLinqExtensions(t.TupleElements.Length))
+                General = uniqueArities
+                    .SelectMany(arity => TupleCodeGeneration.ComposeLinqExtensions(arity))
                     .ToArray()
             };
 
 
             var result = new StringBuilder($"namespace {ExtensionNamespace}\n{{\n\tpublic static class {ExtensionClassName}\n{{\n\t\t");
 
-            foreach (var method in extensionMethods.TasksRelated.Concat(extensionMethods.General))
+            foreach (var method in extensionMethods.General)
             {
                 result.AppendLine(method);
             }

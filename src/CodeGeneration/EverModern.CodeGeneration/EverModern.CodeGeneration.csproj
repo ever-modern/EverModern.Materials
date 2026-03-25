@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageReadmeFile>NuGetReadme.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="NuGetReadme.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BlazorTemplater" />
+		<PackageReference Include="Buildalyzer" />
+		<PackageReference Include="Buildalyzer.Workspaces" />
+		<PackageReference Include="Microsoft.AspNetCore.Components" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Utilities\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
+	  <ProjectReference Include="..\..\Utilities\EverModern.WheelProtection.LinqToTuples\EverModern.WheelProtection.LinqToTuples.csproj" />
+	  <ProjectReference Include="..\..\Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -4,6 +4,7 @@ class NewClass
 {
     public async Task TestAsync()
     {
-        var a = await (Task.Delay(100), Task.FromResult(500));
+        await Task.Delay(100);
+        var a = await Task.FromResult(500);
     }
 }

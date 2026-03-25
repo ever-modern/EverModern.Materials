@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SourceGenerator
+namespace EverModern.SyntaxGenerator
 {
     public class UtilityType
     {

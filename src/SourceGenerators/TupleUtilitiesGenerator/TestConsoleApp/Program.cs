@@ -4,10 +4,10 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using EverModern.SyntaxGenerator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SourceGenerator;
 
 namespace TestConsoleApp;
 
@@ -125,7 +125,7 @@ namespace Foo
 
         var extensionsClass = tupleSyntaxes
             .DistinctBy(s => s.ToFullString())
-            .GenerateExtensionClass(compilation)
+            .GenerateExtensionClass()
             .ToString();
 
         compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(extensionsClass));
