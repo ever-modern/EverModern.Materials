@@ -42,9 +42,14 @@ public abstract class FixedPoolRecycler<T> : Recycler<T> where T : class
 /// Creates new items when other items in the pool are busy and there is still room in the pool.
 /// </summary>
 /// <typeparam name="T">The item type.</typeparam>
-public abstract class Recycler<T> : IDisposable
+/// <remarks>
+/// Initializes a new recycler with the specified pool size.
+/// </remarks>
+/// <param name="maxPoolSize">The maximum pool size.</param>
+public abstract class Recycler<T>(int maxPoolSize) : IDisposable
     where T : class
 {
+    readonly object _locker = new();
     volatile bool _isDisposed;
     /// <summary>
     /// Tries to construct a new item if possible.
@@ -68,17 +73,7 @@ public abstract class Recycler<T> : IDisposable
     /// <param name="item">The item to discard.</param>
     protected abstract void Discard(T item);
 
-    readonly ItemManager[] _pool;
-
-    /// <summary>
-    /// Initializes a new recycler with the specified pool size.
-    /// </summary>
-    /// <param name="maxPoolSize">The maximum pool size.</param>
-    protected Recycler(int maxPoolSize)
-    {
-        _pool = new ItemManager[maxPoolSize];
-    }
-
+    readonly ItemManager[] _pool = new ItemManager[maxPoolSize];
     readonly Queue<TaskCompletionSource<ItemLocker<T>>> _subscriptions
         = [];
 
@@ -90,7 +85,7 @@ public abstract class Recycler<T> : IDisposable
     /// <exception cref="InvalidOperationException">No items can be created and none are available.</exception>
     public ValueTask<ItemLocker<T>> Another(CancellationToken cancellationToken = default)
     {
-        lock (this)
+        lock (_locker)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -164,7 +159,7 @@ public abstract class Recycler<T> : IDisposable
     Action<CallbackItemLocker<T>> OnItemReleased(int i, T item)
         => im =>
         {
-            lock (this)
+            lock (_locker)
             {
                 if (IsWell(item))
                 {
