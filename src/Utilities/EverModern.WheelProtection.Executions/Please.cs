@@ -3,7 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace EverModern.WheelProtection.Executions;
+namespace EverModern.Threading.Executions;
 
 /// <summary>
 /// Provides helper methods for resilient execution and timing.

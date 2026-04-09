@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EverModern.WheelProtection.Queues;
+namespace EverModern.Threading.Queues;
 
 /// <summary>
 /// Represents a disposable lock handle for an item.

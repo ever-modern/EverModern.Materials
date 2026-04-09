@@ -1,4 +1,4 @@
-﻿namespace EverModern.WheelProtection.Extensions.Enumerables;
+﻿namespace EverModern.WheelProtection.Extensions.Arrays;
 
 /// <summary>
 /// Provides deconstruction helpers for lists.

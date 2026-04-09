@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EverModern.WheelProtection.Queues;
+namespace EverModern.Threading.Queues;
 
 /// <summary>
 /// Continuation token that releases a rate slot on disposal.

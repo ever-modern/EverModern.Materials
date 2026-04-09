@@ -1,7 +1,9 @@
-﻿using EverModern.WheelProtection.Extensions.Objects;
+﻿using EverModern.WheelProtection.Extensions;
+using EverModern.WheelProtection.Extensions.Enumerables;
+using EverModern.WheelProtection.Extensions.Objects;
 using EverModern.WheelProtection.Extensions.SpecialDataTypes;
 
-namespace EverModern.WheelProtection.Extensions.Enumerables;
+namespace EverModern.WheelProtection.Extensions.Dictinaries;
 
 /// <summary>
 /// Provides dictionary extension helpers.

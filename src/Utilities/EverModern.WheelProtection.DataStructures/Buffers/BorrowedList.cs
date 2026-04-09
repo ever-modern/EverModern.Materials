@@ -7,7 +7,7 @@ using System.Linq;
 
 /// <summary>
 /// A disposable list implementation that uses <see cref="BorrowedArray{T}"/> for underlying storage.
-/// When disposed, all underlying borrowed arrays are disposed as well.
+/// When disposed, all underlying borrowed arrays are disposed as well. This type is thread-safe.
 /// </summary>
 /// <typeparam name="T">The type of elements in the list.</typeparam>
 public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
@@ -15,6 +15,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
     private readonly List<BorrowedArray<T>> _buffers;
     private int _count;
     private bool _disposed;
+    private readonly object _sync = new();
     private const int DefaultCapacity = 4;
 
     /// <summary>
@@ -66,19 +67,25 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
     {
         get
         {
-            ThrowIfDisposed();
-            if (index < 0 || index >= _count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                if (index < 0 || index >= _count)
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
-            return GetItemAt(index);
+                return GetItemAt(index);
+            }
         }
         set
         {
-            ThrowIfDisposed();
-            if (index < 0 || index >= _count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                if (index < 0 || index >= _count)
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
-            SetItemAt(index, value);
+                SetItemAt(index, value);
+            }
         }
     }
 
@@ -87,8 +94,11 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
     {
         get
         {
-            ThrowIfDisposed();
-            return _count;
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                return _count;
+            }
         }
     }
 
@@ -98,124 +108,154 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
     /// <inheritdoc />
     public void Add(T item)
     {
-        ThrowIfDisposed();
+        lock (_sync)
+        {
+            ThrowIfDisposed();
 
-        EnsureCapacity(_count + 1);
-        SetItemAt(_count, item);
-        _count++;
+            EnsureCapacity(_count + 1);
+            SetItemAt(_count, item);
+            _count++;
+        }
     }
 
     /// <inheritdoc />
     public void Clear()
     {
-        ThrowIfDisposed();
-
-        // Dispose all buffers and recreate empty list
-        foreach (var buffer in _buffers)
+        lock (_sync)
         {
-            buffer?.Free();
+            ThrowIfDisposed();
+
+            // Dispose all buffers and recreate empty list
+            foreach (var buffer in _buffers)
+            {
+                buffer?.Free();
+            }
+            _buffers.Clear();
+            _count = 0;
         }
-        _buffers.Clear();
-        _count = 0;
     }
 
     /// <inheritdoc />
     public bool Contains(T item)
     {
-        ThrowIfDisposed();
-        return IndexOf(item) >= 0;
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            return IndexOf(item) >= 0;
+        }
     }
 
     /// <inheritdoc />
     public void CopyTo(T[] array, int arrayIndex)
     {
-        ThrowIfDisposed();
-
-        ArgumentNullException.ThrowIfNull(array);
-        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
-        if (array.Length - arrayIndex < _count)
-            throw new ArgumentException("Destination array is not long enough.");
-
-        for (int i = 0; i < _count; i++)
+        lock (_sync)
         {
-            array[arrayIndex + i] = GetItemAt(i);
+            ThrowIfDisposed();
+
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            if (array.Length - arrayIndex < _count)
+                throw new ArgumentException("Destination array is not long enough.");
+
+            for (int i = 0; i < _count; i++)
+            {
+                array[arrayIndex + i] = GetItemAt(i);
+            }
         }
     }
 
     /// <inheritdoc />
     public IEnumerator<T> GetEnumerator()
     {
-        ThrowIfDisposed();
-
-        for (int i = 0; i < _count; i++)
+        T[] snapshot;
+        lock (_sync)
         {
-            yield return GetItemAt(i);
+            ThrowIfDisposed();
+            snapshot = new T[_count];
+            for (int i = 0; i < _count; i++)
+            {
+                snapshot[i] = GetItemAt(i);
+            }
         }
+
+        return ((IEnumerable<T>)snapshot).GetEnumerator();
     }
 
     /// <inheritdoc />
     public int IndexOf(T item)
     {
-        ThrowIfDisposed();
-
-        var comparer = EqualityComparer<T>.Default;
-        for (int i = 0; i < _count; i++)
+        lock (_sync)
         {
-            if (comparer.Equals(GetItemAt(i), item))
-                return i;
+            ThrowIfDisposed();
+
+            var comparer = EqualityComparer<T>.Default;
+            for (int i = 0; i < _count; i++)
+            {
+                if (comparer.Equals(GetItemAt(i), item))
+                    return i;
+            }
+            return -1;
         }
-        return -1;
     }
 
     /// <inheritdoc />
     public void Insert(int index, T item)
     {
-        ThrowIfDisposed();
-
-        if (index < 0 || index > _count)
-            throw new ArgumentOutOfRangeException(nameof(index));
-
-        EnsureCapacity(_count + 1);
-
-        // Shift elements to the right
-        for (int i = _count; i > index; i--)
+        lock (_sync)
         {
-            SetItemAt(i, GetItemAt(i - 1));
-        }
+            ThrowIfDisposed();
 
-        SetItemAt(index, item);
-        _count++;
+            if (index < 0 || index > _count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            EnsureCapacity(_count + 1);
+
+            // Shift elements to the right
+            for (int i = _count; i > index; i--)
+            {
+                SetItemAt(i, GetItemAt(i - 1));
+            }
+
+            SetItemAt(index, item);
+            _count++;
+        }
     }
 
     /// <inheritdoc />
     public bool Remove(T item)
     {
-        ThrowIfDisposed();
-
-        int index = IndexOf(item);
-        if (index >= 0)
+        lock (_sync)
         {
-            RemoveAt(index);
-            return true;
+            ThrowIfDisposed();
+
+            int index = IndexOf(item);
+            if (index >= 0)
+            {
+                RemoveAt(index);
+                return true;
+            }
+            return false;
         }
-        return false;
     }
 
     /// <inheritdoc />
     public void RemoveAt(int index)
     {
-        ThrowIfDisposed();
-
-        if (index < 0 || index >= _count)
-            throw new ArgumentOutOfRangeException(nameof(index));
-
-        // Shift elements to the left
-        for (int i = index; i < _count - 1; i++)
+        lock (_sync)
         {
-            SetItemAt(i, GetItemAt(i + 1));
-        }
+            ThrowIfDisposed();
 
-        _count--;
+            if (index < 0 || index >= _count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            // Shift elements to the left
+            for (int i = index; i < _count - 1; i++)
+            {
+                SetItemAt(i, GetItemAt(i + 1));
+            }
+
+            _count--;
+        }
     }
 
     /// <inheritdoc />
@@ -224,15 +264,60 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
     /// <inheritdoc />
     public void Dispose()
     {
-        if (!_disposed)
+        lock (_sync)
         {
-            foreach (var buffer in _buffers)
+            if (!_disposed)
             {
-                buffer?.Free();
+                foreach (var buffer in _buffers)
+                {
+                    buffer?.Free();
+                }
+                _buffers.Clear();
+                _count = 0;
+                _disposed = true;
             }
-            _buffers.Clear();
-            _count = 0;
-            _disposed = true;
+        }
+    }
+
+    public void AddRange(IEnumerable<T> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+
+            IEnumerable<T> sourceItems = items;
+            int? count = items switch
+            {
+                ICollection<T> collection => collection.Count,
+                IReadOnlyCollection<T> readOnlyCollection => readOnlyCollection.Count,
+                ICollection nonGenericCollection => nonGenericCollection.Count,
+                _ => null
+            };
+
+            if (ReferenceEquals(items, this))
+            {
+                var snapshot = new T[_count];
+                for (int i = 0; i < _count; i++)
+                {
+                    snapshot[i] = GetItemAt(i);
+                }
+                sourceItems = snapshot;
+                count = snapshot.Length;
+            }
+
+            if (count.HasValue && count.Value > 0)
+            {
+                EnsureCapacity(_count + count.Value);
+            }
+
+            foreach (var item in sourceItems)
+            {
+                EnsureCapacity(_count + 1);
+                SetItemAt(_count, item);
+                _count++;
+            }
         }
     }
 

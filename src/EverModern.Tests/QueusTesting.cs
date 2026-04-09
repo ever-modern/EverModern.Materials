@@ -1,6 +1,5 @@
 ﻿using EverModern.Chronos;
 using EverModern.WheelProtection.Extensions.Tasks;
-using EverModern.WheelProtection.Queues;
 
 namespace EverModern.Tests;
 

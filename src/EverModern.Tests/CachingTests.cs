@@ -1,6 +1,4 @@
-﻿using EverModern.WheelProtection.Caching;
-
-namespace EverModern.Tests;
+﻿namespace EverModern.Tests;
 
 public class CachingTests
 {

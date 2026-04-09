@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EverModern.WheelProtection.Queues;
+namespace EverModern.Threading.Queues;
 
 /// <summary>
 /// Rate limiter that enforces call constraints within time windows.
@@ -17,6 +17,7 @@ public class RateController : IRateController
     readonly int _commonCallSlotsNumber;
     readonly DateTimeOffset[] _calls;
     readonly TimeSpan _longestCallDistance;
+    readonly Lock _lock = new();
 
     /// <summary>
     /// Initializes a new instance of the rate controller with a custom time provider.
@@ -45,31 +46,30 @@ public class RateController : IRateController
     public async ValueTask WhenAllowed(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
         if (TryImmediately(out var nextCallAt))
         {
             return;
         }
 
         await _nowProvider.WhenComes(nextCallAt, cancellationToken);
-
         await WhenAllowed(cancellationToken);
     }
 
     /// <inheritdoc />
     public bool TryImmediately(out DateTimeOffset tryAgainAt)
     {
-        lock (this)
-        {
-            tryAgainAt = CalculateNextCallPossibleTime();
-            var now = _nowProvider.Now;
-            if (now < tryAgainAt)
-            {
-                return false;
-            }
+        using var _ = new LockedScope(_lock);
 
-            CommitCall(now);
-            return true;
+        tryAgainAt = CalculateNextCallPossibleTime();
+        var now = _nowProvider.Now;
+        if (now < tryAgainAt)
+        {
+            return false;
         }
+
+        CommitCall(now);
+        return true;
     }
 
     void CommitCall(DateTimeOffset at)

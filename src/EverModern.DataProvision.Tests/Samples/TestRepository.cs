@@ -1,5 +1,5 @@
-﻿using EverModern.WheelProtection.Extensions.Tasks;
-using EverModern.WheelProtection.Queues;
+﻿using EverModern.Threading.Queues;
+using EverModern.WheelProtection.Extensions.Tasks;
 
 namespace EverModern.DataProvision.Tests.Samples;
 

@@ -3,7 +3,6 @@
 	<PropertyGroup>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>Destall data structures</Title>
-		<Version>0.0.1</Version>
 		<PackageReadmeFile>NuGetReadme.md</PackageReadmeFile>
 	</PropertyGroup>
 

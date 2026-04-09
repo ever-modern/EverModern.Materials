@@ -1,6 +1,4 @@
 ﻿using EverModern.DataProvision.Queryables;
-using EverModern.WheelProtection.Extensions.Tasks;
-using EverModern.WheelProtection.Queues;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -8,6 +6,8 @@ using System.Data;
 using System.Data.Common;
 
 using EverModern.DataProvision.Abstractions;
+using EverModern.Threading.Queues;
+using EverModern.WheelProtection.Extensions.Tasks;
 
 namespace EverModern.DataProvision;
 
@@ -111,12 +111,14 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
                     }).ToArray();
             }
 
-            dbContext.AddRange(entities);
+            await dbContext.AddRangeAsync(entities, cancellationToken);
 
             int result = -1;
             try
             {
                 await EnsureTransactionAsync(dbContext, cancellationToken);
+                PreprocessSavedEntities(dbContext);
+
                 result = await dbContext.SaveChangesAsync(cancellationToken);
                 HasChanges = true;
             }
@@ -145,7 +147,6 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         }
     }
 
-
     /// <inheritdoc />
     public virtual async Task<int> UpdateAsync<TUpdatedEntity>(IEnumerable<TUpdatedEntity> entities, CancellationToken cancellationToken)
         where TUpdatedEntity : class, TBaseEntity
@@ -156,29 +157,16 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         try
         {
             await dbContext.AddRangeAsync(entities, cancellationToken);
-            var entriesToUpdate = dbContext.ChangeTracker.Entries<TBaseEntity>().ToArray();
 
             int result = await DeleteUnboundOwnedEntitiesAsync(
                 dbContext,
                 entities,
                 cancellationToken);
+
             try
             {
-                foreach (var entry in entriesToUpdate)
-                {
-                    var entity = entry.Entity;
-                    if (dbContext.IdIsTemporary(entity.Id))
-                    {
-                        entry.State = EntityState.Added;
-                    }
-                    else
-                    {
-                        entry.State = EntityState.Modified;
-                    }
-
-                    entity.BeforeSave();
-                }
-
+                PreprocessSavedEntities(dbContext);
+                await EnsureTransactionAsync(dbContext, cancellationToken);
                 result += await dbContext.SaveChangesAsync(cancellationToken);
             }
             finally
@@ -381,6 +369,25 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
         return result;
     }
 
+    protected void PreprocessSavedEntities(TDbContext dbContext)
+    {
+        var entriesToUpdate = dbContext.ChangeTracker.Entries<TBaseEntity>().ToArray();
+        foreach (var entry in entriesToUpdate)
+        {
+            var entity = entry.Entity;
+            if (dbContext.IdIsTemporary(entity.Id))
+            {
+                entry.State = EntityState.Added;
+            }
+            else
+            {
+                entry.State = EntityState.Modified;
+            }
+
+            entity.BeforeSave();
+        }
+    }
+
     protected async Task ExecuteChangesAsync(Func<CancellationToken, Task> executeExpression, ItemLocker<TDbContext> dbContext, CancellationToken ct)
     {
         await EnsureTransactionAsync(dbContext, ct);
@@ -513,19 +520,19 @@ public abstract class EnlightenedRepository<TId, TBaseEntity, TDbContext> : IRep
 
                                         await EnsureTransactionAsync(dbContext, ct);
 
-                                        var lockerTask = await repo._contextInnerReservations.OccupyAsync(dbContext, ct)
-                                            .Then(locker => new CallbackItemLocker<TDbContext>(locker.Item, (l) =>
+                                        var locker = await repo._contextInnerReservations.OccupyAsync(dbContext, ct);
+                                        var lockerTask = new CallbackItemLocker<TDbContext>(locker.Item, (l) =>
+                                        {
+                                            lock (repo)
                                             {
-                                                lock (repo)
+                                                if (willMakeChanges && alreadyReserved is false && repo.HasChanges is false)
                                                 {
-                                                    if (willMakeChanges && alreadyReserved is false && repo.HasChanges is false)
-                                                    {
-                                                        repo.FreeReservedDbContext();
-                                                    }
-
-                                                    locker.Dispose();
+                                                    repo.FreeReservedDbContext();
                                                 }
-                                            }));
+
+                                                locker.Dispose();
+                                            }
+                                        });
 
                                         return (ItemLocker<TDbContext>)lockerTask;
                                     });

@@ -1,4 +1,4 @@
-﻿using EverModern.WheelProtection.Extensions.Enumerables;
+﻿using EverModern.WheelProtection.Extensions.Collections;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;

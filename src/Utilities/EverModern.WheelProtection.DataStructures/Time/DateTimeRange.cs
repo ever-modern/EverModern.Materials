@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using DateTime = System.DateTime;
 
 namespace EverModern.WheelProtection.DataStructures.Time;
 
@@ -71,6 +70,25 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     public bool Contains(DateTime dateTime) => dateTime <= End && dateTime >= Start;
 
     /// <summary>
+    /// Clamps the specified time to the range.
+    /// </summary>
+    /// <param name="dateTime">The time to clamp.</param>
+    public DateTime Clamp(DateTime dateTime)
+    {
+        if (dateTime < Start)
+        {
+            return Start;
+        }
+
+        if (dateTime > End)
+        {
+            return End;
+        }
+
+        return dateTime;
+    }
+
+    /// <summary>
     /// Merges contiguous ranges into a single range.
     /// </summary>
     /// <param name="ranges">The ranges to merge.</param>
@@ -104,6 +122,12 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     /// <param name="other">The tuple.</param>
     public static implicit operator DateTimeRange((DateTime start, DateTime end) other) =>
         new(other.start, other.end);
+
+    /// <summary>
+    /// Converts the date-time range to a date range.
+    /// </summary>
+    public DateRange ToDateRange()
+        => new(DateOnly.FromDateTime(Start), DateOnly.FromDateTime(End));
 
     /// <inheritdoc />
     public static bool operator ==(DateTimeRange left, DateTimeRange right) => left.Equals(right);
@@ -184,6 +208,78 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
         {
             intersection = default;
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Splits the range by removing the overlap with another range.
+    /// </summary>
+    /// <param name="other">The range to split by.</param>
+    public (DateTimeRange Left, DateTimeRange Right) SplitBy(DateTimeRange other)
+    {
+        if (Intersects(other) is false)
+        {
+            return Start < other.Start ? (this, default) : (default, this);
+        }
+
+        var left = default(DateTimeRange);
+        var right = default(DateTimeRange);
+
+        if (other.Start > Start)
+        {
+            left = new DateTimeRange(Start, other.Start);
+        }
+
+        if (other.End < End)
+        {
+            right = new DateTimeRange(other.End, End);
+        }
+
+        return (left, right);
+    }
+
+    public DateTimeRange Shift(TimeSpan offset) => new(Start + offset, End + offset);
+
+    public DateTimeRange Expand(TimeSpan offset) => new(Start - offset, End + offset);
+
+    public static IEnumerable<DateTimeRange> CreateRanges(params IEnumerable<DateTime> dateTimes)
+    {
+        DateTime? previous = default;
+        foreach (var current in dateTimes)
+        {
+            if (previous is not null)
+            {
+                yield return new DateTimeRange(previous.Value, current);
+            }
+
+            previous = current;
+        }
+    }
+
+    /// <summary>
+    /// Enumerates time points that fall on the given calendar period boundaries within the range.
+    /// </summary>
+    /// <param name="periodSize">The size of each calendar period.</param>
+    /// <param name="periodOffset">The offset applied to each period boundary.</param>
+    /// <remarks>
+    /// The first returned value is the first boundary at or after <see cref="Start"/>. Values are
+    /// returned up to and including <see cref="End"/> when a boundary lands exactly on it.
+    /// </remarks>
+    public IEnumerable<DateTime> TakeCalendarPeriodPoints(TimeSpan periodSize, TimeSpan periodOffset = default)
+    {
+        if (periodOffset >= periodSize)
+        {
+            throw new ArgumentOutOfRangeException(nameof(periodOffset), "The period offset must be less than the period size.");
+        }
+
+        var periodTicks = periodSize.Ticks;
+
+        var next = Start.Ticks + (periodTicks - Start.Ticks % periodTicks) + periodOffset.Ticks;
+
+        while (next <= End.Ticks)
+        {
+            yield return new DateTime(next);
+            next += periodTicks;
         }
     }
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace EverModern.WheelProtection.Queues
+namespace EverModern.Threading.Queues
 {
     /// <summary>
     /// Provides queue-related helper algorithms.

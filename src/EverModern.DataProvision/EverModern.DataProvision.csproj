@@ -17,7 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EverModern.DataProvision.Abstractions\EverModern.DataProvision.Abstractions.csproj" />
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj" />
-    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.WheelProtection.Queues.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.Threading.csproj" />
   </ItemGroup>
 
 </Project>

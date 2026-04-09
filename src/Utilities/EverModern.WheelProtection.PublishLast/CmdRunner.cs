@@ -1,4 +1,4 @@
-﻿namespace EverModern.WheelProtection.PublishLast
+﻿namespace EverModern.Threading.PublishLast
 {
     /// <summary>
     /// Runs shell commands using the Windows command processor.

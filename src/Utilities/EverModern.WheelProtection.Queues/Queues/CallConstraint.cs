@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EverModern.WheelProtection.Queues
+namespace EverModern.Threading.Queues
 {
     /// <summary>
     /// Defines a rate limiting constraint for a period and maximum call count.

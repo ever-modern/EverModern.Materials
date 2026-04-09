@@ -96,4 +96,66 @@ public class DateTimeRangeTesting
         Assert.False(intersects2);
         Assert.Equal(intersection1, intersection2);
     }
+
+    [Fact]
+    public void SplitBy()
+    {
+        var bigRange = new DateTimeRange(CreateDate(0), CreateDate(30));
+        var cutRange = new DateTimeRange(CreateDate(10), CreateDate(20));
+
+        var (left, right) = bigRange.SplitBy(cutRange);
+
+        Assert.Equal(new DateTimeRange(CreateDate(0), CreateDate(10)), left);
+        Assert.Equal(new DateTimeRange(CreateDate(20), CreateDate(30)), right);
+    }
+
+    [Fact]
+    public void SplitBy_NoOverlap()
+    {
+        var range = new DateTimeRange(CreateDate(0), CreateDate(10));
+        var other = new DateTimeRange(CreateDate(20), CreateDate(30));
+
+        var (left, right) = range.SplitBy(other);
+
+        Assert.Equal(range, left);
+        Assert.Equal(default, right);
+    }
+
+    [Fact]
+    public void SplitBy_OverlapsStart()
+    {
+        var range = new DateTimeRange(CreateDate(0), CreateDate(20));
+        var other = new DateTimeRange(CreateDate(0), CreateDate(10));
+
+        var (left, right) = range.SplitBy(other);
+
+        Assert.Equal(default, left);
+        Assert.Equal(new DateTimeRange(CreateDate(10), CreateDate(20)), right);
+    }
+
+    [Fact]
+    public void SplitBy_OverlapsEnd()
+    {
+        var range = new DateTimeRange(CreateDate(0), CreateDate(20));
+        var other = new DateTimeRange(CreateDate(10), CreateDate(20));
+
+        var (left, right) = range.SplitBy(other);
+
+        Assert.Equal(new DateTimeRange(CreateDate(0), CreateDate(10)), left);
+        Assert.Equal(default, right);
+    }
+
+    [Fact]
+    public void SplitBy_ContainedByOther()
+    {
+        var range = new DateTimeRange(CreateDate(5), CreateDate(10));
+        var other = new DateTimeRange(CreateDate(0), CreateDate(20));
+
+        var (left, right) = range.SplitBy(other);
+
+        Assert.Equal(default, left);
+        Assert.Equal(default, right);
+    }
+
+
 }

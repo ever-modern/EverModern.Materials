@@ -1,4 +1,5 @@
 ﻿using EverModern.DataProvision.Tests.Samples;
+using EverModern.WheelProtection.Extensions;
 using EverModern.WheelProtection.Extensions.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,11 +46,11 @@ public class RepositoryTests
     [Fact]
     public async Task GrossCrudTest()
     {
-        const int id = 11;
+        const int id = -11;
 
-        const int ownedId_1 = 110;
-        const int ownedId_2 = 1100;
-        const int ownedId_3 = 11000;
+        const int ownedId_1 = -110;
+        const int ownedId_2 = -1100;
+        const int ownedId_3 = -11000;
 
         var repo = _repository;
         var set = repo.Set<BigEntity>();

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore;
-using EverModern.WheelProtection.Queues;
+using EverModern.Threading.Queues;
 
 namespace EverModern.DataProvision.Queryables;
 

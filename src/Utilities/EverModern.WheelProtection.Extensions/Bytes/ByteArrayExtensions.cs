@@ -1,4 +1,4 @@
-﻿namespace EverModern.WheelProtection.Extensions.Enumerables;
+﻿namespace EverModern.WheelProtection.Extensions.Bytes;
 
 /// <summary>
 /// Provides compression helpers for byte arrays.

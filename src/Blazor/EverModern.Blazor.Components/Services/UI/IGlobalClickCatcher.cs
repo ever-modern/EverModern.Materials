@@ -1,29 +1,7 @@
-﻿using Microsoft.AspNetCore.Components.Web;
+﻿using EverModern.WheelProtection.DataStructures.Events;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace EverModern.Blazor.Components.Services.UI;
-
-public class Subscription : IDisposable
-{
-    readonly Action<Subscription> _onCancelled;
-
-    public Subscription(Action<Subscription> onDisposed)
-    {
-        _onCancelled = onDisposed;
-    }
-
-    public Subscription(Action onDisposed)
-    {
-        _onCancelled = th => onDisposed();
-    }
-
-    public void Cancel()
-    {
-        _onCancelled(this);
-    }
-
-    void IDisposable.Dispose()
-        => Cancel();
-}
 public interface IGlobalClickCatcher
 {
     Subscription OnKeyPressed(Action<KeyboardEventArgs, Subscription> action);

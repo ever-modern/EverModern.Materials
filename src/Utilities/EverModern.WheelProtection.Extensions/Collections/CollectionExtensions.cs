@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace EverModern.WheelProtection.Extensions.Enumerables;
+namespace EverModern.WheelProtection.Extensions.Collections;
 
 /// <summary>
 /// Provides collection helper extensions.

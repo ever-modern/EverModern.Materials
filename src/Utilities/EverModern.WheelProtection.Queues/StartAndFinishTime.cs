@@ -1,7 +1,7 @@
 ﻿using System;
 using DateTime = System.DateTimeOffset;
 
-namespace EverModern.WheelProtection.Queues;
+namespace EverModern.Threading;
 
 /// <summary>
 /// Represents a time interval with start and finish timestamps.

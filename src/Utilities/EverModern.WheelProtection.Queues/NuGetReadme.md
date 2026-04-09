@@ -1,3 +1,3 @@
-# EverModern.WheelProtection.Queues
+# EverModern.Threading
 
 Queue, pooling, and rate-limiting utilities.

@@ -11,7 +11,7 @@ public static class RangeExtensions
     /// Enumerates indexes within the range.
     /// </summary>
     /// <param name="range">The range.</param>
-    public static IEnumerable<int> AsSequence(this System.Range range)
+    public static IEnumerable<int> AsSequence(this Range range)
     {
         var (start, end) = range;
         if (start.IsFromEnd || end.IsFromEnd)
@@ -29,7 +29,7 @@ public static class RangeExtensions
     /// </summary>
     /// <param name="range">The range.</param>
     /// <param name="relatedLength">The related length.</param>
-    public static IEnumerable<int> AsSequence(this System.Range range, int relatedLength)
+    public static IEnumerable<int> AsSequence(this Range range, int relatedLength)
     {
         var (start, end) = range.GetOffsetAndLength(relatedLength);
         for (int i = start; 
@@ -46,7 +46,7 @@ public static class RangeExtensions
     /// <param name="range">The range.</param>
     /// <param name="start">The start index.</param>
     /// <param name="end">The end index.</param>
-    public static void Deconstruct(this System.Range range, out Index start, out Index end)
+    public static void Deconstruct(this Range range, out Index start, out Index end)
     {
         start = range.Start;
         end = range.End;
@@ -56,7 +56,7 @@ public static class RangeExtensions
     /// Enumerates indexes within the range.
     /// </summary>
     /// <param name="range">The range.</param>
-    public static IEnumerator<int> GetEnumerator(this System.Range range)
+    public static IEnumerator<int> GetEnumerator(this Range range)
     {
         var (start, end) = range;
         if (start.IsFromEnd || end.IsFromEnd)
