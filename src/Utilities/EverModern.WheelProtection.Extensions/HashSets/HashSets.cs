@@ -1,4 +1,4 @@
-﻿namespace EverModern.WheelProtection.Extensions.Enumerables;
+﻿namespace EverModern.WheelProtection.Extensions.HashSets;
 
 /// <summary>
 /// Provides helper extensions for hash sets.

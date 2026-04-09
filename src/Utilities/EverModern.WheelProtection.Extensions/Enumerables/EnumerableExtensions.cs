@@ -1,4 +1,5 @@
-﻿using EverModern.WheelProtection.Extensions.Tasks;
+﻿using EverModern.WheelProtection.Extensions;
+using EverModern.WheelProtection.Extensions.Tasks;
 using System.Collections;
 
 namespace EverModern.WheelProtection.Extensions.Enumerables;

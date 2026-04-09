@@ -1,4 +1,4 @@
-﻿namespace EverModern.WheelProtection.Executions;
+﻿namespace EverModern.Threading.Executions;
 
 /// <summary>
 /// Provides a human-readable explanation for an exception or result.

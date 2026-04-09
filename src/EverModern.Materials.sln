@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.0.11109.219
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EverModern.WheelProtection.Queues", "Utilities\EverModern.WheelProtection.Queues\EverModern.WheelProtection.Queues.csproj", "{371A1996-C791-4389-93AE-AFFEEC647301}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EverModern.Threading", "Utilities\EverModern.WheelProtection.Queues\EverModern.Threading.csproj", "{371A1996-C791-4389-93AE-AFFEEC647301}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EverModern.WheelProtection.Extensions", "Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj", "{244F4C61-533D-4007-9CD7-108EFAED7A0D}"
 EndProject

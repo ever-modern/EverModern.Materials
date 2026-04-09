@@ -1,6 +1,7 @@
 ﻿using EverModern.Chronos;
+using EverModern.Threading.Queues;
+using EverModern.Threading.Queues;
 using EverModern.WheelProtection.Extensions.Tasks;
-using EverModern.WheelProtection.Queues;
 
 namespace EverModern.Tests.XUnit;
 

@@ -1,6 +1,4 @@
-﻿using EverModern.WheelProtection.Queues;
-
-namespace EverModern.Tests;
+﻿namespace EverModern.Tests;
 public static class CallConstraintExtensions
 {
     public static IEnumerable<(CallConstraint, DateTime[])> FindViolatedConstraints(

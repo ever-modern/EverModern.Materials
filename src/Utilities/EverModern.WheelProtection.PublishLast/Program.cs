@@ -1,4 +1,4 @@
-﻿using EverModern.WheelProtection.PublishLast;
+﻿using EverModern.Threading.PublishLast;
 
 string dir = Environment.CurrentDirectory;
 

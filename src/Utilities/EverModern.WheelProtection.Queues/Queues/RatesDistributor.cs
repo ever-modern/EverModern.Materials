@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EverModern.WheelProtection.Queues;
+namespace EverModern.Threading.Queues;
 
 /// <summary>
 /// Distributes calls across multiple completion rate controllers.

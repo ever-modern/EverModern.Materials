@@ -1,7 +1,5 @@
-﻿using EverModern.WheelProtection.Linq;
-using EverModern.WheelProtection.Extensions.Enumerables;
+﻿using EverModern.WheelProtection.Extensions;
 using EverModern.WheelProtection.Extensions.Tasks;
-using EverModern.WheelProtection.Extensions.Time;
 
 namespace EverModern.Tests;
 

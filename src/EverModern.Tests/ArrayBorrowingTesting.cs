@@ -1,5 +1,4 @@
-﻿using EverModern.WheelProtection.Linq;
-using EverModern.WheelProtection.DataStructures.Buffers;
+﻿using EverModern.WheelProtection.DataStructures.Buffers;
 using EverModern.WheelProtection.Extensions.Ranges;
 
 namespace EverModern.Tests;

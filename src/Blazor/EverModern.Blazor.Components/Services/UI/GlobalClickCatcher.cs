@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components.Web;
+﻿using EverModern.WheelProtection.DataStructures.Events;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace EverModern.Blazor.Components.Services.UI;
 

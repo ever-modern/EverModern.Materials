@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using EverModern.WheelProtection.DataStructures.Events;
 using Microsoft.JSInterop;
 
 namespace EverModern.Blazor.Components.Services.UI;

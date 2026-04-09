@@ -1,4 +1,6 @@
-﻿namespace EverModern.Blazor.Components.Services.UI;
+﻿using EverModern.WheelProtection.DataStructures.Events;
+
+namespace EverModern.Blazor.Components.Services.UI;
 
 public interface IInputManipulator
 {

@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EverModern.WheelProtection.Queues;
+namespace EverModern.Threading.Queues;
 
 /// <summary>
 /// Represents a disposable continuation token for completion-based rate limiting.

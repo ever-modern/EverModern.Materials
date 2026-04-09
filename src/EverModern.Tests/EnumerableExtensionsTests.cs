@@ -1,3 +1,4 @@
+using EverModern.WheelProtection.Extensions;
 using EverModern.WheelProtection.Extensions.Enumerables;
 using EverModern.WheelProtection.Extensions.Tasks;
 

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
-    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.WheelProtection.Queues.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.Threading.csproj" />
   </ItemGroup>
 
 </Project>

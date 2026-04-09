@@ -1,5 +1,6 @@
 ﻿using EverModern.Blazor.Components.Services.UI;
 using EverModern.WheelProtection.DataStructures;
+using EverModern.WheelProtection.DataStructures.Events;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
