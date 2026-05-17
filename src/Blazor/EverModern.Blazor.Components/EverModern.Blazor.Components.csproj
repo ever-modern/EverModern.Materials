@@ -21,6 +21,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\..\EverModern.Events\EverModern.Events.csproj" />
 	  <ProjectReference Include="..\..\Utilities\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
 	</ItemGroup>
 

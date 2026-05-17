@@ -71,7 +71,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateDynamicPackageContent", "CodeGeneration\GenerateDynamicPackageContent\GenerateDynamicPackageContent.csproj", "{CDBB370A-9CDC-4116-94A8-7C6F30EB7016}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EverModern.DataProvision.Abstractions", "EverModern.DataProvision.Abstractions\EverModern.DataProvision.Abstractions.csproj", "{2E016F87-843C-4617-9237-DAD63CE09220}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EverModern.QueryKit.Abstractions", "EverModern.DataProvision.Abstractions\EverModern.QueryKit.Abstractions.csproj", "{2E016F87-843C-4617-9237-DAD63CE09220}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EverModern.Events", "EverModern.Events\EverModern.Events.csproj", "{A1DF6499-78EE-49F0-9A5F-1479E2C979DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EverModern.QueryKit", "Utilities\EverModern.Linq2Db.Extensions\EverModern.QueryKit.csproj", "{75393726-E3FC-3969-2C94-C3D4072ED7C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -191,6 +195,14 @@ Global
 		{2E016F87-843C-4617-9237-DAD63CE09220}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2E016F87-843C-4617-9237-DAD63CE09220}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2E016F87-843C-4617-9237-DAD63CE09220}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1DF6499-78EE-49F0-9A5F-1479E2C979DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1DF6499-78EE-49F0-9A5F-1479E2C979DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1DF6499-78EE-49F0-9A5F-1479E2C979DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1DF6499-78EE-49F0-9A5F-1479E2C979DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75393726-E3FC-3969-2C94-C3D4072ED7C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75393726-E3FC-3969-2C94-C3D4072ED7C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75393726-E3FC-3969-2C94-C3D4072ED7C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75393726-E3FC-3969-2C94-C3D4072ED7C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -225,6 +237,8 @@ Global
 		{4344795D-2CAC-4B5D-9850-09B5D3DF747C} = {F1780A35-75A9-47EB-A195-A1B7349E9057}
 		{CDBB370A-9CDC-4116-94A8-7C6F30EB7016} = {FBF06A7C-DD83-4257-B012-CF37A8CA12AF}
 		{2E016F87-843C-4617-9237-DAD63CE09220} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
+		{A1DF6499-78EE-49F0-9A5F-1479E2C979DB} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
+		{75393726-E3FC-3969-2C94-C3D4072ED7C5} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F0F81FA6-ADDA-4AC5-A926-AC32F3A47ABD}

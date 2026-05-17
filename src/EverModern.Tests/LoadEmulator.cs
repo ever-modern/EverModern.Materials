@@ -1,5 +1,6 @@
-﻿namespace EverModern.Tests;
+﻿using EverModern.Threading.Queues;
 
+namespace EverModern.Tests;
 
 
 partial class LoadEmulator

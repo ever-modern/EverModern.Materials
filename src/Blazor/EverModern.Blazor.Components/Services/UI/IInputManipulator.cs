@@ -1,4 +1,5 @@
-﻿using EverModern.WheelProtection.DataStructures.Events;
+﻿
+using EverModern.Events;
 
 namespace EverModern.Blazor.Components.Services.UI;
 

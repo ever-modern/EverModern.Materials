@@ -3,7 +3,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<Version>0.0.11</Version>
+		<Version>0.0.26</Version>
 		<Copyright>Authored by EverModern</Copyright>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>

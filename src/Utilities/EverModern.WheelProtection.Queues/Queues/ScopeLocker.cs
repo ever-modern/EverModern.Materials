@@ -3,7 +3,7 @@
 /// <summary>
 /// A disposable scope that holds a <see cref="Lock"/> for the duration of a synchronous block.
 /// </summary>
-public readonly struct LockedScope : IDisposable
+public readonly struct ScopeLocker : IDisposable
 {
     private readonly Lock _locker;
 
@@ -11,7 +11,7 @@ public readonly struct LockedScope : IDisposable
     /// Enters the lock and creates a scope that exits it on disposal.
     /// </summary>
     /// <param name="locker">The lock to enter.</param>
-    public LockedScope(Lock locker)
+    public ScopeLocker(Lock locker)
     {
         _locker = locker;
         locker.Enter();
@@ -23,19 +23,19 @@ public readonly struct LockedScope : IDisposable
 
 /// <summary>
 /// A disposable scope that holds a <see cref="SemaphoreSlim"/> for the duration of a block.
-/// Must be obtained via <see cref="AsyncLockedScope.EnterAsync"/> or <see cref="AsyncLockedScope.Enter"/>.
+/// Must be obtained via <see cref="AsyncScopeLocker.EnterAsync"/> or <see cref="AsyncScopeLocker.Enter"/>.
 /// </summary>
-public readonly struct AsyncLockedScope : IDisposable
+public readonly struct AsyncScopeLocker : IDisposable
 {
     private readonly SemaphoreSlim _semaphore;
 
-    private AsyncLockedScope(SemaphoreSlim semaphore) => _semaphore = semaphore;
+    private AsyncScopeLocker(SemaphoreSlim semaphore) => _semaphore = semaphore;
 
     /// <summary>
     /// Synchronously acquires the semaphore and returns a scope that releases it on disposal.
     /// </summary>
     /// <param name="semaphore">The semaphore to acquire.</param>
-    public static AsyncLockedScope Enter(SemaphoreSlim semaphore)
+    public static AsyncScopeLocker Enter(SemaphoreSlim semaphore)
     {
         semaphore.Wait();
         return new(semaphore);
@@ -46,9 +46,10 @@ public readonly struct AsyncLockedScope : IDisposable
     /// </summary>
     /// <param name="semaphore">The semaphore to acquire.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    public static async ValueTask<AsyncLockedScope> EnterAsync(
+    public static async ValueTask<AsyncScopeLocker> EnterAsync(
         SemaphoreSlim semaphore,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         await semaphore.WaitAsync(cancellationToken);
         return new(semaphore);

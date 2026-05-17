@@ -37,7 +37,7 @@ public class DateTimeRangeTesting
             .Select(i => new DateTimeRange(CreateDate(i), CreateDate(i + 1)))
             .ToArray();
 
-        var merged = DateTimeRange.Merge(dates);
+        var merged = DateTimeRange.MergeIntoOne(dates);
 
         Assert.Equal(CreateDate(0), merged.Start);
         Assert.Equal(CreateDate(n), merged.End);

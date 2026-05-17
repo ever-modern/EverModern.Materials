@@ -16,6 +16,7 @@ namespace EverModern.DataProvision.Queryables;
 /// <param name="cancellationToken">A cancellation token.</param>
 /// <returns>A queryable locker.</returns>
 public delegate ValueTask<ItemLocker<IQueryable<T>>> QueryableFactory<T>(CancellationToken cancellationToken);
+
 /// <summary>
 /// Creates a pooled queryable locker for a runtime element type.
 /// </summary>
@@ -23,6 +24,7 @@ public delegate ValueTask<ItemLocker<IQueryable<T>>> QueryableFactory<T>(Cancell
 /// <param name="cancellationToken">A cancellation token.</param>
 /// <returns>A queryable locker.</returns>
 public delegate ValueTask<ItemLocker<IQueryable>> QueryableFactory(Type itemType, CancellationToken cancellationToken);
+
 /// <summary>
 /// Executes a query that may perform changes using a reserved DbContext.
 /// </summary>
@@ -95,7 +97,6 @@ public class PoolReliantQueryable<T, TDbContext> : IQueryable<T>, IAsyncEnumerab
 
     /// <inheritdoc />
     public IQueryProvider Provider { get; }
-
 
     /// <inheritdoc />
     public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)

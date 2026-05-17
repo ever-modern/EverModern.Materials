@@ -16,6 +16,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\EverModern.DataProvision\EverModern.DataProvision.csproj" />
+		<ProjectReference Include="..\Utilities\EverModern.Linq2Db.Extensions\EverModern.QueryKit.csproj" />
 		<ProjectReference Include="..\Utilities\EverModern.WheelProtection.DataWorks\EverModern.WheelProtection.DataWorks.csproj" />
 		<ProjectReference Include="..\Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj" />
 	</ItemGroup>

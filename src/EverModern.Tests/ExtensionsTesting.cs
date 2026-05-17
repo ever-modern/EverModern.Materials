@@ -40,7 +40,7 @@ public class ExtensionsTesting
     {
         var (n1, n2, n3, n4, n5) = await (1, 2, 3, 4, 5).Select(async n =>
         {
-            await TimeSpan.FromMilliseconds(n);
+            await Task.Delay(TimeSpan.FromMilliseconds(n));
             return n;
         });
     }
@@ -49,6 +49,6 @@ public class ExtensionsTesting
     public void DeconstructionTesting()
     {
         var arr = (1, 2, 3, 4, 5, 6).ToArray();
-        var (n1, n2, n3, n4, n5, n6) = arr;
+        //var (n1, n2, n3, n4, n5, n6) = arr;
     }
 }

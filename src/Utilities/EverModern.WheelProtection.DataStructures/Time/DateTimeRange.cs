@@ -12,6 +12,7 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     /// Gets the start time.
     /// </summary>
     public DateTime Start { get; }
+
     /// <summary>
     /// Gets the end time.
     /// </summary>
@@ -89,32 +90,88 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     }
 
     /// <summary>
-    /// Merges contiguous ranges into a single range.
+    /// Merges overlapping or near-contiguous ranges.
+    /// Two ranges are merged if the gap between them
+    /// is less than or equal to <paramref name="maximalGap"/>.
     /// </summary>
-    /// <param name="ranges">The ranges to merge.</param>
-    public static DateTimeRange Merge(params IEnumerable<DateTimeRange> ranges)
+    public static IEnumerable<DateTimeRange> Merge(
+        IEnumerable<DateTimeRange> ranges,
+        TimeSpan maximalGap
+    )
     {
-        ranges = ranges.OrderBy(x => x.Start);
-        var resultStart = DateTime.MinValue;
-        var resultEnd = DateTime.MaxValue;
-        int i = 0;
-        foreach (var (start, end) in ranges)
+        using var enumerator = ranges.OrderBy(r => r.Start).GetEnumerator();
+
+        if (!enumerator.MoveNext())
+            yield break;
+
+        var current = enumerator.Current;
+
+        while (enumerator.MoveNext())
         {
-            if (start > resultEnd)
+            var next = enumerator.Current;
+
+            // Too far apart -> emit current merged block
+            if (next.Start > current.End + maximalGap)
             {
-                throw new ArgumentException($"Date {resultEnd} preceeds {start}.");
+                yield return current;
+                current = next;
+                continue;
             }
 
-            if (i++ == 0)
+            // Merge into current block
+            if (next.End > current.End)
             {
-                resultStart = start;
+                current = new DateTimeRange(current.Start, next.End);
             }
-
-            resultEnd = end;
         }
 
-        return new DateTimeRange(resultStart, resultEnd);
+        yield return current;
     }
+
+    /// <summary>
+    /// Merges multiple date time ranges, treating adjacent or overlapping ranges as continuous.
+    /// </summary>
+    /// <param name="ranges"></param>
+    /// <returns></returns>
+    public static IEnumerable<DateTimeRange> Merge(params IEnumerable<DateTimeRange> ranges) =>
+        Merge(ranges, TimeSpan.FromTicks(1));
+
+    /// <summary>
+    /// Merges overlapping or near-contiguous ranges.
+    /// Two ranges are merged if the gap between them
+    /// is less than or equal to <paramref name="maximalGap"/>.
+    /// </summary>
+    public static DateTimeRange MergeIntoOne(IEnumerable<DateTimeRange> ranges, TimeSpan maximalGap)
+    {
+        var ordered = ranges.OrderBy(r => r.Start).ToList();
+
+        if (ordered.Count == 0)
+            throw new ArgumentException("No ranges.");
+
+        var start = ordered[0].Start;
+        var end = ordered[0].End;
+
+        foreach (var r in ordered.Skip(1))
+        {
+            if (r.Start > end + maximalGap)
+            {
+                throw new ArgumentException($"Gap too large between {end} and {r.Start}");
+            }
+
+            if (r.End > end)
+                end = r.End;
+        }
+
+        return new DateTimeRange(start, end);
+    }
+
+    /// <summary>
+    /// Merges multiple date time ranges into a single range, treating adjacent or overlapping ranges as continuous.
+    /// </summary>
+    /// <param name="ranges">The collections of date time ranges to merge.</param>
+    /// <returns>A single date time range that spans all input ranges.</returns>
+    public static DateTimeRange MergeIntoOne(params IEnumerable<DateTimeRange> ranges) =>
+        MergeIntoOne(ranges, TimeSpan.FromTicks(1));
 
     /// <summary>
     /// Converts a tuple to a date-time range.
@@ -126,8 +183,7 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     /// <summary>
     /// Converts the date-time range to a date range.
     /// </summary>
-    public DateRange ToDateRange()
-        => new(DateOnly.FromDateTime(Start), DateOnly.FromDateTime(End));
+    public DateRange ToDateRange() => new(DateOnly.FromDateTime(Start), DateOnly.FromDateTime(End));
 
     /// <inheritdoc />
     public static bool operator ==(DateTimeRange left, DateTimeRange right) => left.Equals(right);
@@ -265,11 +321,17 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
     /// The first returned value is the first boundary at or after <see cref="Start"/>. Values are
     /// returned up to and including <see cref="End"/> when a boundary lands exactly on it.
     /// </remarks>
-    public IEnumerable<DateTime> TakeCalendarPeriodPoints(TimeSpan periodSize, TimeSpan periodOffset = default)
+    public IEnumerable<DateTime> TakeCalendarPeriodPoints(
+        TimeSpan periodSize,
+        TimeSpan periodOffset = default
+    )
     {
         if (periodOffset >= periodSize)
         {
-            throw new ArgumentOutOfRangeException(nameof(periodOffset), "The period offset must be less than the period size.");
+            throw new ArgumentOutOfRangeException(
+                nameof(periodOffset),
+                "The period offset must be less than the period size."
+            );
         }
 
         var periodTicks = periodSize.Ticks;

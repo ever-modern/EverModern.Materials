@@ -43,6 +43,22 @@ public interface IReadOnlyAsyncQueryable<T> : IAsyncMaterializable<T>
         Expression<Func<T, TKey>> keySelector,
         Expression<Func<T, TElement>> elementSelector);
     /// <summary>
+    /// Correlates elements of two sequences based on key equality and groups matching inner elements.
+    /// </summary>
+    IReadOnlyAsyncQueryable<TResult> GroupJoin<TInner, TKey, TResult>(
+        IReadOnlyAsyncQueryable<TInner> inner,
+        Expression<Func<T, TKey>> outerKeySelector,
+        Expression<Func<TInner, TKey>> innerKeySelector,
+        Expression<Func<T, IEnumerable<TInner>, TResult>> resultSelector);
+    /// <summary>
+    /// Correlates elements of two sequences based on key equality and keeps all elements from the outer sequence.
+    /// </summary>
+    IReadOnlyAsyncQueryable<TResult> LeftJoin<TInner, TKey, TResult>(
+        IReadOnlyAsyncQueryable<TInner> inner,
+        Expression<Func<T, TKey>> outerKeySelector,
+        Expression<Func<TInner, TKey>> innerKeySelector,
+        Expression<Func<T, TInner, TResult>> resultSelector);
+    /// <summary>
     /// Orders elements by the specified key.
     /// </summary>
     IReadOnlyAsyncOrderedQueryable<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector);

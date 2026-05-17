@@ -26,7 +26,7 @@ public class UsageQueue<T> : IDisposable
     {
         SemaphoreSlim semaphore;
 
-        using (var _ = new LockedScope(_lock))
+        using (var _ = new ScopeLocker(_lock))
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -43,7 +43,7 @@ public class UsageQueue<T> : IDisposable
         await semaphore.WaitAsync(cancellationToken);
 
         // Re-acquire the lock to re-register ownership after being signalled.
-        using (var _ = new LockedScope(_lock))
+        using (var _ = new ScopeLocker(_lock))
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             return MakeLocker(item, semaphore);
@@ -53,7 +53,7 @@ public class UsageQueue<T> : IDisposable
     ItemLocker<T> MakeLocker(T item, SemaphoreSlim semaphore)
         => new CallbackItemLocker<T>(item, _ =>
         {
-            using var __ = new LockedScope(_lock);
+            using var __ = new ScopeLocker(_lock);
 
             if (_disposed)
             {
@@ -73,7 +73,7 @@ public class UsageQueue<T> : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        using var _ = new LockedScope(_lock);
+        using var _ = new ScopeLocker(_lock);
 
         if (_disposed)
         {

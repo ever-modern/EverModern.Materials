@@ -1,4 +1,4 @@
-﻿namespace EverModern.WheelProtection.DataStructures.Events;
+﻿namespace EverModern.Events;
 
 public sealed class Subscription(Action<Subscription> onDisposed) : IDisposable
 {

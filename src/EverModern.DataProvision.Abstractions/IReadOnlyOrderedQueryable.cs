@@ -51,6 +51,22 @@ public interface IReadOnlyOrderedQueryable<T> : ISyncMaterializable<T>
         Expression<Func<T, TKey>> keySelector,
         Expression<Func<T, TElement>> elementSelector);
     /// <summary>
+    /// Correlates elements of two sequences based on key equality and groups matching inner elements.
+    /// </summary>
+    IReadOnlyQueryable<TResult> GroupJoin<TInner, TKey, TResult>(
+        IReadOnlyOrderedQueryable<TInner> inner,
+        Expression<Func<T, TKey>> outerKeySelector,
+        Expression<Func<TInner, TKey>> innerKeySelector,
+        Expression<Func<T, IEnumerable<TInner>, TResult>> resultSelector);
+    /// <summary>
+    /// Correlates elements of two sequences based on key equality and keeps all elements from the outer sequence.
+    /// </summary>
+    IReadOnlyQueryable<TResult> LeftJoin<TInner, TKey, TResult>(
+        IReadOnlyOrderedQueryable<TInner> inner,
+        Expression<Func<T, TKey>> outerKeySelector,
+        Expression<Func<TInner, TKey>> innerKeySelector,
+        Expression<Func<T, TInner, TResult>> resultSelector);
+    /// <summary>
     /// Skips the specified number of elements.
     /// </summary>
     IReadOnlyQueryable<T> Skip(int count);

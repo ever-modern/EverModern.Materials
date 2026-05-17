@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30323.103
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{94F5868D-DC56-4E50-B5B5-40D37B982AE7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGenerator", "SourceGenerator\SourceGenerator.csproj", "{D51EC17D-12C3-4101-BCF1-4EC65822CC5B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGenerator", "SourceGenerator\EverModern.SyntaxGenerator.csproj", "{D51EC17D-12C3-4101-BCF1-4EC65822CC5B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGeneratorTests", "SourceGeneratorTests\SourceGeneratorTests.csproj", "{2387D8FA-F665-4ACB-AAC8-692929BBA396}"
 EndProject

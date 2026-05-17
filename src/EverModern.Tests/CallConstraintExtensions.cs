@@ -1,4 +1,6 @@
-﻿namespace EverModern.Tests;
+﻿using EverModern.Threading.Queues;
+
+namespace EverModern.Tests;
 public static class CallConstraintExtensions
 {
     public static IEnumerable<(CallConstraint, DateTime[])> FindViolatedConstraints(
