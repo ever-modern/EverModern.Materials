@@ -2,7 +2,7 @@
 
 public sealed class Subscription(Action<Subscription> onDisposed) : IDisposable
 {
-    private Action<Subscription>? _onDisposed = onDisposed;
+    Action<Subscription>? _onDisposed = onDisposed;
 
     public Subscription(Action onDisposed)
         : this(_ => onDisposed()) { }

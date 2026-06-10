@@ -9,8 +9,4 @@
 	<ItemGroup>
 		<None Include="NuGetReadme.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Events\" />
-	</ItemGroup>
 </Project>

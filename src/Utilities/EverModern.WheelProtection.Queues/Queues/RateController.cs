@@ -59,7 +59,7 @@ public class RateController : IRateController
     /// <inheritdoc />
     public bool TryImmediately(out DateTimeOffset tryAgainAt)
     {
-        using var _ = new ScopeLocker(_lock);
+        using var _ = _lock.LockScope();
 
         tryAgainAt = CalculateNextCallPossibleTime();
         var now = _nowProvider.Now;

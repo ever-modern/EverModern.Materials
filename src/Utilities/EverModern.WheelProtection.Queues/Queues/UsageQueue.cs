@@ -22,11 +22,14 @@ public class UsageQueue<T> : IDisposable
     /// </summary>
     /// <param name="item">The item to lock.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    public async ValueTask<ItemLocker<T>> OccupyAsync(T item, CancellationToken cancellationToken = default)
+    public async ValueTask<ItemLocker<T>> OccupyAsync(
+        T item,
+        CancellationToken cancellationToken = default
+    )
     {
         SemaphoreSlim semaphore;
 
-        using (var _ = new ScopeLocker(_lock))
+        using (var _ = _lock.LockScope())
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -43,37 +46,40 @@ public class UsageQueue<T> : IDisposable
         await semaphore.WaitAsync(cancellationToken);
 
         // Re-acquire the lock to re-register ownership after being signalled.
-        using (var _ = new ScopeLocker(_lock))
+        using (var _ = _lock.LockScope())
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             return MakeLocker(item, semaphore);
         }
     }
 
-    ItemLocker<T> MakeLocker(T item, SemaphoreSlim semaphore)
-        => new CallbackItemLocker<T>(item, _ =>
-        {
-            using var __ = new ScopeLocker(_lock);
-
-            if (_disposed)
+    ItemLocker<T> MakeLocker(T item, SemaphoreSlim semaphore) =>
+        new CallbackItemLocker<T>(
+            item,
+            _ =>
             {
-                return;
-            }
+                using var __ = _lock.LockScope();
 
-            // If anyone is waiting on the semaphore, release one to wake the next waiter.
-            // Otherwise remove the slot so the item is considered free again.
-            if (semaphore.CurrentCount == 0 && _slots.ContainsKey(item))
-            {
-                semaphore.Release();
-            }
+                if (_disposed)
+                {
+                    return;
+                }
 
-            _slots.Remove(item);
-        });
+                // If anyone is waiting on the semaphore, release one to wake the next waiter.
+                // Otherwise remove the slot so the item is considered free again.
+                if (semaphore.CurrentCount == 0 && _slots.ContainsKey(item))
+                {
+                    semaphore.Release();
+                }
+
+                _slots.Remove(item);
+            }
+        );
 
     /// <inheritdoc />
     public void Dispose()
     {
-        using var _ = new ScopeLocker(_lock);
+        using var _ = _lock.LockScope();
 
         if (_disposed)
         {

@@ -344,4 +344,54 @@ public readonly struct DateTimeRange : IEquatable<DateTimeRange>
             next += periodTicks;
         }
     }
+
+    /// <summary>
+    /// Creates a new range with the end trimmed to the specified datetime if it falls before the current end.
+    /// </summary>
+    /// <param name="dateTime">The datetime to potentially trim the range's end to.</param>
+    /// <returns>A new DateTimeRange with the same start and the end set to the earlier of the specified datetime or the current
+    /// end.</returns>
+    public DateTimeRange TrimRight(DateTime dateTime) =>
+        new(Start, dateTime < End ? dateTime : End);
+
+    /// <summary>
+    /// Creates a new date time range with the start adjusted to be no earlier than the specified date time.
+    /// </summary>
+    /// <param name="dateTime">The minimum start date time for the resulting range.</param>
+    /// <returns>A new range with the start set to the maximum of the specified date time and the current start, and the end
+    /// unchanged.</returns>
+    public DateTimeRange TrimLeft(DateTime dateTime) =>
+        new(dateTime > Start ? dateTime : Start, End);
+
+    /// <summary>
+    /// Gets the gaps between the specified date time ranges.
+    /// The input ranges will be processed exactly in the order they are provided,
+    /// so they should be pre-sorted if a specific order is desired.
+    /// The resulting gaps will be returned in the order they are found between the input ranges.
+    /// </summary>
+    /// <param name="ranges">The date time ranges to find gaps between.</param>
+    /// <returns>An enumerable of date time ranges representing the gaps between the specified ranges.</returns>
+    public static IEnumerable<DateTimeRange> GatherGaps(IEnumerable<DateTimeRange> ranges)
+    {
+        var ordered = ranges;
+        DateTime currentEnd = default;
+        bool first = true;
+        foreach (var r in ordered)
+        {
+            if (first)
+            {
+                first = false;
+                currentEnd = r.End;
+                continue;
+            }
+
+            if (r.Start > currentEnd)
+            {
+                yield return new DateTimeRange(currentEnd, r.Start);
+            }
+
+            if (r.End > currentEnd)
+                currentEnd = r.End;
+        }
+    }
 }

@@ -91,7 +91,7 @@ public abstract class Recycler<T> : IDisposable
         // Wait until at least one slot is free (either available or creatable).
         await _gate.WaitAsync(cancellationToken);
 
-        using var _ = new ScopeLocker(_lock);
+        using var _ = _lock.LockScope();
 
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -143,7 +143,7 @@ public abstract class Recycler<T> : IDisposable
     Action<CallbackItemLocker<T>> OnItemReleased(int slotIndex, T item)
         => im =>
         {
-            using var _ = new ScopeLocker(_lock);
+            using var _ = _lock.LockScope();
 
             if (IsWell(item))
             {
@@ -165,7 +165,7 @@ public abstract class Recycler<T> : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        using var _ = new ScopeLocker(_lock);
+        using var _ = _lock.LockScope();
 
         if (_isDisposed)
         {

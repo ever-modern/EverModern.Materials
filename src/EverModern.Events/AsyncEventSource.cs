@@ -1,13 +1,13 @@
 ﻿namespace EverModern.Events;
 
-public sealed class EventSource : INotifier, IDisposable
+public sealed class AsyncEventSource : IAsyncNotifier, IDisposable
 {
     private readonly Lock _lock = new();
 
-    private Action? _handlers;
+    private Func<ValueTask>? _handlers;
     private int _disposed;
 
-    public Subscription Subscribe(Action handler)
+    public Subscription Subscribe(Func<ValueTask> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
 
@@ -30,9 +30,9 @@ public sealed class EventSource : INotifier, IDisposable
         });
     }
 
-    public void Invoke()
+    public async ValueTask InvokeAsync()
     {
-        Action? snapshot;
+        Func<ValueTask>? snapshot;
 
         lock (_lock)
         {
@@ -41,7 +41,14 @@ public sealed class EventSource : INotifier, IDisposable
             snapshot = _handlers;
         }
 
-        snapshot?.Invoke();
+        if (snapshot is null)
+            return;
+
+        // multicast delegate invocation
+        foreach (Func<ValueTask> handler in snapshot.GetInvocationList())
+        {
+            await handler().ConfigureAwait(false);
+        }
     }
 
     public void Dispose()
@@ -58,18 +65,18 @@ public sealed class EventSource : INotifier, IDisposable
     private void ThrowIfDisposed()
     {
         if (_disposed != 0)
-            throw new ObjectDisposedException(nameof(EventSource));
+            throw new ObjectDisposedException(nameof(AsyncEventSource));
     }
 }
 
-public sealed class EventSource<T> : INotifier<T>, IDisposable
+public sealed class AsyncEventSource<T> : IAsyncNotifier<T>, IDisposable
 {
     private readonly Lock _lock = new();
 
-    private Action<T>? _handlers;
+    private Func<T, ValueTask>? _handlers;
     private int _disposed;
 
-    public Subscription Subscribe(Action<T> handler)
+    public Subscription Subscribe(Func<T, ValueTask> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
 
@@ -92,9 +99,9 @@ public sealed class EventSource<T> : INotifier<T>, IDisposable
         });
     }
 
-    public void Invoke(T value)
+    public async ValueTask InvokeAsync(T value)
     {
-        Action<T>? snapshot;
+        Func<T, ValueTask>? snapshot;
 
         lock (_lock)
         {
@@ -103,7 +110,13 @@ public sealed class EventSource<T> : INotifier<T>, IDisposable
             snapshot = _handlers;
         }
 
-        snapshot?.Invoke(value);
+        if (snapshot is null)
+            return;
+
+        foreach (Func<T, ValueTask> handler in snapshot.GetInvocationList())
+        {
+            await handler(value).ConfigureAwait(false);
+        }
     }
 
     public void Dispose()
@@ -120,6 +133,6 @@ public sealed class EventSource<T> : INotifier<T>, IDisposable
     private void ThrowIfDisposed()
     {
         if (_disposed != 0)
-            throw new ObjectDisposedException(nameof(EventSource<T>));
+            throw new ObjectDisposedException(nameof(AsyncEventSource<T>));
     }
 }

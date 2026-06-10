@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\EverModern.Chronos\EverModern.Chronos.csproj" />
+	  <ProjectReference Include="..\..\EverModern.Events\EverModern.Events.csproj" />
 	  <ProjectReference Include="..\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
 	</ItemGroup>
 
