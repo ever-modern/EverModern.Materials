@@ -1,10 +1,10 @@
-﻿using EverModern.WheelProtection.Caching;
+using EverModern.WheelProtection.Caching;
 
-namespace EverModern.Tests;
+namespace EverModern.Tests.XUnit;
 
 public class CachingTests
 {
-    [Test]
+    [Fact]
     public async Task CacherDoesntDoUnnecessaryIterations()
     {
         var cachingSettings = new CachingSettings()

@@ -1,7 +1,6 @@
-﻿using EverModern.Threading.Queues;
+using EverModern.Threading.Queues;
 
-namespace EverModern.Tests;
-
+namespace EverModern.Tests.XUnit;
 
 partial class LoadEmulator
 {

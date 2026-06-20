@@ -1,8 +1,8 @@
-﻿namespace EverModern.Tests;
+namespace EverModern.Tests.XUnit;
 
-public class EqualityComparer
+public class EqualityComparerTests
 {
-    [Test]
+    [Fact]
     public void TestWithDictionary()
     {
         var equalityComparer = ReferenceEqualityComparer.Instance;
@@ -17,21 +17,21 @@ public class EqualityComparer
 
         var (hashCode1, hashCode2) = (equalityComparer.GetHashCode(key), equalityComparer.GetHashCode(newKey));
 
-        Assert.AreEqual(key, newKey);
-        Assert.IsFalse(ReferenceEquals(key, newKey));
-        Assert.IsFalse(dict.Contains(newKey));
-        Assert.AreNotEqual(hashCode1, hashCode2);
+        Assert.Equal(key, newKey);
+        Assert.False(ReferenceEquals(key, newKey));
+        Assert.False(dict.Contains(newKey));
+        Assert.NotEqual(hashCode1, hashCode2);
 
         newKey = string.Intern(newKey);
         (hashCode1, hashCode2) = (equalityComparer.GetHashCode(key), equalityComparer.GetHashCode(newKey));
 
-        Assert.AreEqual(key, newKey);
-        Assert.IsTrue(ReferenceEquals(key, newKey));
-        Assert.IsTrue(dict.Contains(newKey));
-        Assert.AreEqual(hashCode1, hashCode2);
+        Assert.Equal(key, newKey);
+        Assert.True(ReferenceEquals(key, newKey));
+        Assert.True(dict.Contains(newKey));
+        Assert.Equal(hashCode1, hashCode2);
     }
 
-    [Test]
+    [Fact]
     public void GetHashCode_MustIgnoreOverriden()
     {
         var equalityComparer = ReferenceEqualityComparer.Instance;
@@ -46,11 +46,11 @@ public class EqualityComparer
             Value = 1
         };
 
-        Assert.AreEqual(item1, item2);
-        Assert.AreEqual(item1.GetHashCode(), item2.GetHashCode());
+        Assert.Equal(item1, item2);
+        Assert.Equal(item1.GetHashCode(), item2.GetHashCode());
 
-        Assert.AreNotEqual(equalityComparer.GetHashCode(item1), equalityComparer.GetHashCode(item2));
-        Assert.IsFalse(equalityComparer.Equals(item1, item2));
+        Assert.NotEqual(equalityComparer.GetHashCode(item1), equalityComparer.GetHashCode(item2));
+        Assert.False(equalityComparer.Equals(item1, item2));
     }
 
     class OverridingClass

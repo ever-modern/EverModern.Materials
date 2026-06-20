@@ -1,14 +1,14 @@
-﻿using EverModern.Chronos;
+using EverModern.Chronos;
 using EverModern.Threading.Queues;
 using EverModern.WheelProtection.Extensions.Tasks;
 
-namespace EverModern.Tests;
+namespace EverModern.Tests.XUnit;
 
-public class QueusTesting
+public class QueuesTests
 {
     LoadEmulator _serverEmulator = new LoadEmulator(10);
 
-    [Test]
+    [Fact]
     public async Task Simple()
     {
         var rand = new Random(10);
@@ -42,7 +42,7 @@ public class QueusTesting
         }
     }
 
-    [Test]
+    [Fact]
     public async Task Recycler()
     {
         var testedRecycler = new TestedRecycler(5);
@@ -57,7 +57,7 @@ public class QueusTesting
         }))]);
     }
 
-    [Test]
+    [Fact]
     public async Task Distributor_OrderlyTest()
     {
         var log = (string m) => Console.WriteLine(m);
@@ -110,11 +110,11 @@ public class QueusTesting
                 .Where(c => c.Any())
                 .ToArray();
 
-            Assert.IsEmpty(violatedConstraints);
+            Assert.Empty(violatedConstraints);
         }
     }
 
-    [Test]
+    [Fact]
     public async Task RateControllerLengthyOperation()
     {
         CancellationToken cancellationToken = default;
@@ -133,11 +133,11 @@ public class QueusTesting
 
             secondRequest = rateController.WhenAllowed(cancellationToken);
 
-            Assert.IsFalse(secondRequest.IsCompleted);
+            Assert.False(secondRequest.IsCompleted);
 
             nowProvider.MoveTime(TimeSpan.FromSeconds(5));
 
-            Assert.IsFalse(secondRequest.IsCompleted);
+            Assert.False(secondRequest.IsCompleted);
 
             nowProvider.MoveTime(TimeSpan.FromSeconds(5.1));
 
@@ -145,21 +145,21 @@ public class QueusTesting
         }
 
         {
-            Assert.IsFalse(secondRequest.IsCompleted);
+            Assert.False(secondRequest.IsCompleted);
 
             nowProvider.MoveTime(TimeSpan.FromSeconds(1));
 
-            Assert.IsFalse(secondRequest.IsCompleted);
+            Assert.False(secondRequest.IsCompleted);
 
             nowProvider.MoveTime(TimeSpan.FromSeconds(1));
 
             await secondRequest.AsTask().WithinDeadline(TimeSpan.FromMilliseconds(1));
 
-            Assert.IsTrue(secondRequest.IsCompleted);
+            Assert.True(secondRequest.IsCompleted);
 
             nowProvider.MoveTime(TimeSpan.FromSeconds(1));
 
-            Assert.IsTrue(secondRequest.IsCompleted);
+            Assert.True(secondRequest.IsCompleted);
         }
     }
 }

@@ -1,12 +1,10 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.0.11109.219
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EverModern.Threading", "Utilities\EverModern.WheelProtection.Queues\EverModern.Threading.csproj", "{371A1996-C791-4389-93AE-AFFEEC647301}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EverModern.WheelProtection.Extensions", "Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj", "{244F4C61-533D-4007-9CD7-108EFAED7A0D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EverModern.Tests", "EverModern.Tests\EverModern.Tests.csproj", "{90107A05-0F30-49EA-AB12-4515E41B55CD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestAsConsoler", "TestAsConsoler\TestAsConsoler.csproj", "{F3CC3774-C43D-4B36-A6AD-503435347678}"
 EndProject
@@ -91,10 +89,6 @@ Global
 		{244F4C61-533D-4007-9CD7-108EFAED7A0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{244F4C61-533D-4007-9CD7-108EFAED7A0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{244F4C61-533D-4007-9CD7-108EFAED7A0D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90107A05-0F30-49EA-AB12-4515E41B55CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90107A05-0F30-49EA-AB12-4515E41B55CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90107A05-0F30-49EA-AB12-4515E41B55CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{90107A05-0F30-49EA-AB12-4515E41B55CD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F3CC3774-C43D-4B36-A6AD-503435347678}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F3CC3774-C43D-4B36-A6AD-503435347678}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3CC3774-C43D-4B36-A6AD-503435347678}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -210,7 +204,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{371A1996-C791-4389-93AE-AFFEEC647301} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
 		{244F4C61-533D-4007-9CD7-108EFAED7A0D} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
-		{90107A05-0F30-49EA-AB12-4515E41B55CD} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
 		{F3CC3774-C43D-4B36-A6AD-503435347678} = {023EFA56-3D87-402E-A854-2D74FE19A4E2}
 		{FCE55518-4A9A-4D55-95E4-700F0EF34AF9} = {FBF06A7C-DD83-4257-B012-CF37A8CA12AF}
 		{ACA82F46-B748-4051-AC99-4B85B45978D6} = {FBF06A7C-DD83-4257-B012-CF37A8CA12AF}

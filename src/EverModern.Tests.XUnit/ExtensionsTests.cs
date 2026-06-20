@@ -1,11 +1,11 @@
-﻿using EverModern.WheelProtection.Extensions;
+using EverModern.WheelProtection.Extensions;
 using EverModern.WheelProtection.Extensions.Tasks;
 
-namespace EverModern.Tests;
+namespace EverModern.Tests.XUnit;
 
-public class ExtensionsTesting
+public class ExtensionsTests
 {
-    [Test]
+    [Fact]
     public async Task AwaitTuple()
     {
         var firstTask = Task.FromResult(1);
@@ -15,10 +15,10 @@ public class ExtensionsTesting
 
         var (first, second, third, fourth) = await (firstTask, secondTask, thirdTask, fourthTask);
 
-        Assert.AreEqual(first + second + third + fourth, 10);
+        Assert.Equal(10, first + second + third + fourth);
     }
 
-    [Test]
+    [Fact]
     public void GetEnumeratorOfTuple()
     {
         int i = 0;
@@ -26,16 +26,16 @@ public class ExtensionsTesting
         {
             i++;
         }
-        Assert.AreEqual(3, i);
+        Assert.Equal(3, i);
     }
 
-    [Test]
+    [Fact]
     public void DeconstructList()
     {
         var list = (1, 2.0, 3, 4.0, 5, 6.0).ToDictionary();
     }
 
-    [Test]
+    [Fact]
     public async Task SelectTask_AwaitThem()
     {
         var (n1, n2, n3, n4, n5) = await (1, 2, 3, 4, 5).Select(async n =>
@@ -45,10 +45,9 @@ public class ExtensionsTesting
         });
     }
 
-    [Test]
+    [Fact]
     public void DeconstructionTesting()
     {
         var arr = (1, 2, 3, 4, 5, 6).ToArray();
-        //var (n1, n2, n3, n4, n5, n6) = arr;
     }
 }

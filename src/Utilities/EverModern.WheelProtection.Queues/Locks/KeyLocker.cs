@@ -2,21 +2,42 @@ using System.Collections.Concurrent;
 
 namespace EverModern.Threading.Locks;
 
+/// <summary>
+/// Provides synchronous, key-level mutual exclusion using <see cref="Lock"/> per key.
+/// Different keys can be locked concurrently without contention.
+/// Disposing the locker prevents new acquisitions.
+/// </summary>
+/// <typeparam name="TKey">The type of keys. Must not be null.</typeparam>
 public class KeyLocker<TKey> : IDisposable
     where TKey : notnull
 {
     readonly ConcurrentDictionary<TKey, LockEntry> _locks;
     int _disposed;
 
+    /// <summary>
+    /// Initializes a new instance using the default equality comparer.
+    /// </summary>
     public KeyLocker()
         : this(EqualityComparer<TKey>.Default) { }
 
+    /// <summary>
+    /// Initializes a new instance with the specified key comparer.
+    /// </summary>
+    /// <param name="comparer">The equality comparer for keys.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="comparer"/> is null.</exception>
     public KeyLocker(IEqualityComparer<TKey> comparer)
     {
         ArgumentNullException.ThrowIfNull(comparer);
         _locks = new ConcurrentDictionary<TKey, LockEntry>(comparer);
     }
 
+    /// <summary>
+    /// Synchronously acquires an exclusive lock for the specified key.
+    /// The lock is released when the returned <see cref="LockedScope"/> is disposed.
+    /// </summary>
+    /// <param name="key">The key to lock.</param>
+    /// <returns>A <see cref="LockedScope"/> that releases the lock on disposal.</returns>
+    /// <exception cref="ObjectDisposedException">Thrown if the locker has been disposed.</exception>
     public LockedScope Lock(TKey key)
     {
         ThrowIfDisposed();
@@ -27,15 +48,11 @@ public class KeyLocker<TKey> : IDisposable
 
         try
         {
-            entry.Lock.Enter();
-
             var scope = LockedScope.Enter(entry.Lock);
 
             scope.BeforeExit.Subscribe(_ =>
-            {
-                entry.Lock.Exit();
-                ReleaseReference(key, entry);
-            });
+                ReleaseReference(key, entry)
+            );
 
             return scope;
         }
@@ -46,6 +63,10 @@ public class KeyLocker<TKey> : IDisposable
         }
     }
 
+    /// <summary>
+    /// Disposes the locker. Prevents new lock acquisitions.
+    /// Active lock scopes continue to function normally.
+    /// </summary>
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)

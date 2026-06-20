@@ -13,8 +13,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EverModern.Chronos\EverModern.Chronos.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Caching\EverModern.WheelProtection.Caching.csproj" />
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.DataStructures\EverModern.WheelProtection.DataStructures.csproj" />
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Extensions\EverModern.WheelProtection.Extensions.csproj" />
+    <ProjectReference Include="..\Utilities\EverModern.WheelProtection.LinqToTuples\EverModern.WheelProtection.LinqToTuples.csproj" />
     <ProjectReference Include="..\Utilities\EverModern.WheelProtection.Queues\EverModern.Threading.csproj" />
   </ItemGroup>
 

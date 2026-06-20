@@ -1,12 +1,12 @@
-﻿using TupleType = (int, int, int, int, int);
+using TupleType = (int, int, int, int, int);
 
-namespace EverModern.Tests;
+namespace EverModern.Tests.XUnit;
 
-public class LinqToTuplesTesting
+public class LinqToTuplesTests
 {
     static TupleType _items = (3, 10, 20, 50, 51);
 
-    [Test]
+    [Fact]
     public void Methods_MustYieldSameResults_AsClassicLinq()
     {
         List<(Func<int[], object>, Func<TupleType, object>)> checks = [
@@ -27,8 +27,7 @@ public class LinqToTuplesTesting
         {
             var (arrayCheck, tupleCheck) = check;
 
-            Assert.AreEqual(arrayCheck(itemsArray), tupleCheck(_items));
+            Assert.Equal(arrayCheck(itemsArray), tupleCheck(_items));
         }
-
     }
 }

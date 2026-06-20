@@ -1,12 +1,12 @@
-﻿using EverModern.WheelProtection.DataStructures.Buffers;
+using EverModern.WheelProtection.DataStructures.Buffers;
 using EverModern.WheelProtection.Extensions.Ranges;
 
-namespace EverModern.Tests;
+namespace EverModern.Tests.XUnit;
 
-public class ArrayBorrowingTesting
+public class ArrayBorrowingTests
 {
-    [Test]
-    public void ArrayBorrower_GetRange()
+    [Fact]
+    public void GetRange()
     {
         const int size = 100;
 
@@ -29,11 +29,11 @@ public class ArrayBorrowingTesting
             }
         }
 
-        Assert.AreEqual((size - 1) * size / 2, i);
+        Assert.Equal((size - 1) * size / 2, i);
     }
 
-    [Test]
-    public void ArrayBorrower_GetRange_FromEndIndexing()
+    [Fact]
+    public void GetRange_FromEndIndexing()
     {
         const int size = 100;
 
@@ -61,11 +61,11 @@ public class ArrayBorrowingTesting
             }
         }
 
-        Assert.AreEqual((size - 1) * size / 2, i);
+        Assert.Equal((size - 1) * size / 2, i);
     }
 
-    [Test]
-    public void ArrayBorrower_ComputeRentedArraySize()
+    [Fact]
+    public void ComputeRentedArraySize()
     {
         var expectedResults = (
                     (128, 200, 256),
@@ -77,11 +77,11 @@ public class ArrayBorrowingTesting
         foreach (var act in expectedResults)
         {
             var actual = ArrayBorrower<object>.ComputeRentedArraySize(act.Item2, act.Item1);
-            Assert.AreEqual(act.Item3, actual);
+            Assert.Equal(act.Item3, actual);
         }
     }
 
-    [Test]
+    [Fact]
     public void Create_ThenBorrow()
     {
         const int borrowedSize = 200;
@@ -98,19 +98,19 @@ public class ArrayBorrowingTesting
 
         arr[0] = 45;
 
-        Assert.AreNotEqual(arr1[0], arr[0]);
+        Assert.NotEqual(arr1[0], arr[0]);
 
         arr.Free();
 
         var arr2 = borrower.Borrow(borrowedSize);
 
-        Assert.AreEqual(45, arr2[0]);
+        Assert.Equal(45, arr2[0]);
 
         arr2.Free();
         arr1.Free();
     }
 
-    [Test]
+    [Fact]
     public void OneArrayWriter_GetMemory()
     {
         int[] arr = (0, 0, 0, 0, 0, 0).ToArray();
@@ -120,29 +120,29 @@ public class ArrayBorrowingTesting
         var mem1 = writer.GetMemory(1);
         new int[] { 100 }.AsMemory().CopyTo(mem1);
 
-        Assert.AreEqual(100, arr[0]);
+        Assert.Equal(100, arr[0]);
 
         writer.Advance(1);
         var mem2 = writer.GetMemory(2);
         new int[] { 200, 300 }.CopyTo(mem2);
 
-        Assert.AreEqual(200, arr[1]);
-        Assert.AreEqual(300, arr[2]);
+        Assert.Equal(200, arr[1]);
+        Assert.Equal(300, arr[2]);
 
         writer.Advance(2);
         var mem3 = writer.GetMemory(3);
         new int[] { 400, 500, 600 }.CopyTo(mem3);
 
-        Assert.AreEqual(400, arr[3]);
-        Assert.AreEqual(500, arr[4]);
-        Assert.AreEqual(600, arr[5]);
+        Assert.Equal(400, arr[3]);
+        Assert.Equal(500, arr[4]);
+        Assert.Equal(600, arr[5]);
 
         writer.Advance(3);
 
         Assert.Throws<IndexOutOfRangeException>(() => writer.Advance(1));
     }
 
-    [Test]
+    [Fact]
     public void OneArrayWriter_GetSpan()
     {
         int[] arr = (0, 0, 0, 0, 0, 0).ToArray();
@@ -152,29 +152,29 @@ public class ArrayBorrowingTesting
         var mem1 = writer.GetSpan(1);
         new int[] { 100 }.AsSpan().CopyTo(mem1);
 
-        Assert.AreEqual(100, arr[0]);
+        Assert.Equal(100, arr[0]);
 
         writer.Advance(1);
         var mem2 = writer.GetSpan(2);
         new int[] { 200, 300 }.CopyTo(mem2);
 
-        Assert.AreEqual(200, arr[1]);
-        Assert.AreEqual(300, arr[2]);
+        Assert.Equal(200, arr[1]);
+        Assert.Equal(300, arr[2]);
 
         writer.Advance(2);
         var mem3 = writer.GetSpan(3);
         new int[] { 400, 500, 600 }.CopyTo(mem3);
 
-        Assert.AreEqual(400, arr[3]);
-        Assert.AreEqual(500, arr[4]);
-        Assert.AreEqual(600, arr[5]);
+        Assert.Equal(400, arr[3]);
+        Assert.Equal(500, arr[4]);
+        Assert.Equal(600, arr[5]);
 
         writer.Advance(3);
 
         Assert.Throws<IndexOutOfRangeException>(() => writer.Advance(1));
     }
 
-    [Test]
+    [Fact]
     public void ArrayPoolWriter_GetSpan()
     {
         var writer = new ArrayPoolWriter<int>();
@@ -197,14 +197,14 @@ public class ArrayBorrowingTesting
             using var arr = writer.ExtractResults()
                 ?? throw new Exception();
 
-            Assert.AreEqual(6, arr.Length);
+            Assert.Equal(6, arr.Length);
 
-            Assert.AreEqual(100, arr[0]);
-            Assert.AreEqual(200, arr[1]);
-            Assert.AreEqual(300, arr[2]);
-            Assert.AreEqual(400, arr[3]);
-            Assert.AreEqual(500, arr[4]);
-            Assert.AreEqual(600, arr[5]);
+            Assert.Equal(100, arr[0]);
+            Assert.Equal(200, arr[1]);
+            Assert.Equal(300, arr[2]);
+            Assert.Equal(400, arr[3]);
+            Assert.Equal(500, arr[4]);
+            Assert.Equal(600, arr[5]);
 
             writer.Advance(3);
         }
