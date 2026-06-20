@@ -29,7 +29,7 @@ public class RatesDistributor<T>
     /// </summary>
     /// <param name="callConstraints">Pairs of items and their call constraints.</param>
     public RatesDistributor(IEnumerable<KeyValuePair<T, IEnumerable<CallConstraint>>> callConstraints) 
-        : this(callConstraints, RealTimeChronos.Instance)
+        : this(callConstraints, RealtimeChronos.Instance)
     {
     }
 

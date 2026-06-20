@@ -10,13 +10,13 @@ namespace EverModern.Threading.Queues;
 public interface IRateController
 {
     /// <summary>
-    /// Attempts to reserve a slot immediately.
+    /// Attempts to reserve a slot immediately and commits it if true
     /// </summary>
     /// <param name="tryAgainAt">The earliest time a call can be retried if denied.</param>
     bool TryImmediately(out DateTimeOffset tryAgainAt);
 
     /// <summary>
-    /// Awaits until a call is allowed.
+    /// Awaits until a call is allowed and commits it
     /// </summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     ValueTask WhenAllowed(CancellationToken cancellationToken = default);

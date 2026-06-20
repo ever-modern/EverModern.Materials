@@ -1,6 +1,6 @@
 ﻿namespace EverModern.WheelProtection.Caching;
 
-internal struct CachedValue<TValue>
+struct CachedValue<TValue>
 {
     public readonly TValue Value;
     public readonly DateTime ValidUntil;

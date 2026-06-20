@@ -10,23 +10,23 @@ namespace EverModern.Threading.Channels;
 /// <typeparam name="TMessage">
 /// The message type accepted by the writer and observed by subscribers.
 /// </typeparam>
-public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMessage>, IDisposable
+public sealed class MultireadChannel<TMessage> : IBroadcastChannel<TMessage, TMessage>, IDisposable
 {
-    private readonly Channel<TMessage> _outgoingChannel;
+    readonly Channel<TMessage> _outgoingChannel;
 
-    private readonly ConcurrentDictionary<Guid, Channel<TMessage>> _subscribers = new();
+    readonly ConcurrentDictionary<Guid, Channel<TMessage>> _subscribers = new();
 
-    private readonly CancellationTokenSource _cts = new();
+    readonly CancellationTokenSource _cts = new();
 
-    private readonly Task _broadcastTask;
+    readonly Task _broadcastTask;
 
-    private readonly BoundedChannelOptions? _subscriberBoundedOptions;
+    readonly BoundedChannelOptions? _subscriberBoundedOptions;
 
-    private readonly UnboundedChannelOptions? _subscriberUnboundedOptions;
+    readonly UnboundedChannelOptions? _subscriberUnboundedOptions;
 
     /// <summary>
     /// Initializes a new instance of the
-    /// <see cref="BroadcastChannel{TMessage}"/> class using bounded
+    /// <see cref="MultireadChannel{TMessage}"/> class using bounded
     /// outgoing and subscriber channels.
     /// </summary>
     /// <param name="capacity">
@@ -38,7 +38,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
     /// <see cref="BoundedChannelFullMode.DropOldest"/> by default.
     /// When capacity is exceeded, the oldest messages are discarded.
     /// </remarks>
-    public BroadcastChannel(int capacity = 1000)
+    public MultireadChannel(int capacity = 1000)
         : this(
             new BoundedChannelOptions(capacity)
             {
@@ -52,11 +52,11 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
                 SingleReader = true,
                 SingleWriter = true,
             }
-        ) { }
+        ) {}
 
     /// <summary>
     /// Initializes a new instance of the
-    /// <see cref="BroadcastChannel{TMessage}"/> class using bounded
+    /// <see cref="MultireadChannel{TMessage}"/> class using bounded
     /// outgoing and subscriber channels.
     /// </summary>
     /// <param name="outgoingOptions">
@@ -65,7 +65,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
     /// <param name="subscriberOptions">
     /// Configuration options for subscriber channels.
     /// </param>
-    public BroadcastChannel(
+    public MultireadChannel(
         BoundedChannelOptions outgoingOptions,
         BoundedChannelOptions subscriberOptions
     )
@@ -79,7 +79,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
 
     /// <summary>
     /// Initializes a new instance of the
-    /// <see cref="BroadcastChannel{TMessage}"/> class using a bounded
+    /// <see cref="MultireadChannel{TMessage}"/> class using a bounded
     /// outgoing channel and unbounded subscriber channels.
     /// </summary>
     /// <param name="outgoingOptions">
@@ -88,7 +88,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
     /// <param name="subscriberOptions">
     /// Configuration options for subscriber channels.
     /// </param>
-    public BroadcastChannel(
+    public MultireadChannel(
         BoundedChannelOptions outgoingOptions,
         UnboundedChannelOptions subscriberOptions
     )
@@ -102,7 +102,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
 
     /// <summary>
     /// Initializes a new instance of the
-    /// <see cref="BroadcastChannel{TMessage}"/> class using an
+    /// <see cref="MultireadChannel{TMessage}"/> class using an
     /// unbounded outgoing channel and bounded subscriber channels.
     /// </summary>
     /// <param name="outgoingOptions">
@@ -111,7 +111,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
     /// <param name="subscriberOptions">
     /// Configuration options for subscriber channels.
     /// </param>
-    public BroadcastChannel(
+    public MultireadChannel(
         UnboundedChannelOptions outgoingOptions,
         BoundedChannelOptions subscriberOptions
     )
@@ -125,7 +125,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
 
     /// <summary>
     /// Initializes a new instance of the
-    /// <see cref="BroadcastChannel{TMessage}"/> class using unbounded
+    /// <see cref="MultireadChannel{TMessage}"/> class using unbounded
     /// outgoing and subscriber channels.
     /// </summary>
     /// <param name="outgoingOptions">
@@ -134,7 +134,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
     /// <param name="subscriberOptions">
     /// Configuration options for subscriber channels.
     /// </param>
-    public BroadcastChannel(
+    public MultireadChannel(
         UnboundedChannelOptions outgoingOptions,
         UnboundedChannelOptions subscriberOptions
     )
@@ -184,9 +184,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
     {
         var id = Guid.NewGuid();
 
-        Channel<TMessage> channel = _subscriberBoundedOptions is not null
-            ? Channel.CreateBounded<TMessage>(_subscriberBoundedOptions)
-            : Channel.CreateUnbounded<TMessage>(_subscriberUnboundedOptions!);
+        Channel<TMessage> channel = _subscriberBoundedOptions is not null ? Channel.CreateBounded<TMessage>(_subscriberBoundedOptions) : Channel.CreateUnbounded<TMessage>(_subscriberUnboundedOptions!);
 
         if (!_subscribers.TryAdd(id, channel))
         {
@@ -200,7 +198,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
         );
     }
 
-    private async Task BroadcastLoop()
+    async Task BroadcastLoop()
     {
         try
         {
@@ -212,11 +210,11 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
                     {
                         await subscriber.Writer.WriteAsync(message, _cts.Token);
                     }
-                    catch (ChannelClosedException) { }
+                    catch (ChannelClosedException) {}
                 }
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) {}
         finally
         {
             foreach (var subscriber in _subscribers.Values)
@@ -228,7 +226,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
         }
     }
 
-    private void RemoveSubscriber(Guid id)
+    void RemoveSubscriber(Guid id)
     {
         if (_subscribers.TryRemove(id, out var channel))
         {
@@ -251,7 +249,7 @@ public sealed class BroadcastChannel<TMessage> : IBroadcastChannel<TMessage, TMe
             _broadcastTask.Wait();
         }
         catch (AggregateException ex)
-            when (ex.InnerExceptions.All(x => x is OperationCanceledException)) { }
+            when (ex.InnerExceptions.All(x => x is OperationCanceledException)) {}
 
         _cts.Dispose();
     }

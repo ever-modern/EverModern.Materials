@@ -8,7 +8,7 @@ using Xunit;
 
 public class BorrowedListTests : IDisposable
 {
-    private BorrowedList<int> _list;
+    BorrowedList<int> _list;
 
     public BorrowedListTests()
     {

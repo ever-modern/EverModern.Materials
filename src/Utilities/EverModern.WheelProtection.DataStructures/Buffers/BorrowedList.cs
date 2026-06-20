@@ -12,11 +12,11 @@ using System.Linq;
 /// <typeparam name="T">The type of elements in the list.</typeparam>
 public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
 {
-    private readonly List<BorrowedArray<T>> _buffers;
-    private int _count;
-    private bool _disposed;
-    private readonly object _sync = new();
-    private const int DefaultCapacity = 4;
+    readonly List<BorrowedArray<T>> _buffers;
+    int _count;
+    bool _disposed;
+    readonly object _sync = new();
+    const int DefaultCapacity = 4;
 
     /// <summary>
     /// Initializes an empty list.
@@ -321,13 +321,13 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         }
     }
 
-    private void ThrowIfDisposed()
+    void ThrowIfDisposed()
     {
         if (_disposed)
             throw new ObjectDisposedException(nameof(BorrowedList<T>));
     }
 
-    private void EnsureCapacity(int requiredCapacity)
+    void EnsureCapacity(int requiredCapacity)
     {
         int currentCapacity = _buffers.Sum(b => b?.Length ?? 0);
 
@@ -344,7 +344,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         _buffers.Add(new BorrowedArray<T>(newBufferSize));
     }
 
-    private T GetItemAt(int logicalIndex)
+    T GetItemAt(int logicalIndex)
     {
         int currentIndex = 0;
         foreach (var buffer in _buffers)
@@ -358,7 +358,7 @@ public sealed class BorrowedList<T> : IList<T>, IDisposable, IReadOnlyList<T>
         throw new ArgumentOutOfRangeException(nameof(logicalIndex));
     }
 
-    private void SetItemAt(int logicalIndex, T value)
+    void SetItemAt(int logicalIndex, T value)
     {
         int currentIndex = 0;
         foreach (var buffer in _buffers)

@@ -1,112 +1,61 @@
 ﻿namespace EverModern.Events;
 
-public sealed class AsyncEventSource : IAsyncNotifier, IDisposable
+public sealed class AsyncEventSource : BaseAsyncEventSource<Nothing>, IAsyncNotifier
 {
-    private readonly Lock _lock = new();
-
-    private Func<ValueTask>? _handlers;
-    private int _disposed;
+    public ValueTask InvokeAsync() => base.InvokeAsync(default);
 
     public Subscription Subscribe(Func<ValueTask> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
-
-        lock (_lock)
-        {
-            ThrowIfDisposed();
-
-            _handlers += handler;
-        }
-
-        return new Subscription(() =>
-        {
-            lock (_lock)
-            {
-                if (_disposed != 0)
-                    return;
-
-                _handlers -= handler;
-            }
-        });
-    }
-
-    public async ValueTask InvokeAsync()
-    {
-        Func<ValueTask>? snapshot;
-
-        lock (_lock)
-        {
-            ThrowIfDisposed();
-
-            snapshot = _handlers;
-        }
-
-        if (snapshot is null)
-            return;
-
-        // multicast delegate invocation
-        foreach (Func<ValueTask> handler in snapshot.GetInvocationList())
-        {
-            await handler().ConfigureAwait(false);
-        }
-    }
-
-    public void Dispose()
-    {
-        lock (_lock)
-        {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
-                return;
-
-            _handlers = null;
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (_disposed != 0)
-            throw new ObjectDisposedException(nameof(AsyncEventSource));
+        return base.Subscribe(_ => handler());
     }
 }
 
-public sealed class AsyncEventSource<T> : IAsyncNotifier<T>, IDisposable
+public sealed class AsyncEventSource<T> : BaseAsyncEventSource<T>, IAsyncNotifier<T>
 {
-    private readonly Lock _lock = new();
-
-    private Func<T, ValueTask>? _handlers;
-    private int _disposed;
+    public ValueTask InvokeAsync(T value) => base.InvokeAsync(value);
 
     public Subscription Subscribe(Func<T, ValueTask> handler)
+        => base.Subscribe(handler);
+}
+
+public abstract class BaseAsyncEventSource<T> : IDisposable
+{
+    readonly object _sync = new();
+
+    Func<T, ValueTask>? _handlers;
+    bool _disposed;
+
+    protected Subscription Subscribe(Func<T, ValueTask> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
 
-        lock (_lock)
+        lock (_sync)
         {
             ThrowIfDisposed();
-
             _handlers += handler;
         }
 
         return new Subscription(() =>
-        {
-            lock (_lock)
             {
-                if (_disposed != 0)
-                    return;
+                lock (_sync)
+                {
+                    if (_disposed)
+                        return;
 
-                _handlers -= handler;
+                    _handlers -= handler;
+                }
             }
-        });
+        );
     }
 
-    public async ValueTask InvokeAsync(T value)
+    protected async ValueTask InvokeAsync(T value)
     {
         Func<T, ValueTask>? snapshot;
 
-        lock (_lock)
+        lock (_sync)
         {
             ThrowIfDisposed();
-
             snapshot = _handlers;
         }
 
@@ -121,18 +70,19 @@ public sealed class AsyncEventSource<T> : IAsyncNotifier<T>, IDisposable
 
     public void Dispose()
     {
-        lock (_lock)
+        lock (_sync)
         {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            if (_disposed)
                 return;
 
+            _disposed = true;
             _handlers = null;
         }
     }
 
-    private void ThrowIfDisposed()
+    void ThrowIfDisposed()
     {
-        if (_disposed != 0)
-            throw new ObjectDisposedException(nameof(AsyncEventSource<T>));
+        if (_disposed)
+            throw new ObjectDisposedException(GetType().Name);
     }
 }

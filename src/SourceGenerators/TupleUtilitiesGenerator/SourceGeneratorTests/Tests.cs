@@ -94,7 +94,7 @@ namespace Foo
         }
     }
 
-    private static ImmutableArray<Diagnostic> GetGeneratedOutput(string source)
+    static ImmutableArray<Diagnostic> GetGeneratedOutput(string source)
     {
         var tree = CSharpSyntaxTree.ParseText(source);
 

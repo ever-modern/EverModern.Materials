@@ -1,197 +1,213 @@
-﻿using EverModern.WheelProtection.DataStructures;
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using EverModern.WheelProtection.DataStructures;
 
-namespace EverModern.Threading.Executions;
+namespace EverModern.WheelProtection.Executions;
 
 /// <summary>
-/// Provides helper methods for resilient execution and timing.
+/// Provides helper methods for resilient execution, retrying, and timing.
 /// </summary>
 public static class Please
 {
-    /// <summary>
-    /// Repeats an async function until it succeeds or the retry limit is reached.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="function">The function to execute.</param>
-    /// <param name="maxTriesCount">The maximum number of attempts.</param>
-    /// <param name="awaitBetweenTries">The delay between attempts.</param>
-    public static async Task<TResult> RepeatUntilSuccessAsync<TResult>(
-        this Func<Task<TResult>> function,
-        int maxTriesCount,
-        TimeSpan awaitBetweenTries = default
-    )
+    static async Task Delay(TimeSpan delay, CancellationToken ct)
     {
-        while (maxTriesCount-- > 0)
+        if (delay <= TimeSpan.Zero)
         {
-            try
-            {
-                return await function();
-            }
-            catch
-            {
-                if (maxTriesCount == 0)
-                {
-                    throw;
-                }
-                await Task.Delay(awaitBetweenTries);
-            }
+            await Task.Yield();
+            return;
         }
-        return default;
+
+        await Task.Delay(delay, ct);
     }
 
-    /// <summary>
-    /// Repeats an async function until it succeeds and passes a validity check.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="function">The function to execute.</param>
-    /// <param name="maxTriesCount">The maximum number of attempts.</param>
-    /// <param name="validityCriterion">The validity check for the result.</param>
-    /// <param name="awaitBetweenTries">The delay between attempts.</param>
-    public static async Task<TResult> RepeatUntilSuccessAsync<TResult>(
-        this Func<Task<TResult>> function,
-        int maxTriesCount,
-        Func<TResult, bool> validityCriterion,
-        TimeSpan awaitBetweenTries = default
+    // =========================
+    // RETRY CORE
+    // =========================
+
+    static async Task<TResult> RetryCore<TResult>(
+        Func<Task<TResult>> func,
+        int maxTries,
+        Func<TResult, bool>? validator,
+        TimeSpan delay,
+        CancellationToken ct
     )
     {
-        while (maxTriesCount-- > 0)
+        if (func is null)
+            throw new ArgumentNullException(nameof(func));
+        if (maxTries <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxTries));
+
+        Exception? lastException = null;
+
+        while (maxTries-- > 0)
         {
+            ct.ThrowIfCancellationRequested();
+
             try
             {
-                var result = await function();
-                if (validityCriterion(result) || maxTriesCount == 0)
-                {
+                var result = await func();
+
+                if (validator is null || validator(result))
                     return result;
-                }
+
+                if (maxTries == 0)
+                    return result;
             }
             catch (Exception ex)
             {
-                if (maxTriesCount == 0)
-                {
+                lastException = ex;
+
+                if (maxTries == 0)
                     throw;
-                }
             }
-            await Task.Delay(awaitBetweenTries);
+
+            await Delay(delay, ct);
         }
-        return default;
+
+        throw lastException ?? new InvalidOperationException("Retry failed.");
     }
 
-    /// <summary>
-    /// Measures execution time for a synchronous function.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="func">The function to execute.</param>
-    /// <param name="doWithTimeTaken">Callback for the elapsed time.</param>
-    public static TResult MeasureExecutionTime<TResult>(
-        this Func<TResult> func,
-        Action<TimeSpan> doWithTimeTaken
-    )
-    {
-        var stopwatch = Stopwatch.StartNew();
-        try
-        {
-            var result = func();
-            return result;
-        }
-        finally
-        {
-            doWithTimeTaken(stopwatch.Elapsed);
-        }
-    }
+    // =========================
+    // RETRIES
+    // =========================
 
-    /// <summary>
-    /// Measures execution time for an async function.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="func">The function to execute.</param>
-    /// <param name="doWithTimeTaken">Callback for the elapsed time.</param>
-    public static async Task<TResult> MeasureExecutionTimeAsync<TResult>(
+    public static Task<TResult> RepeatUntilSuccessAsync<TResult>(
         this Func<Task<TResult>> func,
-        Action<TimeSpan> doWithTimeTaken
-    )
+        int maxTriesCount,
+        TimeSpan awaitBetweenTries = default,
+        CancellationToken ct = default
+    ) => RetryCore(func, maxTriesCount, null, awaitBetweenTries, ct);
+
+    public static Task<TResult> RepeatUntilSuccessAsync<TResult>(
+        this Func<Task<TResult>> func,
+        int maxTriesCount,
+        Func<TResult, bool> validityCriterion,
+        TimeSpan awaitBetweenTries = default,
+        CancellationToken ct = default
+    ) => RetryCore(func, maxTriesCount, validityCriterion, awaitBetweenTries, ct);
+
+    // =========================
+    // TIMING CORE
+    // =========================
+
+    static TResult MeasureCore<TResult>(Func<TResult> func, Action<TimeSpan> callback)
     {
-        var stopwatch = Stopwatch.StartNew();
+        if (func is null)
+            throw new ArgumentNullException(nameof(func));
+        if (callback is null)
+            throw new ArgumentNullException(nameof(callback));
+
+        var sw = Stopwatch.StartNew();
         try
         {
-            var result = await func();
-            return result;
+            return func();
         }
         finally
         {
-            doWithTimeTaken(stopwatch.Elapsed);
+            callback(sw.Elapsed);
         }
     }
 
-    /// <summary>
-    /// Measures execution time for an async action.
-    /// </summary>
-    /// <param name="func">The action to execute.</param>
-    /// <param name="doWithTimeTaken">Callback for the elapsed time.</param>
-    public static async Task MeasureExecutionTimeAsync(
-        this Func<Task> func,
-        Action<TimeSpan> doWithTimeTaken
+    static async Task<TResult> MeasureCoreAsync<TResult>(
+        Func<Task<TResult>> func,
+        Action<TimeSpan> callback
     )
     {
-        var stopwatch = Stopwatch.StartNew();
+        if (func is null)
+            throw new ArgumentNullException(nameof(func));
+        if (callback is null)
+            throw new ArgumentNullException(nameof(callback));
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            return await func();
+        }
+        finally
+        {
+            callback(sw.Elapsed);
+        }
+    }
+
+    static async Task MeasureCoreAsync(Func<Task> func, Action<TimeSpan> callback)
+    {
+        if (func is null)
+            throw new ArgumentNullException(nameof(func));
+        if (callback is null)
+            throw new ArgumentNullException(nameof(callback));
+
+        var sw = Stopwatch.StartNew();
         try
         {
             await func();
         }
         finally
         {
-            doWithTimeTaken(stopwatch.Elapsed);
+            callback(sw.Elapsed);
         }
     }
 
-    /// <summary>
-    /// Measures execution time for a task.
-    /// </summary>
-    /// <typeparam name="T">The result type.</typeparam>
-    /// <param name="task">The task to execute.</param>
-    /// <param name="doWithTimeTaken">Callback for the elapsed time.</param>
-    public static async Task<T> MeasureExecutionTimeAsync<T>(this Task<T> task, Action<TimeSpan> doWithTimeTaken)
+    // =========================
+    // TIMING API
+    // =========================
+
+    public static TResult MeasureExecutionTime<TResult>(
+        this Func<TResult> func,
+        Action<TimeSpan> doWithTimeTaken
+    ) => MeasureCore(func, doWithTimeTaken);
+
+    public static Task<TResult> MeasureExecutionTimeAsync<TResult>(
+        this Func<Task<TResult>> func,
+        Action<TimeSpan> doWithTimeTaken
+    ) => MeasureCoreAsync(func, doWithTimeTaken);
+
+    public static Task MeasureExecutionTimeAsync(
+        this Func<Task> func,
+        Action<TimeSpan> doWithTimeTaken
+    ) => MeasureCoreAsync(func, doWithTimeTaken);
+
+    public static async Task<T> MeasureExecutionTimeAsync<T>(
+        this Task<T> task,
+        Action<TimeSpan> doWithTimeTaken
+    )
     {
-        var stopwatch = Stopwatch.StartNew();
+        if (task is null)
+            throw new ArgumentNullException(nameof(task));
+        if (doWithTimeTaken is null)
+            throw new ArgumentNullException(nameof(doWithTimeTaken));
+
+        var sw = Stopwatch.StartNew();
         try
         {
             return await task;
         }
         finally
         {
-            doWithTimeTaken(stopwatch.Elapsed);
+            doWithTimeTaken(sw.Elapsed);
         }
     }
 
-    /// <summary>
-    /// Measures execution time for a synchronous action.
-    /// </summary>
-    /// <param name="action">The action to execute.</param>
-    /// <param name="doWithTimeTaken">Callback for the elapsed time.</param>
-    public static void MeasureExecutionTime(
-        this Action action,
-        Action<TimeSpan> doWithTimeTaken
-    )
+    public static void MeasureExecutionTime(this Action action, Action<TimeSpan> doWithTimeTaken)
     {
-        var stopwatch = Stopwatch.StartNew();
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+        if (doWithTimeTaken is null)
+            throw new ArgumentNullException(nameof(doWithTimeTaken));
+
+        var sw = Stopwatch.StartNew();
         try
         {
             action();
         }
         finally
         {
-            stopwatch.Stop();
-            doWithTimeTaken(stopwatch.Elapsed);
+            doWithTimeTaken(sw.Elapsed);
         }
     }
 
-    /// <summary>
-    /// Executes an async function and returns a fallback value on error.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="func">The function to execute.</param>
-    /// <param name="onError">The error handler.</param>
+    // =========================
+    // ERROR WRAPPERS
+    // =========================
+
     public static async Task<TResult> ReturnOnErrorAsync<TResult>(
         this Func<Task<TResult>> func,
         Func<Exception, TResult> onError
@@ -207,12 +223,6 @@ public static class Please
         }
     }
 
-    /// <summary>
-    /// Executes a function and returns a fallback value on error.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="func">The function to execute.</param>
-    /// <param name="onError">The error handler.</param>
     public static TResult ReturnOnError<TResult>(
         this Func<TResult> func,
         Func<Exception, TResult> onError
@@ -228,11 +238,10 @@ public static class Please
         }
     }
 
-    /// <summary>
-    /// Executes an async function and returns a result wrapper.
-    /// </summary>
-    /// <typeparam name="T">The result type.</typeparam>
-    /// <param name="asyncFunc">The function to execute.</param>
+    // =========================
+    // RESULT WRAPPERS
+    // =========================
+
     public static async Task<Result<T>> RunAsync<T>(this Func<Task<T>> asyncFunc)
     {
         try
@@ -245,13 +254,9 @@ public static class Please
         }
     }
 
-    /// <summary>
-    /// Executes an async function and returns a result wrapper for a specific exception type.
-    /// </summary>
-    /// <typeparam name="T">The result type.</typeparam>
-    /// <typeparam name="TException">The exception type.</typeparam>
-    /// <param name="asyncFunc">The function to execute.</param>
-    public static async Task<Result<T, TException>> RunAsync<T, TException>(this Func<Task<T>> asyncFunc)
+    public static async Task<Result<T, TException>> RunAsync<T, TException>(
+        this Func<Task<T>> asyncFunc
+    )
         where TException : Exception
     {
         try
@@ -264,11 +269,6 @@ public static class Please
         }
     }
 
-    /// <summary>
-    /// Executes a function and returns a result wrapper.
-    /// </summary>
-    /// <typeparam name="T">The result type.</typeparam>
-    /// <param name="func">The function to execute.</param>
     public static Result<T> Run<T>(this Func<T> func)
     {
         try
@@ -281,11 +281,7 @@ public static class Please
         }
     }
 
-    /// <summary>
-    /// Executes an action and returns the thrown exception, if any.
-    /// </summary>
-    /// <param name="action">The action to execute.</param>
-    public static Exception Run(this Action action)
+    public static Exception? Run(this Action action)
     {
         try
         {
@@ -298,11 +294,7 @@ public static class Please
         }
     }
 
-    /// <summary>
-    /// Executes an async action and returns the thrown exception, if any.
-    /// </summary>
-    /// <param name="asyncTask">The async action to execute.</param>
-    public static async Task<Exception> RunAsync(this Func<Task> asyncTask)
+    public static async Task<Exception?> RunAsync(this Func<Task> asyncTask)
     {
         try
         {

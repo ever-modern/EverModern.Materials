@@ -1,8 +1,16 @@
 ﻿namespace EverModern.Events;
 
-public class Scope : IDisposable
+public interface IObservableScope
 {
-    readonly Lock _locker = new();
+    INotifier BeforeEnter { get; }
+    INotifier AfterEnter { get; }
+    INotifier BeforeExit { get; }
+    INotifier AfterExit { get; }
+}
+
+public class Scope : IObservableScope, IDisposable
+{
+    readonly object _locker = new();
 
     readonly EventSource _beforeEnter = new();
     readonly EventSource _afterEnter = new();
@@ -12,48 +20,106 @@ public class Scope : IDisposable
     bool _entered;
     bool _disposed;
 
-    public INotifier BeforeEnter => _beforeEnter;
-    public INotifier AfterEnter => _afterEnter;
-    public INotifier BeforeExit => _beforeExit;
-    public INotifier AfterExit => _afterExit;
+    public INotifier BeforeEnter => ThrowIfDisposed(_beforeEnter);
+    public INotifier AfterEnter => ThrowIfDisposed(_afterEnter);
+    public INotifier BeforeExit => ThrowIfDisposed(_beforeExit);
+    public INotifier AfterExit => ThrowIfDisposed(_afterExit);
 
-    public static Scope EnterNew() => new Scope().Enter();
+    public static Scope EnterNew()
+    {
+        var scope = new Scope();
+        scope.Enter();
+        return scope;
+    }
 
-    public Scope Enter()
+    protected Scope Enter()
     {
         lock (_locker)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(Scope));
+            ThrowIfDisposedLocked();
 
             if (_entered)
                 throw new InvalidOperationException("Scope already entered.");
 
-            _beforeEnter.Invoke();
+            SafeInvoke(_beforeEnter);
             _entered = true;
         }
 
-        _afterEnter.Invoke();
+        SafeInvoke(_afterEnter);
         return this;
     }
 
-    public void Dispose()
+    public void Exit()
     {
+        EventSource beforeExit, afterExit;
+
         lock (_locker)
         {
             if (_disposed)
                 return;
 
-            if (_entered)
-            {
-                _beforeExit.Invoke();
-                _entered = false;
-                _afterExit.Invoke();
-            }
-
             _disposed = true;
 
-            ScopeExtensions.DisposeAll(_beforeEnter, _afterEnter, _beforeExit, _afterExit);
+            if (!_entered)
+            {
+                DisposeSources();
+                return;
+            }
+
+            beforeExit = _beforeExit;
+            afterExit = _afterExit;
+        }
+
+        // Outside lock: callbacks must not block state transitions
+        SafeInvoke(beforeExit);
+
+        lock (_locker)
+        {
+            _entered = false;
+        }
+
+        SafeInvoke(afterExit);
+
+        DisposeSources();
+    }
+
+    void DisposeSources()
+    {
+        ScopeExtensions.DisposeAll(
+            _beforeEnter,
+            _afterEnter,
+            _beforeExit,
+            _afterExit
+        );
+    }
+
+    static void SafeInvoke(EventSource source)
+    {
+        try
+        {
+            source.Invoke();
+        }
+        catch
+        {
+            // swallow or optionally log
+            // important: lifecycle must not break due to observers
         }
     }
+
+    void ThrowIfDisposedLocked()
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(Scope));
+    }
+
+    T ThrowIfDisposed<T>(T value)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(Scope));
+
+        return value;
+    }
+    
+    void IDisposable.Dispose()
+        => Exit();
 }

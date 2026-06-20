@@ -4,7 +4,7 @@ using System.Threading.Channels;
 namespace EverModern.Threading.Channels;
 
 /// <summary>
-/// Default subscription implementation for <see cref="BroadcastChannel{TMessage}"/>.
+/// Default subscription implementation for <see cref="MultireadChannel{TMessage}"/>.
 /// </summary>
 /// <typeparam name="T">The message type.</typeparam>
 public class ChannelSubscription<T>(

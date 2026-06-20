@@ -1,129 +1,121 @@
 ﻿using EverModern.Chronos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using EverModern.Threading.Locks;
 
 namespace EverModern.Threading.Queues;
 
-/// <summary>
-/// Rate limiter that enforces call constraints within time windows.
-/// </summary>
-public class RateController : IRateController
+public sealed class RateController : IRateController
 {
-    readonly CallConstraint[] _actionConstraints;
-    readonly IChronos _nowProvider;
-    readonly int _commonCallSlotsNumber;
-    readonly DateTimeOffset[] _calls;
-    readonly TimeSpan _longestCallDistance;
+    readonly CallConstraint[] _constraints;
+    readonly IChronos _clock;
+
+    readonly Queue<DateTimeOffset>[] _calls;
+
+    // Single lock because evaluation and commit must be atomic
     readonly Lock _lock = new();
 
-    /// <summary>
-    /// Initializes a new instance of the rate controller with a custom time provider.
-    /// </summary>
-    /// <param name="actionConstraints">The call constraints to enforce.</param>
-    /// <param name="nowProvider">The time provider.</param>
-    public RateController(IEnumerable<CallConstraint> actionConstraints, IChronos nowProvider)
+    public RateController(
+        IEnumerable<CallConstraint> constraints,
+        IChronos clock)
     {
-        _actionConstraints = [.. actionConstraints.OptimizeConstraints()];
-        _nowProvider = nowProvider;
-        _commonCallSlotsNumber = _actionConstraints.Sum(a => a.MaxCallsCount);
-        _calls = new DateTimeOffset[_commonCallSlotsNumber];
-        _longestCallDistance = _actionConstraints.MaxBy(c => c.Period).Period;
+        _constraints = constraints.OptimizeConstraints().ToArray();
+        _clock = clock;
+
+        _calls = _constraints
+            .Select(x => new Queue<DateTimeOffset>(x.MaxCallsCount))
+            .ToArray();
     }
 
-    /// <summary>
-    /// Initializes a new instance of the rate controller using real time.
-    /// </summary>
-    /// <param name="actionConstraints">The call constraints to enforce.</param>
-    public RateController(IEnumerable<CallConstraint> actionConstraints)
-        : this(actionConstraints, RealTimeChronos.Instance)
-    {
-    }
-
-    /// <inheritdoc />
-    public async ValueTask WhenAllowed(CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (TryImmediately(out var nextCallAt))
-        {
-            return;
-        }
-
-        await _nowProvider.WhenComes(nextCallAt, cancellationToken);
-        await WhenAllowed(cancellationToken);
-    }
-
-    /// <inheritdoc />
     public bool TryImmediately(out DateTimeOffset tryAgainAt)
     {
-        using var _ = _lock.LockScope();
+        var now = _clock.Now;
 
-        tryAgainAt = CalculateNextCallPossibleTime();
-        var now = _nowProvider.Now;
-        if (now < tryAgainAt)
+        using (_lock.LockScope())
         {
-            return false;
+            return TryCommitCore(now, out tryAgainAt);
+        }
+    }
+
+    public async ValueTask WhenAllowed(
+        CancellationToken cancellationToken = default)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var now = _clock.Now;
+
+            DateTimeOffset nextAllowedAt;
+
+            using (_lock.LockScope())
+            {
+                if (TryCommitCore(now, out nextAllowedAt))
+                    return;
+            }
+
+            var delay = nextAllowedAt - now;
+
+            if (delay <= TimeSpan.Zero)
+            {
+                await Task.Yield();
+                continue;
+            }
+
+            delay = ClampDelay(delay);
+
+            await _clock.WhenComes(now + delay, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Must be called under _lock.
+    /// Atomically evaluates and commits.
+    /// </summary>
+    bool TryCommitCore(
+        DateTimeOffset now,
+        out DateTimeOffset nextAllowedAt)
+    {
+        nextAllowedAt = DateTimeOffset.MaxValue;
+
+        for (int i = 0; i < _constraints.Length; i++)
+        {
+            var constraint = _constraints[i];
+            var queue = _calls[i];
+
+            while (queue.Count > 0 &&
+                   now - queue.Peek() > constraint.Period)
+            {
+                queue.Dequeue();
+            }
+
+            if (queue.Count < constraint.MaxCallsCount)
+                continue;
+
+            var candidate = queue.Peek() + constraint.Period;
+
+            if (candidate < nextAllowedAt)
+                nextAllowedAt = candidate;
         }
 
-        CommitCall(now);
+        if (nextAllowedAt != DateTimeOffset.MaxValue)
+            return false;
+
+        for (int i = 0; i < _calls.Length; i++)
+        {
+            _calls[i].Enqueue(now);
+        }
+
+        nextAllowedAt = now;
+
         return true;
     }
 
-    void CommitCall(DateTimeOffset at)
+    static TimeSpan ClampDelay(TimeSpan delay)
     {
-        var calls = _calls.AsSpan();
-        calls[..^1].CopyTo(calls[1..]);
-        calls[0] = at;
-    }
+        if (delay < TimeSpan.Zero)
+            return TimeSpan.Zero;
 
-    DateTimeOffset CalculateNextCallPossibleTime()
-    {
-        var l = _actionConstraints.Length;
-        var actionConstraints = _actionConstraints.AsSpan();
-        var calls = _calls.AsSpan();
-        var now = _nowProvider.Now;
-        DateTimeOffset result = default;
-        for (int i = 0; i < l; i++)
-        {
-            var (period, callsAllowedQuantity) = actionConstraints[i];
-            DateTimeOffset earliestPossibleCallByThisConstraint = default;
-            var madeCallsWithinConstraint = 0;
-            for (int callIndex = 0; callIndex < _commonCallSlotsNumber; callIndex++)
-            {
-                var call = calls[callIndex];
-                var distance = now - call;
-                if (distance > _longestCallDistance)
-                {
-                    break;
-                }
+        var max = TimeSpan.FromMilliseconds(int.MaxValue);
 
-                bool withinConstraint = distance < period;
-
-                if (withinConstraint is false)
-                {
-                    earliestPossibleCallByThisConstraint = default;
-                    break;
-                }
-                else
-                {
-                    earliestPossibleCallByThisConstraint = call + period - distance;
-                    madeCallsWithinConstraint++;
-                }
-            }
-
-            if (madeCallsWithinConstraint < callsAllowedQuantity)
-            {
-                earliestPossibleCallByThisConstraint = default;
-            }
-
-            result = result > earliestPossibleCallByThisConstraint ?
-                result :
-                earliestPossibleCallByThisConstraint;
-        }
-
-        return result;
+        return delay > max ? max : delay;
     }
 }

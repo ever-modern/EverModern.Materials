@@ -2,7 +2,7 @@ using EverModern.Threading.Channels;
 
 namespace EverModern.Tests.XUnit;
 
-public class BroadcastChannelTests
+public class MultireadChannelTests
 {
     static async Task<T> ReadSingleAsync<T>(
         IChannelSubscription<T> subscription,
@@ -19,7 +19,7 @@ public class BroadcastChannelTests
     [Fact]
     public async Task BroadcastsMessageToAllSubscribers()
     {
-        using var channel = new BroadcastChannel<int>();
+        using var channel = new MultireadChannel<int>();
         using var subscription1 = channel.Subscribe(_ => true);
         using var subscription2 = channel.Subscribe(_ => true);
 
@@ -37,7 +37,7 @@ public class BroadcastChannelTests
     [Fact]
     public async Task SubscriptionFilter_IsApplied()
     {
-        using var channel = new BroadcastChannel<int>();
+        using var channel = new MultireadChannel<int>();
         using var subscription = channel.Subscribe(message => message % 2 == 0);
 
         await channel.Writer.WriteAsync(1);
@@ -53,7 +53,7 @@ public class BroadcastChannelTests
     [Fact]
     public async Task DisposedSubscription_DoesNotReceiveFurtherMessages()
     {
-        using var channel = new BroadcastChannel<int>();
+        using var channel = new MultireadChannel<int>();
         var subscription = channel.Subscribe(_ => true);
 
         await channel.Writer.WriteAsync(10);

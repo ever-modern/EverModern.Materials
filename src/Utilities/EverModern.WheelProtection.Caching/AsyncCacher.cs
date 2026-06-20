@@ -102,7 +102,7 @@ public class AsyncCacher<TIn, TOut>
         return result;
     }
 
-    private class ByChecksumEqualityComparer : IEqualityComparer<TIn>
+    class ByChecksumEqualityComparer : IEqualityComparer<TIn>
     {
         readonly Func<TIn, int> _getChecksum;
 

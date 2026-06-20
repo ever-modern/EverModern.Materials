@@ -24,7 +24,7 @@
             process.WaitForExit();
         }
 
-        private static void Process_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        static void Process_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
         {
             Console.WriteLine(e.Data);
         }

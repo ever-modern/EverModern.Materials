@@ -5,7 +5,7 @@ namespace EverModern.Blazor.Components.Services.UI;
 
 public class JsUiManipulator : IUiManipulator
 {
-    private readonly IJSRuntime _runtime;
+    readonly IJSRuntime _runtime;
 
     const string _scrollsModule = "destallMaterials.uiManipulation.scrolls";
     

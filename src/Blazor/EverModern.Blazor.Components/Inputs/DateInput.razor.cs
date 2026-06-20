@@ -5,7 +5,7 @@ namespace EverModern.Blazor.Components.Inputs;
 
 public partial class DateInput
 {
-    private bool _showCustomPicker = false;
+    bool _showCustomPicker = false;
 
     [Parameter]
     public bool Clearable { get; set; }
@@ -47,13 +47,13 @@ public partial class DateInput
         }
     }
 
-    private void OnInputFocus()
+    void OnInputFocus()
     {
         _showCustomPicker = true;
         ScheduleRender();
     }
 
-    private void OnInputBlur()
+    void OnInputBlur()
     {
         // Delay hiding to allow clicking on picker items
         Task.Delay(200)
@@ -75,21 +75,21 @@ public partial class DateInput
         ScheduleRender();
     }
 
-    private void SelectDay(int day)
+    void SelectDay(int day)
     {
         var newValue = new DateOnly(Value.Year, Value.Month, day);
         OnValueChanged(newValue);
         ScheduleRender();
     }
 
-    private void SelectMonth(int month)
+    void SelectMonth(int month)
     {
         var newValue = new DateOnly(Value.Year, month, Value.Day);
         OnValueChanged(newValue);
         ScheduleRender();
     }
 
-    private void SelectYear(int year)
+    void SelectYear(int year)
     {
         var newValue = new DateOnly(year, Value.Month, Value.Day);
         OnValueChanged(newValue);

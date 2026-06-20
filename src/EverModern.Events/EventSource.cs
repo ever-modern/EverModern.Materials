@@ -1,105 +1,59 @@
 ﻿namespace EverModern.Events;
 
-public sealed class EventSource : INotifier, IDisposable
+public readonly struct Nothing();
+
+/// <summary>
+/// Represents a thread-safe synchronous event source with subscription support.
+/// </summary>
+public class EventSource : BaseEventSource<Nothing>, INotifier
 {
-    private readonly Lock _lock = new();
-
-    private Action? _handlers;
-    private int _disposed;
-
-    public Subscription Subscribe(Action handler)
-    {
-        ArgumentNullException.ThrowIfNull(handler);
-
-        lock (_lock)
-        {
-            ThrowIfDisposed();
-
-            _handlers += handler;
-        }
-
-        return new Subscription(() =>
-        {
-            lock (_lock)
-            {
-                if (_disposed != 0)
-                    return;
-
-                _handlers -= handler;
-            }
-        });
-    }
-
-    public void Invoke()
-    {
-        Action? snapshot;
-
-        lock (_lock)
-        {
-            ThrowIfDisposed();
-
-            snapshot = _handlers;
-        }
-
-        snapshot?.Invoke();
-    }
-
-    public void Dispose()
-    {
-        lock (_lock)
-        {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
-                return;
-
-            _handlers = null;
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (_disposed != 0)
-            throw new ObjectDisposedException(nameof(EventSource));
-    }
+    public void Invoke() => base.Invoke(default);
+    public Subscription Subscribe(Action handler) => Subscribe(_ => handler());
 }
 
-public sealed class EventSource<T> : INotifier<T>, IDisposable
+public class EventSource<T> : BaseEventSource<T>, INotifier<T>
 {
-    private readonly Lock _lock = new();
+    public void Invoke(T value) => base.Invoke(value);
+    public Subscription Subscribe(Action<T> handler) => base.Subscribe(handler);
+}
 
-    private Action<T>? _handlers;
-    private int _disposed;
+public abstract class BaseEventSource<T> : IDisposable
+{
+    readonly object _sync = new();
 
-    public Subscription Subscribe(Action<T> handler)
+    Action<T>? _handlers;
+    bool _disposed;
+
+    protected Subscription Subscribe(Action<T> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
 
-        lock (_lock)
+        lock (_sync)
         {
             ThrowIfDisposed();
-
             _handlers += handler;
         }
 
         return new Subscription(() =>
-        {
-            lock (_lock)
             {
-                if (_disposed != 0)
-                    return;
+                lock (_sync)
+                {
+                    if (_disposed)
+                        return;
 
-                _handlers -= handler;
+                    _handlers -= handler;
+                }
             }
-        });
+        );
     }
 
-    public void Invoke(T value)
+    protected void Invoke(T value)
     {
         Action<T>? snapshot;
 
-        lock (_lock)
+        lock (_sync)
         {
             ThrowIfDisposed();
-
             snapshot = _handlers;
         }
 
@@ -108,18 +62,19 @@ public sealed class EventSource<T> : INotifier<T>, IDisposable
 
     public void Dispose()
     {
-        lock (_lock)
+        lock (_sync)
         {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            if (_disposed)
                 return;
 
+            _disposed = true;
             _handlers = null;
         }
     }
 
-    private void ThrowIfDisposed()
+    void ThrowIfDisposed()
     {
-        if (_disposed != 0)
-            throw new ObjectDisposedException(nameof(EventSource<T>));
+        if (_disposed)
+            throw new ObjectDisposedException(this.GetType().FullName);
     }
 }

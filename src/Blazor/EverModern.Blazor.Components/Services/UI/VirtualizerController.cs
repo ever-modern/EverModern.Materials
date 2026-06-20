@@ -20,8 +20,8 @@ public class VirtualizerController<TVirtualize>
     readonly IUiManipulator _uiManipulator;
     readonly Virtualize<TVirtualize> _virtualize;
     readonly string _containerId;
-    private readonly int _itemsShown;
-    private readonly int _lineHeightPixels;
+    readonly int _itemsShown;
+    readonly int _lineHeightPixels;
 
     public VirtualizerController(
             IUiManipulator uiManipulator,

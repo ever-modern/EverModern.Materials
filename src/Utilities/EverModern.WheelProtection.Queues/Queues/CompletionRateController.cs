@@ -1,9 +1,4 @@
 ﻿using EverModern.Chronos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace EverModern.Threading.Queues;
 
@@ -12,197 +7,119 @@ namespace EverModern.Threading.Queues;
 /// </summary>
 public class CompletionRateController : ICompletionRateController
 {
-    void Log(string message)
+    readonly IChronos _clock;
+    readonly CallConstraint[] _constraints;
+
+    readonly PriorityQueue<Slot, DateTimeOffset>[] _queues;
+    readonly Lock _lock = new();
+
+    sealed class Slot
     {
-#if DEBUG
-        Console.WriteLine($"{nameof(CompletionRateController)}#{GetHashCode()} {_nowProvider.Now}: {message}");
-#endif
+        public DateTimeOffset ReleaseAt;
     }
 
-    readonly IChronos _nowProvider;
-    readonly CallConstraint[] _actionConstraints;
-    readonly List<StartAndFinishTime> _history = [];
-    readonly int _commonCallSlotsNumber;
-
-    async Task ProcessAnotherAsync()
+    public CompletionRateController(
+        IEnumerable<CallConstraint> constraints,
+        IChronos clock)
     {
-        var nextCallAt = CalculateNextCallAllowedTime();
-        if (nextCallAt < DateTimeOffset.MaxValue && _subscriptions.TryDequeue(out var sub))
+        _constraints = constraints.OptimizeConstraints().ToArray();
+        _clock = clock;
+
+        _queues = new PriorityQueue<Slot, DateTimeOffset>[_constraints.Length];
+
+        for (int i = 0; i < _queues.Length; i++)
+            _queues[i] = new PriorityQueue<Slot, DateTimeOffset>();
+    }
+
+    public CompletionRateController(IEnumerable<CallConstraint> constraints)
+        : this(constraints, RealtimeChronos.Instance) {}
+
+    public bool TryTakeImmediately(out ContinuationToken token)
+    {
+        lock (_lock)
         {
-            Log($"Task {sub.Item2.GetHashCode()} will have to wait until {nextCallAt} to complete.");
-            await _nowProvider.WhenComes(nextCallAt).ContinueWith((_) => sub.Item1());
+            var now = _clock.Now;
+
+            if (!TryAcquire(now, out _))
+            {
+                token = null!;
+                return false;
+            }
+
+            token = CreateToken();
+            return true;
         }
     }
 
-    readonly ControlledQueue<Tuple<Action, Task>> _subscriptions
-        = new(x => x.Item2.IsCompleted == false);
-
-    readonly Lock _locker = new();
-
-    /// <summary>
-    /// Initializes a new instance of the completion rate controller with a custom time provider.
-    /// </summary>
-    /// <param name="actionConstraints">The call constraints to enforce.</param>
-    /// <param name="nowProvider">The time provider.</param>
-    public CompletionRateController(IEnumerable<CallConstraint> actionConstraints, IChronos nowProvider)
+    public async ValueTask<ContinuationToken> WhenAllowed(CancellationToken cancellationToken = default)
     {
-        _actionConstraints = [.. actionConstraints.OptimizeConstraints()];
-        _nowProvider = nowProvider;
-        _commonCallSlotsNumber = _actionConstraints.Sum(a => a.MaxCallsCount);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the completion rate controller using real time.
-    /// </summary>
-    /// <param name="actionConstraints">The call constraints to enforce.</param>
-    public CompletionRateController(IEnumerable<CallConstraint> actionConstraints)
-        : this(actionConstraints, RealTimeChronos.Instance)
-    {
-    }
-
-    /// <inheritdoc />
-    public ValueTask<ContinuationToken> WhenAllowed(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (TryTakeImmediately(out var immediateResult))
+        while (true)
         {
-            Log("Immediate result returned.");
-            return new(immediateResult);
-        }
+            cancellationToken.ThrowIfCancellationRequested();
 
-        lock (_locker)
-        {
-            var tcs = new TaskCompletionSource<ContinuationToken>();
+            DateTimeOffset nextAllowedAt;
 
-            cancellationToken.Register(() => tcs.TrySetCanceled());
-
-            void action()
+            lock (_lock)
             {
-                if (tcs.Task.IsCompleted)
-                {
-                    return;
-                }
+                var now = _clock.Now;
 
-                var result = CreateControlLocker();
-                tcs.TrySetResult(result);
+                if (TryAcquire(now, out nextAllowedAt))
+                    return CreateToken();
             }
 
-            bool willBeNext = _subscriptions.FindThrough() is null;
-            if (willBeNext)
-            {
-                Log($"Task {tcs.Task.GetHashCode()} is going to be next in line.");
-            }
-
-            var subscriptionTask = Tuple.Create(action, tcs.Task as Task);
-            _subscriptions.Enqueue(subscriptionTask);
-
-            try
-            {
-                return new(tcs.Task);
-            }
-            finally
-            {
-                if (willBeNext)
-                {
-                    ProcessAnotherAsync();
-                }
-            }
+            await _clock.WhenComes(nextAllowedAt, cancellationToken);
         }
     }
 
-    /// <summary>
-    /// Attempts to acquire a continuation token immediately.
-    /// </summary>
-    /// <param name="result">The acquired token, if successful.</param>
-    public bool TryTakeImmediately(out ContinuationToken result)
+    bool TryAcquire(DateTimeOffset now, out DateTimeOffset nextAllowedAt)
     {
-        lock (_locker)
-        {
-            var nextPossibleCallAt = CalculateNextCallAllowedTime();
-            if (nextPossibleCallAt == default)
-            {
-                result = CreateControlLocker();
-                return true;
-            }
+        nextAllowedAt = DateTimeOffset.MaxValue;
 
-            result = null;
-            return false;
+        for (int i = 0; i < _constraints.Length; i++)
+        {
+            var constraint = _constraints[i];
+            var pq = _queues[i];
+
+            while (pq.Count > 0 && pq.Peek().ReleaseAt <= now)
+                pq.Dequeue();
+
+            if (pq.Count < constraint.MaxCallsCount)
+                continue;
+
+            var earliest = pq.Peek().ReleaseAt;
+            if (earliest < nextAllowedAt)
+                nextAllowedAt = earliest;
         }
+
+        return nextAllowedAt == DateTimeOffset.MaxValue;
     }
 
-    RateControlLocker CreateControlLocker()
+    ContinuationToken CreateToken()
     {
-        var time = new StartAndFinishTime(_nowProvider.Now);
-        _history.Add(time);
+        var released = 0;
+        var ownedSlots = new Slot[_constraints.Length];
+
         return new RateControlLocker(() =>
-        {
-            lock (_locker)
             {
-                time.Finish = _nowProvider.Now;
-                ProcessAnotherAsync();
-            }
-        });
-    }
+                if (Interlocked.Exchange(ref released, 1) != 0)
+                    return;
 
-    /// <summary>
-    /// Calculate time in which the next call can be made.
-    /// </summary>
-    /// <returns>TimeSpan.MinValue - if call may be made immediately</returns>
-    DateTimeOffset CalculateNextCallAllowedTime()
-    {
-        var executionsHistory = _history;
-        var callsCount = executionsHistory.Count;
-        Span<CallConstraint> actionConstraints = _actionConstraints;
-        var now = _nowProvider.Now;
-        if (executionsHistory.Count == 0)
-        {
-            return default;
-        }
+                var now = _clock.Now;
 
-        DateTimeOffset earliestCallPossible = default;
-        for (int i = 0; i < actionConstraints.Length; i++)
-        {
-            var (period, callsAllowedQuantity) = actionConstraints[i];
-            var allowedNextCallByThisConstraint = DateTimeOffset.MaxValue;
-            var callsWithinConstraint = 0;
-            for (int callIndex = callsCount - 1; callsCount - callIndex <= _commonCallSlotsNumber; callIndex--)
-            {
-                var (_, finish) = executionsHistory[callIndex];
-                var isOver = now >= finish;
-                var withinConstraint = isOver || now - finish <= period;
-                if (withinConstraint is false)
+                lock (_lock)
                 {
-                    allowedNextCallByThisConstraint = default;
-                    break;
-                }
-                else 
-                {
-                    callsWithinConstraint++;
-                }
+                    for (int i = 0; i < _constraints.Length; i++)
+                    {
+                        var slot = new Slot
+                        {
+                            ReleaseAt = now + _constraints[i].Period
+                        };
 
-                if (isOver)
-                {
-                    allowedNextCallByThisConstraint = finish + period;
-                    break;
+                        ownedSlots[i] = slot;
+                        _queues[i].Enqueue(slot, slot.ReleaseAt);
+                    }
                 }
             }
-
-            if (callsWithinConstraint < callsAllowedQuantity)
-            {
-                allowedNextCallByThisConstraint = default;
-            }
-
-            if (allowedNextCallByThisConstraint == DateTimeOffset.MaxValue)
-            {
-                return DateTimeOffset.MaxValue;
-            }
-
-            earliestCallPossible = earliestCallPossible > allowedNextCallByThisConstraint ?
-                earliestCallPossible :
-                allowedNextCallByThisConstraint;
-        }
-
-        return earliestCallPossible;
+        );
     }
 }

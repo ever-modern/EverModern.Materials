@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using EverModern.Threading.Locks;
 
 namespace EverModern.Threading.Queues;
 

@@ -11,7 +11,7 @@ namespace EverModern.Blazor.Components
 
     public class ExampleJsInterop : IAsyncDisposable
     {
-        private readonly Lazy<Task<IJSObjectReference>> moduleTask;
+        readonly Lazy<Task<IJSObjectReference>> moduleTask;
 
         public ExampleJsInterop(IJSRuntime jsRuntime)
         {

@@ -1,6 +1,6 @@
 ﻿namespace EverModern.Blazor.Components.Common;
 
-internal static class StringUtils
+static class StringUtils
 {
     
 }
